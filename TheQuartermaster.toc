@@ -1,0 +1,64 @@
+## Interface: 120001, 120000
+## Title: The Quartermaster
+## Notes: Modern alt management and cross-character inventory tracking
+## Author: TheQuartermaster Team
+## Version: 0.2.81
+## IconTexture: Interface\AddOns\TheQuartermaster\Media\icon
+## SavedVariables: TheQuartermasterDB
+## OptionalDeps: Ace3
+## X-Category: Bags & Inventory
+## X-Curse-Project-ID: 
+## X-Wago-ID: 
+
+# Libraries
+embeds.xml
+
+# Localization (Blizzard supported locales only - no trTR)
+Locales\enUS.lua
+Locales\deDE.lua
+Locales\esES.lua
+Locales\esMX.lua
+Locales\frFR.lua
+Locales\itIT.lua
+Locales\koKR.lua
+Locales\ptBR.lua
+Locales\ruRU.lua
+Locales\zhCN.lua
+Locales\zhTW.lua
+
+# Core
+Core\Constants.lua
+Core\Defaults.lua
+Core.lua
+Config.lua
+
+# Modules (Core Services - Load First!)
+Modules\APIWrapper.lua
+Modules\ErrorHandler.lua
+Modules\DataService.lua
+Modules\CacheManager.lua
+Modules\EventManager.lua
+Modules\DatabaseOptimizer.lua
+Modules\CollectionManager.lua
+Modules\NotificationManager.lua
+
+# Modules (Features)
+Modules\MinimapButton.lua
+Modules\TooltipEnhancer.lua
+Modules\Scanner.lua
+Modules\Banker.lua
+Modules\PvE.lua
+
+# UI Modules (SharedWidgets must load first!)
+Modules\UI\SharedWidgets.lua
+Modules\UI\CharactersUI.lua
+Modules\UI\ExperienceUI.lua
+Modules\UI\GuildUI.lua
+Modules\UI\CurrencyUI.lua
+Modules\UI\ItemsUI.lua
+Modules\UI\StorageUI.lua
+Modules\UI\PvEUI.lua
+Modules\UI\ReputationUI.lua
+Modules\UI\StatisticsUI.lua
+Modules\UI\InformationDialog.lua
+Modules\UI.lua

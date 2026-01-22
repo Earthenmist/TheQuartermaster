@@ -1,0 +1,288 @@
+--[[
+    The Quartermaster - Minimap Button Module
+    LibDBIcon integration for easy access
+    
+    Features:
+    - Click to toggle main window
+    - Right-click for quick menu
+    - Tooltip with summary info
+    - Draggable icon position
+]]
+
+local ADDON_NAME, ns = ...
+local TheQuartermaster = ns.TheQuartermaster
+
+local function RGBToHex(r, g, b)
+    r = math.max(0, math.min(1, tonumber(r) or 1))
+    g = math.max(0, math.min(1, tonumber(g) or 1))
+    b = math.max(0, math.min(1, tonumber(b) or 1))
+    return string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
+end
+
+local function GetTitleColorHex()
+    -- Prefer the current UI theme accent colour, fallback to a readable yellow.
+    local c = ns and ns.UI_COLORS and ns.UI_COLORS.accent
+    if type(c) == "table" then
+        return RGBToHex(c[1], c[2], c[3])
+    end
+    -- Yellow fallback
+    return "ffd100"
+end
+
+-- IMPORTANT:
+-- Do not cache ns.UI_FormatGold at file load time.
+-- UI/SharedWidgets.lua assigns ns.UI_FormatGold later in the addon's load order.
+-- If we cache it here, we'd lock in a nil upvalue and tooltips would error.
+local function FormatGold(amount)
+    local fn = ns and ns.UI_FormatGold
+    if type(fn) == "function" then
+        return fn(amount)
+    end
+
+    -- Fallback: use Blizzard coin string if available.
+    if type(GetCoinTextureString) == "function" then
+        return GetCoinTextureString(tonumber(amount) or 0)
+    end
+
+    return tostring(tonumber(amount) or 0)
+end
+
+local function BuildTooltip(tip, addon)
+    if not tip or not tip.AddLine then return end
+
+    local titleHex = GetTitleColorHex()
+    tip:SetText("|cff" .. titleHex .. "The Quartermaster|r")
+    tip:AddLine(" ")
+
+    -- Gold totals
+    local charGold = 0
+    if addon.db and addon.db.global and addon.db.global.characters then
+        for _, charData in pairs(addon.db.global.characters) do
+            charGold = charGold + (tonumber(charData.gold) or 0)
+        end
+    end
+
+    local warbandGold = (addon.db and addon.db.global and addon.db.global.warbandBank and addon.db.global.warbandBank.gold) or 0
+    warbandGold = tonumber(warbandGold) or 0
+    local totalGold = charGold + warbandGold
+
+    tip:AddDoubleLine("Total Gold:", FormatGold(totalGold), 1, 1, 0.5, 1, 1, 1)
+    tip:AddDoubleLine("Character Gold:", FormatGold(charGold), 1, 1, 0.5, 1, 1, 1)
+    tip:AddDoubleLine("Warband Bank:", FormatGold(warbandGold), 1, 1, 0.5, 1, 1, 1)
+    tip:AddLine(" ")
+
+    -- Character count
+    local charCount = 0
+    if addon.db and addon.db.global and addon.db.global.characters then
+        for _ in pairs(addon.db.global.characters) do
+            charCount = charCount + 1
+        end
+    end
+    tip:AddDoubleLine("Characters Tracked:", charCount, 0.7, 0.7, 0.7, 1, 1, 1)
+
+    -- Last scan time
+    local lastScan = (addon.db and addon.db.global and addon.db.global.warbandBank and addon.db.global.warbandBank.lastScan) or 0
+    lastScan = tonumber(lastScan) or 0
+    if lastScan > 0 then
+        local timeSince = time() - lastScan
+        local timeStr
+        if timeSince < 60 then
+            timeStr = string.format("%d seconds ago", timeSince)
+        elseif timeSince < 3600 then
+            timeStr = string.format("%d minutes ago", math.floor(timeSince / 60))
+        else
+            timeStr = string.format("%d hours ago", math.floor(timeSince / 3600))
+        end
+        tip:AddDoubleLine("Last Scan:", timeStr, 0.7, 0.7, 0.7, 1, 1, 1)
+    else
+        tip:AddDoubleLine("Last Scan:", "Never", 0.7, 0.7, 0.7, 1, 0.5, 0.5)
+    end
+
+    tip:AddLine(" ")
+    tip:AddLine("|cff00ff00Left-Click:|r Toggle window", 0.7, 0.7, 0.7)
+    tip:AddLine("|cff00ff00Right-Click:|r Quick menu", 0.7, 0.7, 0.7)
+end
+
+-- LibDBIcon reference
+local LDB = LibStub("LibDataBroker-1.1", true)
+local LDBI = LibStub("LibDBIcon-1.0", true)
+
+-- ============================================================================
+-- DATA BROKER OBJECT
+-- ============================================================================
+
+--[[
+    Initialize LibDataBroker object
+    This creates the minimap button and defines its behavior
+]]
+function TheQuartermaster:InitializeMinimapButton()
+    -- Safety check: Make sure libraries are available
+    if not LDB or not LDBI then
+        return
+    end
+    
+    -- Store reference to self for callbacks
+    local addon = self
+    
+    -- Create DataBroker object
+    local dataObj = LDB:NewDataObject(ADDON_NAME, {
+        type = "launcher",
+        text = "The Quartermaster",
+        icon = "Interface\\AddOns\\TheQuartermaster\\Media\\icon",
+        
+        -- Left-click: Toggle main window
+        OnClick = function(clickedframe, button)
+            if button == "LeftButton" then
+                addon:ToggleMainWindow()
+            elseif button == "RightButton" then
+                addon:ShowMinimapMenu()
+            end
+        end,
+        
+        -- Tooltip
+        OnTooltipShow = function(tooltip)
+            BuildTooltip(tooltip, addon)
+        end,
+        
+        OnEnter = function(frame)
+            GameTooltip:SetOwner(frame, "ANCHOR_LEFT")
+            BuildTooltip(GameTooltip, addon)
+            GameTooltip:Show()
+        end,
+        
+        OnLeave = function()
+            GameTooltip:Hide()
+        end,
+    })
+    
+    -- Register with LibDBIcon
+    LDBI:Register(ADDON_NAME, dataObj, self.db.profile.minimap)
+    
+    -- Show/hide based on settings
+    if self.db.profile.minimap.hide then
+        LDBI:Hide(ADDON_NAME)
+    else
+        LDBI:Show(ADDON_NAME)
+    end
+end
+
+--[[
+    Show/hide minimap button
+    @param show boolean - True to show, false to hide
+]]
+function TheQuartermaster:SetMinimapButtonVisible(show)
+    if not LDBI then return end
+    
+    if show then
+        LDBI:Show(ADDON_NAME)
+        self.db.profile.minimap.hide = false
+    else
+        LDBI:Hide(ADDON_NAME)
+        self.db.profile.minimap.hide = true
+    end
+end
+
+--[[
+    Toggle minimap button visibility
+]]
+function TheQuartermaster:ToggleMinimapButton()
+    if not LDBI then return end
+    
+    if self.db.profile.minimap.hide then
+        self:SetMinimapButtonVisible(true)
+        self:Print("Minimap button shown")
+    else
+        self:SetMinimapButtonVisible(false)
+        self:Print("Minimap button hidden (use /wn minimap to show)")
+    end
+end
+
+--[[
+    Update minimap button tooltip
+    Called when data changes (gold, scan time, etc.)
+]]
+function TheQuartermaster:UpdateMinimapTooltip()
+    -- Force tooltip refresh if it's currently shown
+    if GameTooltip:IsShown() and GameTooltip:GetOwner() then
+        local owner = GameTooltip:GetOwner()
+        if owner and owner.dataObject and owner.dataObject == ADDON_NAME then
+            GameTooltip:ClearLines()
+            local dataObj = LDB:GetDataObjectByName(ADDON_NAME)
+            if dataObj and dataObj.OnTooltipShow then
+                dataObj.OnTooltipShow(GameTooltip)
+            end
+            GameTooltip:Show()
+        end
+    end
+end
+
+-- ============================================================================
+-- RIGHT-CLICK MENU
+-- ============================================================================
+
+--[[
+    Show right-click context menu
+    Provides quick access to common actions
+]]
+function TheQuartermaster:ShowMinimapMenu()
+    -- Modern TWW 11.0+ menu system
+    if MenuUtil and MenuUtil.CreateContextMenu then
+        MenuUtil.CreateContextMenu(UIParent, function(ownerRegion, rootDescription)
+            -- Header
+            rootDescription:CreateTitle("The Quartermaster")
+            
+            -- Toggle Window
+            rootDescription:CreateButton("Toggle Window", function()
+                self:ToggleMainWindow()
+            end)
+            
+            -- Scan Bank (if open)
+            local scanButton = rootDescription:CreateButton("Scan Bank", function()
+                if self.bankIsOpen then
+                    self:Print("Scanning bank...")
+                    if self.warbandBankIsOpen and self.ScanWarbandBank then
+                        self:ScanWarbandBank()
+                    end
+                    if self.ScanPersonalBank then
+                        self:ScanPersonalBank()
+                    end
+                    self:Print("Scan complete!")
+                else
+                    self:Print("Bank is not open")
+                end
+            end)
+            if not self.bankIsOpen then
+                scanButton:SetEnabled(false)
+            end
+            
+            rootDescription:CreateDivider()
+            
+            -- Options
+            rootDescription:CreateButton("Options", function()
+                self:OpenOptions()
+            end)
+            
+            -- Hide Minimap Button
+            rootDescription:CreateButton("Hide Minimap Button", function()
+                self:SetMinimapButtonVisible(false)
+                self:Print("Minimap button hidden (use /wn minimap to show)")
+            end)
+        end)
+    else
+        -- Fallback: Show commands
+        self:Print("Right-click menu unavailable")
+        self:Print("Use /wn show, /wn scan, /wn config")
+    end
+end
+
+-- ============================================================================
+-- SLASH COMMANDS
+-- ============================================================================
+
+--[[
+    Slash command for minimap button
+    /wn minimap - Toggle minimap button visibility
+]]
+function TheQuartermaster:MinimapSlashCommand()
+    self:ToggleMinimapButton()
+end
