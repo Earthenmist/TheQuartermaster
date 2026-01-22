@@ -2,7 +2,7 @@
 
 > Modern Warband bank management and cross-character inventory tracking for World of Warcraft
 
-[![WoW Version](https://img.shields.io/badge/WoW-11.0.2-blue.svg)](https://worldofwarcraft.com)
+[![WoW Version](https://img.shields.io/badge/WoW-12.0.0-blue.svg)](https://worldofwarcraft.com)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## 📖 Overview
