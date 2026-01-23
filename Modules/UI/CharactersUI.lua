@@ -133,7 +133,7 @@ function TheQuartermaster:DrawCharacterList(parent)
     local wb1Icon = wbGoldCard:CreateTexture(nil, "ARTWORK")
     wb1Icon:SetSize(36, 36)
     wb1Icon:SetPoint("LEFT", 15, 0)
-    wb1Icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
+    wb1Icon:SetTexture("Interface\\Icons\\ui_warbands")
     
     local wb1Label = wbGoldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     wb1Label:SetPoint("TOPLEFT", wb1Icon, "TOPRIGHT", 12, -2)
@@ -307,7 +307,7 @@ function TheQuartermaster:DrawCharacterList(parent)
             self.db.profile.ui.favoritesExpanded = isExpanded
             self:RefreshUI()
         end,
-        "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend"  -- Heart/people icon
+        "Interface\\Icons\\trade_archaeology_tyrandesfavoritedoll"
     )
     favHeader:SetPoint("TOPLEFT", 10, -yOffset)
     favHeader:SetPoint("TOPRIGHT", -10, -yOffset)

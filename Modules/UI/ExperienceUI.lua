@@ -174,7 +174,7 @@ function TheQuartermaster:DrawExperienceList(parent)
     local mIcon = maxLvlCard:CreateTexture(nil, "ARTWORK")
     mIcon:SetSize(36, 36)
     mIcon:SetPoint("LEFT", 15, 0)
-    mIcon:SetTexture("Interface\\Icons\\Achievement_Level_10") -- generic achievement icon (exists broadly)
+    mIcon:SetTexture("Interface\\Icons\\achievement_level_90") -- generic achievement icon (exists broadly)
 
     local mLabel = maxLvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     mLabel:SetPoint("TOPLEFT", mIcon, "TOPRIGHT", 12, -2)
@@ -386,7 +386,7 @@ function TheQuartermaster:DrawExperienceList(parent)
             self.db.profile.ui.favoritesExpanded = isExpanded
             self:RefreshUI()
         end,
-        "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend"  -- Heart/people icon
+        "Interface\\Icons\\trade_archaeology_tyrandesfavoritedoll
     )
     favHeader:SetPoint("TOPLEFT", 10, -yOffset)
     favHeader:SetPoint("TOPRIGHT", -10, -yOffset)

@@ -469,7 +469,7 @@ end
     local titleIcon = titleCard:CreateTexture(nil, "ARTWORK")
     titleIcon:SetSize(40, 40)
     titleIcon:SetPoint("LEFT", 15, 0)
-    titleIcon:SetTexture("Interface\\Icons\\INV_Misc_Bag_36")
+    titleIcon:SetTexture("Interface\\Icons\\achievement_guildperk_mobilebanking")
     
     local titleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     titleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, 5)
