@@ -114,18 +114,14 @@ function TheQuartermaster:ShowInfoDialog()
 
     AddText("A clean, account-wide overview of your characters, currencies, reputations, inventory storage, and progression — built for modern Warband play.", "GameFontNormal", {0.85, 0.85, 0.85}, 12)
 
-    AddDivider()
-
     -- How data is collected
     AddText("How it works", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
     AddText("The Quartermaster is view-only. It builds your account database as you play:", "GameFontNormal", {0.9, 0.9, 0.9}, 6)
-    AddText("• Log into characters at least once to capture their profile data.
-• Open Inventory/Bank/Warband Bank/Guild Bank to cache item lists.
-• Use search and filters to find items across all stored locations.", "GameFontNormal", {0.9, 0.9, 0.9}, 12)
+    AddText("• Log into characters at least once to capture their profile data.", "GameFontNormal", {0.9, 0.9, 0.9}, 6)
+    AddText("• Open Inventory/Bank/Warband Bank/Guild Bank to cache item lists.", "GameFontNormal", {0.9, 0.9, 0.9}, 6)
+    AddText("• Use search and filters to find items across all stored locations.", "GameFontNormal", {0.9, 0.9, 0.9}, 12)
 
     AddText("Tip: If something looks missing, visit that character and open the relevant window once (then /reload if needed).", "GameFontHighlightSmall", {0.75, 0.75, 0.75}, 14)
-
-    AddDivider()
 
     -- Characters Tab
     AddText("Characters", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
@@ -142,7 +138,7 @@ function TheQuartermaster:ShowInfoDialog()
     -- Items Tab
     AddText("Items", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
     AddText("Browse cached items by location (Inventory, Bank, Warband Bank, and Guild Bank). The list is searchable and designed to load fast even with large collections.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
-
+    
     -- Storage Tab
     AddText("Storage", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
     AddText("A unified item view that aggregates everything you’ve cached across characters and banks. Use filters and search to quickly answer: “Where is that item?”", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
@@ -162,11 +158,7 @@ function TheQuartermaster:ShowInfoDialog()
     -- Statistics Tab
     AddText("Statistics", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
     AddText("Account-wide collection stats such as achievement points, mounts, companions, toys, and storage usage.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
-
-    AddDivider()
-
-
-    
+  
     -- Footer
     AddText("Thank you for your support!", "GameFontNormalLarge", {0.2, 0.8, 0.2}, 8)
     AddText("If you encounter any bugs or have suggestions, please leave a comment on CurseForge. Your feedback helps make The Quartermaster better!", "GameFontNormal", {0.8, 0.8, 0.8}, 5)
