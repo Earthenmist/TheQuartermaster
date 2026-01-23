@@ -209,8 +209,15 @@ function TheQuartermaster:DrawCurrencyTab(parent)
         return yOffset + 50
     end
     
-    -- Get filter mode and zero toggle
-    local filterMode = self.db.profile.currencyFilterMode or "nonfiltered"
+    -- View mode and zero toggle
+    -- currencyViewMode:
+    --   "warband"   = All Warband (default) - hides alt list, shows this character + warband/account-wide currencies
+    --   "character" = Character Only - shows alt list (current behaviour)
+    local viewMode = self.db.profile.currencyViewMode
+    if not viewMode or (viewMode ~= "warband" and viewMode ~= "character") then
+        viewMode = "warband"
+        self.db.profile.currencyViewMode = viewMode
+    end
     local showZero = self.db.profile.currencyShowZero
     if showZero == nil then showZero = true end
     
@@ -341,7 +348,7 @@ function TheQuartermaster:DrawCurrencyTab(parent)
 
     local btnHolder = CreateFrame("Frame", nil, titleCard)
     btnHolder:SetPoint("RIGHT", titleCard, "RIGHT", -10, 0)
-    btnHolder:SetSize(260, 24)
+    btnHolder:SetSize(300, 24)
 
     -- Show/Hide 0 Qty toggle
     local zeroBtn = CreateHeaderActionButton(
@@ -359,25 +366,24 @@ function TheQuartermaster:DrawCurrencyTab(parent)
         TheQuartermaster:RefreshUI()
     end)
 
-    -- Filtered/Non-Filtered toggle
+
+    -- All Warband / Character Only toggle
     local toggleBtn = CreateHeaderActionButton(
         btnHolder,
-        120,
-        filterMode == "filtered" and "Filtered" or "Non-Filtered",
-        "Currency Filter Mode",
-        "Filtered: shows only watched/important currencies.\nNon-Filtered: shows everything."
+        140,
+        viewMode == "warband" and "All Warband" or "Character Only",
+        "Currency View",
+        "All Warband: shows this character + warband/account-wide currencies (hides alt list).\nCharacter Only: shows each character and their currencies."
     )
     toggleBtn:SetPoint("RIGHT", zeroBtn, "LEFT", -8, 0)
     toggleBtn:SetScript("OnClick", function(self)
-        if filterMode == "filtered" then
-            filterMode = "nonfiltered"
-            TheQuartermaster.db.profile.currencyFilterMode = "nonfiltered"
-            self.text:SetText("Non-Filtered")
+        if viewMode == "warband" then
+            viewMode = "character"
         else
-            filterMode = "filtered"
-            TheQuartermaster.db.profile.currencyFilterMode = "filtered"
-            self.text:SetText("Filtered")
+            viewMode = "warband"
         end
+        TheQuartermaster.db.profile.currencyViewMode = viewMode
+        self.text:SetText(viewMode == "warband" and "All Warband" or "Character Only")
         TheQuartermaster:RefreshUI()
     end)
 
@@ -429,6 +435,50 @@ yOffset = yOffset + 78
         return (a.char.name or "") < (b.char.name or "")
     end)
     
+
+    -- All Warband view: hide alt list by rendering ONLY the current (online) character.
+    -- We still keep the single character header for context, but no other alts are listed.
+    if viewMode == "warband" and #charactersWithCurrencies > 0 then
+        local selected = nil
+        for _, cd in ipairs(charactersWithCurrencies) do
+            if cd.isOnline then
+                selected = cd
+                break
+            end
+        end
+        if not selected then
+            selected = charactersWithCurrencies[1]
+        end
+
+        -- Merge account-wide (warband) currencies from all characters into the selected list.
+        local accountWide = {}
+        for _, cd in ipairs(charactersWithCurrencies) do
+            for _, curr in ipairs(cd.currencies) do
+                if curr.data and curr.data.isAccountWide then
+                    local existing = accountWide[curr.id]
+                    if not existing or (curr.data.quantity or 0) > (existing.data.quantity or 0) then
+                        accountWide[curr.id] = curr
+                    end
+                end
+            end
+        end
+
+        local merged = {}
+        local seen = {}
+        for _, curr in ipairs(selected.currencies) do
+            merged[#merged+1] = curr
+            seen[curr.id] = true
+        end
+        for cid, curr in pairs(accountWide) do
+            if not seen[cid] then
+                merged[#merged+1] = curr
+            end
+        end
+        selected.currencies = merged
+
+        charactersWithCurrencies = { selected }
+    end
+
     if not hasAnyData then
         DrawEmptyState(parent, 
             currencySearchText ~= "" and "No currencies match your search" or "No currencies found",
@@ -436,7 +486,328 @@ yOffset = yOffset + 78
         return yOffset + 100
     end
     
-    -- Draw each character
+    
+    -- ============================================================================
+    -- Blizzard-like ordering (requested)
+    -- ============================================================================
+    local LEGACY_ORDER = {
+        "The War Within",
+        "Dragonflight",
+        "Shadowlands",
+        "Battle for Azeroth",
+        "Legion",
+        "Warlords of Draenor",
+        "Mists of Pandaria",
+        "Wrath of the Lich King",
+        "Burning Crusade",
+        "The Burning Crusade",
+        "Account-Wide",
+        "Other",
+    }
+
+    local function NormalizeHeaderName(name)
+        name = name or ""
+        name = name:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+        return name:lower()
+    end
+
+    -- Blizzard header names can differ between versions (e.g. "The War Within" vs "War Within").
+    -- Resolve a bucket by trying common aliases so we don't drop currencies when names vary.
+    local function GetBucketByHeaderName(buckets, headerName)
+        local key = NormalizeHeaderName(headerName)
+        local bucket = buckets[key]
+        if bucket then return bucket, key end
+
+        -- Try stripping leading "the "
+        if key:sub(1, 4) == "the " then
+            local alt = key:sub(5)
+            bucket = buckets[alt]
+            if bucket then return bucket, alt end
+        end
+
+        -- Try adding leading "the "
+        local withThe = "the " .. key
+        bucket = buckets[withThe]
+        if bucket then return bucket, withThe end
+
+        return nil, key
+    end
+
+    local function BuildHeaderBuckets(currList)
+        local buckets = {}
+        for _, curr in ipairs(currList) do
+            local header = (curr.data and curr.data.headerName) or "Other"
+            local key = NormalizeHeaderName(header)
+            buckets[key] = buckets[key] or { name = header, items = {} }
+            table.insert(buckets[key].items, curr)
+        end
+        -- stable sort each bucket by name
+        for _, b in pairs(buckets) do
+            table.sort(b.items, function(a, b2)
+                return (a.data.name or "") < (b2.data.name or "")
+            end)
+        end
+        return buckets
+    end
+
+    local function RenderCurrenciesUnderHeader(headerTitle, headerKey, headerIcon, items, baseIndent, defaultExpanded, nestedFn, allowEmpty, countOverride)
+        if (not items or #items == 0) and not allowEmpty then
+            return
+        end
+
+        local hKey = headerKey
+        local hExpanded = IsExpanded(hKey, defaultExpanded ~= false)
+
+        if currencySearchText ~= "" then
+            hExpanded = true
+        end
+
+        local hdr, _ = CreateCollapsibleHeader(
+            parent,
+            headerTitle .. " (" .. (countOverride or #items) .. ")",
+            hKey,
+            hExpanded,
+            function(isExpanded) ToggleExpand(hKey, isExpanded) end,
+            headerIcon
+        )
+        hdr:SetPoint("TOPLEFT", 10 + baseIndent, -yOffset)
+        hdr:SetWidth(width - baseIndent)
+        hdr:SetBackdropColor(0.10, 0.10, 0.12, 0.9)
+        local COLORS = GetCOLORS()
+        local borderColor = COLORS.accent
+        hdr:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
+
+        yOffset = yOffset + HEADER_SPACING
+
+        if hExpanded then
+            local rowIdx = 0
+            for _, curr in ipairs(items) do
+                rowIdx = rowIdx + 1
+                yOffset = CreateCurrencyRow(parent, curr.data, curr.id, rowIdx, baseIndent, width, yOffset)
+            end
+        end
+
+        if nestedFn then
+            nestedFn(hExpanded)
+        end
+    end
+
+    local function RenderBlizzardOrder(charKeyForState, currList, baseIndent)
+        local buckets = BuildHeaderBuckets(currList)
+
+        -- Midnight (when it exists) + Season subheaders
+        local midnight = buckets["midnight"]
+        if midnight and #midnight.items > 0 then
+            RenderCurrenciesUnderHeader(
+                midnight.name,
+                charKeyForState .. "-hdr-midnight",
+                "Interface\\Icons\\INV_Misc_QuestionMark",
+                midnight.items,
+                baseIndent,
+                true,
+                function()
+                    -- Season subheaders (Season 1, Season 2, ...)
+                    for i = 1, 6 do
+                        local sKey = "season " .. i
+                        local sBucket = buckets[sKey]
+                        if sBucket and #sBucket.items > 0 then
+                            RenderCurrenciesUnderHeader(
+                                sBucket.name,
+                                charKeyForState .. "-hdr-midnight-" .. sKey:gsub("%s",""),
+                                "Interface\\Icons\\INV_Misc_QuestionMark",
+                                sBucket.items,
+                                baseIndent + 20,
+                                true
+                            )
+                        end
+                    end
+                end
+            )
+        end
+
+        -- Dungeon & Raid
+        local dr = buckets["dungeon and raid"] or buckets["dungeons and raids"] or buckets["dungeon & raid"]
+        if dr and #dr.items > 0 then
+            RenderCurrenciesUnderHeader(
+                dr.name,
+                charKeyForState .. "-hdr-dungeonraid",
+                "Interface\\Icons\\achievement_boss_archaedas",
+                dr.items,
+                baseIndent,
+                true
+            )
+        end
+
+        -- Miscellaneous with Timerunning subheader
+        local misc = buckets["miscellaneous"]
+        if misc and #misc.items > 0 then
+            RenderCurrenciesUnderHeader(
+                misc.name,
+                charKeyForState .. "-hdr-misc",
+                "Interface\\Icons\\INV_Misc_Gear_01",
+                misc.items,
+                baseIndent,
+                true,
+                function()
+                    local tr = buckets["timerunning"] or buckets["time running"]
+                    if tr and #tr.items > 0 then
+                        RenderCurrenciesUnderHeader(
+                            tr.name,
+                            charKeyForState .. "-hdr-timerunning",
+                            "Interface\\Icons\\INV_Misc_QuestionMark",
+                            tr.items,
+                            baseIndent + 20,
+                            true
+                        )
+                    end
+                end
+            )
+        elseif (buckets["timerunning"] or buckets["time running"]) then
+            local tr = buckets["timerunning"] or buckets["time running"]
+            if tr and #tr.items > 0 then
+                RenderCurrenciesUnderHeader(
+                    "Miscellaneous",
+                    charKeyForState .. "-hdr-misc",
+                    "Interface\\Icons\\INV_Misc_Gear_01",
+                    tr.items,
+                    baseIndent,
+                    true,
+                    function()
+                        RenderCurrenciesUnderHeader(
+                            tr.name,
+                            charKeyForState .. "-hdr-timerunning",
+                            "Interface\\Icons\\INV_Misc_QuestionMark",
+                            tr.items,
+                            baseIndent + 20,
+                            true
+                        )
+                    end
+                )
+            end
+        end
+
+        -- Player vs. Player
+        local pvp = buckets["player vs. player"] or buckets["pvp"]
+        if pvp and #pvp.items > 0 then
+            RenderCurrenciesUnderHeader(
+                pvp.name,
+                charKeyForState .. "-hdr-pvp",
+                "Interface\\Icons\\Achievement_BG_returnXflags_def_WSG",
+                pvp.items,
+                baseIndent,
+                true
+            )
+        end
+
+        -- Legacy (with expansion subheadings)
+        local legacyItemsCount = 0
+        for _, expName in ipairs(LEGACY_ORDER) do
+            local b = select(1, GetBucketByHeaderName(buckets, expName))
+            if b and #b.items > 0 then
+                legacyItemsCount = legacyItemsCount + #b.items
+            end
+        end
+
+
+        -- Season buckets sometimes appear as top-level headers (e.g. "Season 3") but should be nested under
+        -- Legacy → The War Within (to mirror Blizzard's currency layout).
+        local warWithinBucket, warWithinKey = GetBucketByHeaderName(buckets, "The War Within")
+        local seasonCount = 0
+        for i = 1, 6 do
+            local sKey = "season " .. i
+            local sBucket = buckets[sKey]
+            if sBucket and #sBucket.items > 0 then
+                seasonCount = seasonCount + #sBucket.items
+            end
+        end
+        if seasonCount > 0 then
+            legacyItemsCount = legacyItemsCount + seasonCount
+        end
+
+        if legacyItemsCount > 0 then
+            local legacyKey = charKeyForState .. "-hdr-legacy"
+            local legacyExpanded = IsExpanded(legacyKey, true)
+            if currencySearchText ~= "" then legacyExpanded = true end
+
+            local legacyHdr, _ = CreateCollapsibleHeader(
+                parent,
+                "Legacy (" .. legacyItemsCount .. ")",
+                legacyKey,
+                legacyExpanded,
+                function(isExpanded) ToggleExpand(legacyKey, isExpanded) end,
+                "Interface\\Icons\\INV_Misc_QuestionMark"
+            )
+            legacyHdr:SetPoint("TOPLEFT", 10 + baseIndent, -yOffset)
+            legacyHdr:SetWidth(width - baseIndent)
+            legacyHdr:SetBackdropColor(0.10, 0.10, 0.12, 0.9)
+            local COLORS = GetCOLORS()
+            local borderColor = COLORS.accent
+            legacyHdr:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
+
+            yOffset = yOffset + HEADER_SPACING
+
+            if legacyExpanded then
+                for _, expName in ipairs(LEGACY_ORDER) do
+                    local b, key = GetBucketByHeaderName(buckets, expName)
+
+                    if key == warWithinKey then
+                        -- War Within: nest Season headers beneath it
+                        local wwItems = (b and b.items) or {}
+                        local wwSeasonCount = 0
+                        for i = 1, 6 do
+                            local sKey = "season " .. i
+                            local sBucket = buckets[sKey]
+                            if sBucket and #sBucket.items > 0 then
+                                wwSeasonCount = wwSeasonCount + #sBucket.items
+                            end
+                        end
+
+                        if (#wwItems > 0) or (wwSeasonCount > 0) then
+                            RenderCurrenciesUnderHeader(
+                                (b and b.name) or expName,
+                                charKeyForState .. "-legacy-" .. key:gsub("%s",""),
+                                nil,
+                                wwItems,
+                                baseIndent + 20,
+                                true,
+                                function()
+                                    for i = 1, 6 do
+                                        local sKey = "season " .. i
+                                        local sBucket = buckets[sKey]
+                                        if sBucket and #sBucket.items > 0 then
+                                            RenderCurrenciesUnderHeader(
+                                                sBucket.name,
+                                                charKeyForState .. "-legacy-" .. key:gsub("%s","") .. "-" .. sKey:gsub("%s",""),
+                                                "Interface\Icons\INV_Misc_QuestionMark",
+                                                sBucket.items,
+                                                baseIndent + 40,
+                                                true
+                                            )
+                                        end
+                                    end
+                                end,
+                                true,
+                                (#wwItems + wwSeasonCount)
+                            )
+                        end
+                    else
+                        if b and #b.items > 0 then
+                            RenderCurrenciesUnderHeader(
+                                b.name,
+                                charKeyForState .. "-legacy-" .. key:gsub("%s",""),
+                                nil,
+                                b.items,
+                                baseIndent + 20,
+                                true
+                            )
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+-- Draw each character
     for _, charData in ipairs(charactersWithCurrencies) do
         local char = charData.char
         local charKey = charData.key
@@ -488,468 +859,8 @@ yOffset = yOffset + 78
         if charExpanded then
             local charIndent = 20
             
-            if filterMode == "nonfiltered" then
-                -- ===== NON-FILTERED: Use Blizzard's Currency Headers =====
-                local headers = char.currencyHeaders or {}
-                
-                -- Find War Within and Season 3 headers for special handling
-                local warWithinHeader = nil
-                local season3Header = nil
-                local processedHeaders = {}
-                
-                for _, headerData in ipairs(headers) do
-                    local headerName = headerData.name:lower()
-                    
-                    -- Skip Timerunning (not in Retail)
-                    if headerName:find("timerunning") or headerName:find("time running") then
-                        -- Skip this header completely
-                    elseif headerName:find("war within") then
-                        warWithinHeader = headerData
-                    elseif headerName:find("season") and (headerName:find("3") or headerName:find("three")) then
-                        season3Header = headerData
-                    else
-                        table.insert(processedHeaders, headerData)
-                    end
-                end
-                
-                -- First: War Within with Season 3 as sub-header
-                if warWithinHeader then
-                    local warWithinCurrencies = {}
-                    for _, currencyID in ipairs(warWithinHeader.currencies) do
-                        for _, curr in ipairs(currencies) do
-                            if curr.id == currencyID then
-                                -- Skip Timerunning currencies
-                                if not curr.data.name:lower():find("infinite knowledge") then
-                                    table.insert(warWithinCurrencies, curr)
-                                end
-                                break
-                            end
-                        end
-                    end
-                    
-                    local season3Currencies = {}
-                    if season3Header then
-                        for _, currencyID in ipairs(season3Header.currencies) do
-                            for _, curr in ipairs(currencies) do
-                                if curr.id == currencyID then
-                                    table.insert(season3Currencies, curr)
-                                    break
-                                end
-                            end
-                        end
-                    end
-                    
-                    local totalTWW = #warWithinCurrencies + #season3Currencies
-                    
-                    if totalTWW > 0 then
-                        local warKey = charKey .. "-header-" .. warWithinHeader.name
-                        local warExpanded = IsExpanded(warKey, true)
-                        
-                        if currencySearchText ~= "" then
-                            warExpanded = true
-                        end
-                        
-                        -- War Within Header
-                        local warHeader, warBtn = CreateCollapsibleHeader(
-                            parent,
-                            warWithinHeader.name .. " (" .. totalTWW .. ")",
-                            warKey,
-                            warExpanded,
-                            function(isExpanded) ToggleExpand(warKey, isExpanded) end,
-                            "Interface\\Icons\\INV_Misc_Gem_Diamond_01"
-                        )
-                        warHeader:SetPoint("TOPLEFT", 10 + charIndent, -yOffset)
-                        warHeader:SetWidth(width - charIndent)
-                        warHeader:SetBackdropColor(0.10, 0.10, 0.12, 0.9)
-                        local COLORS = GetCOLORS()
-                        local borderColor = COLORS.accent
-                        warHeader:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
-                        
-                        yOffset = yOffset + HEADER_SPACING
-                        
-                        if warExpanded then
-                            local warIndent = charIndent + 20
-                            
-                            -- First: War Within currencies (non-Season 3)
-                            if #warWithinCurrencies > 0 then
-                                local rowIdx = 0
-                                for _, curr in ipairs(warWithinCurrencies) do
-                                    rowIdx = rowIdx + 1
-                                    yOffset = CreateCurrencyRow(parent, curr.data, curr.id, rowIdx, warIndent, width, yOffset)
-                                end
-                            end
-                            
-                            -- Then: Season 3 sub-header
-                            if #season3Currencies > 0 then
-                                local s3Key = warKey .. "-season3"
-                                local s3Expanded = IsExpanded(s3Key, true)
-                                
-                                if currencySearchText ~= "" then
-                                    s3Expanded = true
-                                end
-                                
-                                local s3Header, s3Btn = CreateCollapsibleHeader(
-                                    parent,
-                                    season3Header.name .. " (" .. #season3Currencies .. ")",
-                                    s3Key,
-                                    s3Expanded,
-                                    function(isExpanded) ToggleExpand(s3Key, isExpanded) end
-                                )
-                                s3Header:SetPoint("TOPLEFT", 10 + warIndent, -yOffset)
-                                s3Header:SetWidth(width - warIndent)
-                                s3Header:SetBackdropColor(0.08, 0.08, 0.10, 0.9)
-                                local COLORS = GetCOLORS()
-                                local borderColor = COLORS.accent
-                                s3Header:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
-                                
-                                yOffset = yOffset + HEADER_SPACING
-                                
-                                if s3Expanded then
-                                    local rowIdx = 0
-                                    for _, curr in ipairs(season3Currencies) do
-                                        rowIdx = rowIdx + 1
-                                        yOffset = CreateCurrencyRow(parent, curr.data, curr.id, rowIdx, warIndent, width, yOffset)
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-                
-                -- Then: All other Blizzard headers (in order)
-                for _, headerData in ipairs(processedHeaders) do
-                    local headerCurrencies = {}
-                    for _, currencyID in ipairs(headerData.currencies) do
-                        for _, curr in ipairs(currencies) do
-                            if curr.id == currencyID then
-                                -- Skip Timerunning currencies
-                                if not curr.data.name:lower():find("infinite knowledge") then
-                                    table.insert(headerCurrencies, curr)
-                                end
-                                break
-                            end
-                        end
-                    end
-                    
-                    if #headerCurrencies > 0 then
-                        local headerKey = charKey .. "-header-" .. headerData.name
-                        local headerExpanded = IsExpanded(headerKey, true)
-                        
-                        if currencySearchText ~= "" then
-                            headerExpanded = true
-                        end
-                        
-                        -- Blizzard Header
-                        local headerIcon = nil
-                        -- Try to find icon for common headers
-                        if headerData.name:find("War Within") then
-                            headerIcon = "Interface\\Icons\\INV_Misc_Gem_Diamond_01"
-                        elseif headerData.name:find("Dragonflight") then
-                            headerIcon = "Interface\\Icons\\INV_Misc_Head_Dragon_Bronze"
-                        elseif headerData.name:find("Shadowlands") then
-                            headerIcon = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01"
-                        elseif headerData.name:find("Battle for Azeroth") then
-                            headerIcon = "Interface\\Icons\\INV_Sword_39"
-                        elseif headerData.name:find("Legion") then
-                            headerIcon = "Interface\\Icons\\Spell_Shadow_Twilight"
-                        elseif headerData.name:find("Warlords of Draenor") or headerData.name:find("Draenor") then
-                            headerIcon = "Interface\\Icons\\INV_Misc_Tournaments_banner_Orc"
-                        elseif headerData.name:find("Mists of Pandaria") or headerData.name:find("Pandaria") then
-                            headerIcon = "Interface\\Icons\\Achievement_Character_Pandaren_Female"
-                        elseif headerData.name:find("Cataclysm") then
-                            headerIcon = "Interface\\Icons\\Spell_Fire_Flameshock"
-                        elseif headerData.name:find("Wrath") or headerData.name:find("Lich King") then
-                            headerIcon = "Interface\\Icons\\Spell_Shadow_SoulLeech_3"
-                        elseif headerData.name:find("Burning Crusade") or headerData.name:find("Outland") then
-                            headerIcon = "Interface\\Icons\\Spell_Fire_FelFlameStrike"
-                        elseif headerData.name:find("PvP") or headerData.name:find("Player vs") then
-                            headerIcon = "Interface\\Icons\\Achievement_BG_returnXflags_def_WSG"
-                        elseif headerData.name:find("Dungeon") or headerData.name:find("Raid") then
-                            headerIcon = "Interface\\Icons\\achievement_boss_archaedas"
-                        elseif headerData.name:find("Miscellaneous") then
-                            headerIcon = "Interface\\Icons\\INV_Misc_Gear_01"
-                        end
-                        
-                        local header, headerBtn = CreateCollapsibleHeader(
-                            parent,
-                            headerData.name .. " (" .. #headerCurrencies .. ")",
-                            headerKey,
-                            headerExpanded,
-                            function(isExpanded) ToggleExpand(headerKey, isExpanded) end,
-                            headerIcon  -- Pass icon
-                        )
-                        header:SetPoint("TOPLEFT", 10 + charIndent, -yOffset)
-                        header:SetWidth(width - charIndent)
-                        header:SetBackdropColor(0.10, 0.10, 0.12, 0.9)
-                        local COLORS = GetCOLORS()
-                        local borderColor = COLORS.accent
-                        header:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
-                        
-                        yOffset = yOffset + HEADER_SPACING
-                        
-                        if headerExpanded then
-                            local rowIdx = 0
-                            for _, curr in ipairs(headerCurrencies) do
-                                rowIdx = rowIdx + 1
-                                yOffset = CreateCurrencyRow(parent, curr.data, curr.id, rowIdx, charIndent, width, yOffset)
-                            end
-                        end
-                    end
-                end
-            else
-                -- ===== FILTERED: Expansion → Season → Category (StorageUI pattern) =====
-                -- Group by expansion
-                local byExpansion = {}
-                for _, curr in ipairs(currencies) do
-                    local expansion = curr.data.expansion or "Other"
-                    if not byExpansion[expansion] then
-                        byExpansion[expansion] = {}
-                    end
-                    table.insert(byExpansion[expansion], curr)
-                end
-                
-                local expansionOrder = {"The War Within", "Dragonflight", "Shadowlands", "Battle for Azeroth", "Legion", "Warlords of Draenor", "Mists of Pandaria", "Cataclysm", "Wrath of the Lich King", "The Burning Crusade", "Account-Wide", "Other"}
-                local expansionIcons = {
-                    ["The War Within"] = "Interface\\Icons\\INV_Misc_Gem_Diamond_01",
-                    ["Dragonflight"] = "Interface\\Icons\\INV_Misc_Head_Dragon_Bronze",
-                    ["Shadowlands"] = "Interface\\Icons\\INV_Misc_Bone_HumanSkull_01",
-                    ["Battle for Azeroth"] = "Interface\\Icons\\INV_Sword_39",
-                    ["Legion"] = "Interface\\Icons\\Spell_Shadow_Twilight",
-                    ["Warlords of Draenor"] = "Interface\\Icons\\INV_Misc_Tournaments_banner_Orc",
-                    ["Mists of Pandaria"] = "Interface\\Icons\\Achievement_Character_Pandaren_Female",
-                    ["Cataclysm"] = "Interface\\Icons\\Spell_Fire_Flameshock",
-                    ["Wrath of the Lich King"] = "Interface\\Icons\\Spell_Shadow_SoulLeech_3",
-                    ["The Burning Crusade"] = "Interface\\Icons\\Spell_Fire_FelFlameStrike",
-                    ["Account-Wide"] = "Interface\\Icons\\INV_Misc_Coin_02",
-                    ["Other"] = "Interface\\Icons\\INV_Misc_QuestionMark",
-                }
-                
-                -- Process each expansion (StorageUI pattern)
-                for _, expansion in ipairs(expansionOrder) do
-                    if byExpansion[expansion] then
-                        local expKey = charKey .. "-exp-" .. expansion
-                        local expExpanded = IsExpanded(expKey, true)
-                        
-                        if currencySearchText ~= "" then
-                            expExpanded = true
-                        end
-                        
-                        -- Expansion header (level 1, like StorageUI's Warband Bank)
-                        local expHeader, expBtn = CreateCollapsibleHeader(
-                            parent,
-                            expansion .. " (" .. #byExpansion[expansion] .. ")",
-                            expKey,
-                            expExpanded,
-                            function(isExpanded) ToggleExpand(expKey, isExpanded) end,
-                            expansionIcons[expansion]
-                        )
-                        expHeader:SetPoint("TOPLEFT", 10 + charIndent, -yOffset)
-                        expHeader:SetWidth(width - charIndent)
-                        expHeader:SetBackdropColor(0.10, 0.10, 0.12, 0.9)
-                        local COLORS = GetCOLORS()
-                        local borderColor = COLORS.accent
-                        expHeader:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
-                        
-                        yOffset = yOffset + HEADER_SPACING
-                        
-                        if expExpanded then
-                            local expIndent = charIndent + 20
-                            
-                            -- For "The War Within", add Season 3 sub-header (StorageUI pattern)
-                            if expansion == "The War Within" then
-                                -- Group currencies by season
-                                local season3Currencies = {}
-                                local otherCurrencies = {}
-                                
-                                for _, curr in ipairs(byExpansion[expansion]) do
-                                    -- Check if currency is marked as Season 3
-                                    if curr.data.season == "Season 3" then
-                                        table.insert(season3Currencies, curr)
-                                    else
-                                        table.insert(otherCurrencies, curr)
-                                    end
-                                end
-                                
-                                -- First: Other War Within currencies (not in Season 3)
-                                if #otherCurrencies > 0 then
-                                    local byCategory = {}
-                                    for _, curr in ipairs(otherCurrencies) do
-                                        local category = curr.data.category or "Other"
-                                        if not byCategory[category] then
-                                            byCategory[category] = {}
-                                        end
-                                        table.insert(byCategory[category], curr)
-                                    end
-                                    
-                                    local categoryOrder = {"Supplies", "Currency", "Profession", "PvP", "Event", "Other"}
-                                    
-                                    for _, category in ipairs(categoryOrder) do
-                                        if byCategory[category] then
-                                            local catKey = expKey .. "-cat-" .. category
-                                            local catExpanded = IsExpanded(catKey, true)
-                                            
-                                            if currencySearchText ~= "" then
-                                                catExpanded = true
-                                            end
-                                            
-                                            -- Category header (level 2, like StorageUI's type category)
-                                            local catHeader, catBtn = CreateCollapsibleHeader(
-                                                parent,
-                                                category .. " (" .. #byCategory[category] .. ")",
-                                                catKey,
-                                                catExpanded,
-                                                function(isExpanded) ToggleExpand(catKey, isExpanded) end
-                                            )
-                                            catHeader:SetPoint("TOPLEFT", 10 + expIndent, -yOffset)
-                                            catHeader:SetWidth(width - expIndent)
-                                            catHeader:SetBackdropColor(0.08, 0.08, 0.10, 0.9)
-                                            local COLORS = GetCOLORS()
-                                            local borderColor = COLORS.accent
-                                            catHeader:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
-                                            
-                                            yOffset = yOffset + HEADER_SPACING
-                                            
-                                            if catExpanded then
-                                                local rowIdx = 0
-                                                for _, curr in ipairs(byCategory[category]) do
-                                                    rowIdx = rowIdx + 1
-                                                    yOffset = CreateCurrencyRow(parent, curr.data, curr.id, rowIdx, expIndent, width, yOffset)
-                                                end
-                                            end
-                                        end
-                                    end
-                                end
-                                
-                                -- Then: Season 3 header (level 2, at the bottom)
-                                if #season3Currencies > 0 then
-                                    local seasonKey = expKey .. "-season-3"
-                                    local seasonExpanded = IsExpanded(seasonKey, true)
-                                    
-                                    if currencySearchText ~= "" then
-                                        seasonExpanded = true
-                                    end
-                                    
-                                    local seasonHeader, seasonBtn = CreateCollapsibleHeader(
-                                        parent,
-                                        "Season 3 (" .. #season3Currencies .. ")",
-                                        seasonKey,
-                                        seasonExpanded,
-                                        function(isExpanded) ToggleExpand(seasonKey, isExpanded) end
-                                    )
-                                    seasonHeader:SetPoint("TOPLEFT", 10 + expIndent, -yOffset)
-                                    seasonHeader:SetWidth(width - expIndent)
-                                    seasonHeader:SetBackdropColor(0.08, 0.08, 0.10, 0.9)
-                                    local COLORS = GetCOLORS()
-                                    local borderColor = COLORS.accent
-                                    seasonHeader:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
-                                    
-                                    yOffset = yOffset + HEADER_SPACING
-                                    
-                                    if seasonExpanded then
-                                        local seasonIndent = expIndent + 20
-                                        
-                                        -- Group Season 3 currencies by category (level 3)
-                                        local byCategory = {}
-                                        for _, curr in ipairs(season3Currencies) do
-                                            local category = curr.data.category or "Other"
-                                            if not byCategory[category] then
-                                                byCategory[category] = {}
-                                            end
-                                            table.insert(byCategory[category], curr)
-                                        end
-                                        
-                                        local categoryOrder = {"Crest", "Upgrade", "Other"}
-                                        
-                                        for _, category in ipairs(categoryOrder) do
-                                            if byCategory[category] then
-                                                local catKey = seasonKey .. "-cat-" .. category
-                                                local catExpanded = IsExpanded(catKey, true)
-                                                
-                                                if currencySearchText ~= "" then
-                                                    catExpanded = true
-                                                end
-                                                
-                                                -- Category header (level 3, like StorageUI's double-indented type)
-                                                local catHeader, catBtn = CreateCollapsibleHeader(
-                                                    parent,
-                                                    category .. " (" .. #byCategory[category] .. ")",
-                                                    catKey,
-                                                    catExpanded,
-                                                    function(isExpanded) ToggleExpand(catKey, isExpanded) end
-                                                )
-                                                catHeader:SetPoint("TOPLEFT", 10 + seasonIndent, -yOffset)
-                                                catHeader:SetWidth(width - seasonIndent)
-                                                catHeader:SetBackdropColor(0.06, 0.06, 0.08, 0.9)
-                                                local COLORS = GetCOLORS()
-                                                local borderColor = COLORS.accent
-                                                catHeader:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
-                                                
-                                                yOffset = yOffset + HEADER_SPACING
-                                                
-                                                if catExpanded then
-                                                    local rowIdx = 0
-                                                    for _, curr in ipairs(byCategory[category]) do
-                                                        rowIdx = rowIdx + 1
-                                                        yOffset = CreateCurrencyRow(parent, curr.data, curr.id, rowIdx, seasonIndent, width, yOffset)
-                                                    end
-                                                end
-                                            end
-                                        end
-                                    end
-                                end
-                            else
-                                -- Other expansions: simple Category grouping (level 2)
-                                local byCategory = {}
-                                for _, curr in ipairs(byExpansion[expansion]) do
-                                    local category = curr.data.category or "Other"
-                                    if not byCategory[category] then
-                                        byCategory[category] = {}
-                                    end
-                                    table.insert(byCategory[category], curr)
-                                end
-                                
-                                local categoryOrder = {"Crest", "Upgrade", "Supplies", "Currency", "Profession", "PvP", "Event", "Other"}
-                                
-                                for _, category in ipairs(categoryOrder) do
-                                    if byCategory[category] then
-                                        local catKey = expKey .. "-cat-" .. category
-                                        local catExpanded = IsExpanded(catKey, true)
-                                        
-                                        if currencySearchText ~= "" then
-                                            catExpanded = true
-                                        end
-                                        
-                                        -- Category header (level 2)
-                                        local catHeader, catBtn = CreateCollapsibleHeader(
-                                            parent,
-                                            category .. " (" .. #byCategory[category] .. ")",
-                                            catKey,
-                                            catExpanded,
-                                            function(isExpanded) ToggleExpand(catKey, isExpanded) end
-                                        )
-                                        catHeader:SetPoint("TOPLEFT", 10 + expIndent, -yOffset)
-                                        catHeader:SetWidth(width - expIndent)
-                                        catHeader:SetBackdropColor(0.08, 0.08, 0.10, 0.9)
-                                        local COLORS = GetCOLORS()
-                                        local borderColor = COLORS.accent
-                                        catHeader:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
-                                        
-                                        yOffset = yOffset + HEADER_SPACING
-                                        
-                                        if catExpanded then
-                                            local rowIdx = 0
-                                            for _, curr in ipairs(byCategory[category]) do
-                                                rowIdx = rowIdx + 1
-                                                yOffset = CreateCurrencyRow(parent, curr.data, curr.id, rowIdx, expIndent, width, yOffset)
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
+                        -- Render currencies in Blizzard header order (shared between both views)
+            RenderBlizzardOrder(charKey, currencies, charIndent)
         end
         
         yOffset = yOffset + 5

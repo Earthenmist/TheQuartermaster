@@ -231,7 +231,7 @@ function TheQuartermaster:DrawPvEProgress(parent)
     
     -- Update timer
     local secondsUntil = GetWeeklyResetTime()
-    resetText:SetText(FormatResetTime(secondsUntil))
+    resetText:SetText("|cffaaaaaaWeekly Reset in:|r |cff4DE64D" .. FormatResetTime(secondsUntil) .. "|r")
     
     -- Refresh every minute (use ticker to avoid per-frame OnUpdate cost)
 if titleCard.resetTicker then
@@ -240,7 +240,7 @@ if titleCard.resetTicker then
 end
 titleCard.resetTicker = C_Timer.NewTicker(60, function()
     local seconds = GetWeeklyResetTime()
-    resetText:SetText(FormatResetTime(seconds))
+    resetText:SetText("|cffaaaaaaWeekly Reset in:|r |cff4DE64D" .. FormatResetTime(seconds) .. "|r")
 end)
     
     yOffset = yOffset + 75 -- Reduced spacing
@@ -397,6 +397,104 @@ end)
                 }
                 return icons[typeName] or "Interface\\Icons\\INV_Misc_QuestionMark"
             end
+
+            local function Pluralize(count, singular, plural)
+                if count == 1 then return singular end
+                return plural or (singular .. "s")
+            end
+
+            local function ShowGreatVaultSlotTooltip(owner, slotIndex, vaultByType, defaultThresholds)
+                if not owner or not slotIndex then return end
+                GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+                GameTooltip:ClearLines()
+                GameTooltip:SetText(string.format("Great Vault – Slot %d", slotIndex), 1, 0.82, 0)
+
+                local function AddTypeLine(typeKey, displayName, descBuilder)
+                    local activities = vaultByType and vaultByType[typeKey]
+                    local activity = activities and activities[slotIndex]
+
+                    local threshold = (activity and activity.threshold) or (defaultThresholds[typeKey] and defaultThresholds[typeKey][slotIndex]) or 0
+                    local progress = (activity and activity.progress) or 0
+                    local complete = (threshold > 0 and progress >= threshold)
+
+                    if threshold and threshold > 0 then
+                        local reqText = descBuilder(threshold)
+                        local progText = string.format("%d/%d", progress, threshold)
+                        GameTooltip:AddLine(displayName .. ": " .. reqText, 1, 1, 1)
+                        if complete then
+                            GameTooltip:AddLine("Progress: " .. progText, 0.2, 1, 0.2)
+                        else
+                            GameTooltip:AddLine("Progress: " .. progText, 1, 0.82, 0)
+                        end
+                    else
+                        GameTooltip:AddLine(displayName .. ": No data", 0.6, 0.6, 0.6)
+                    end
+                end
+
+                AddTypeLine("Raid", "Raid", function(th) return string.format("Defeat %d raid %s", th, Pluralize(th, "boss")) end)
+                AddTypeLine("M+", "Dungeons", function(th) return string.format("Complete %d %s", th, Pluralize(th, "dungeon")) end)
+                AddTypeLine("World", "World", function(th) return string.format("Complete %d world %s", th, Pluralize(th, "activity", "activities")) end)
+
+                GameTooltip:Show()
+            end
+
+
+            local function ShowGreatVaultActivityTooltip(owner, typeKey, slotIndex, activity, threshold, progress)
+                if not owner or not typeKey or not slotIndex then return end
+                GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+                GameTooltip:ClearLines()
+
+                -- Best effort: try to use Blizzard's native Weekly Rewards tooltip if available
+                if activity and GameTooltip.SetWeeklyRewardsActivity then
+                    local ok = pcall(GameTooltip.SetWeeklyRewardsActivity, GameTooltip, activity.type, activity.index)
+                    if ok then
+                        GameTooltip:Show()
+                        return
+                    end
+                end
+                if activity and GameTooltip.SetWeeklyRewardActivity then
+                    local ok = pcall(GameTooltip.SetWeeklyRewardActivity, GameTooltip, activity.type, activity.index)
+                    if ok then
+                        GameTooltip:Show()
+                        return
+                    end
+                end
+
+                -- Fallback: build a tooltip that matches Great Vault wording as closely as possible
+                local headerType = typeKey
+                if typeKey == "M+" then headerType = "Dungeons" end
+                GameTooltip:SetText(string.format("%s – Slot %d", headerType, slotIndex), 1, 0.82, 0)
+
+                local th = tonumber(threshold) or 0
+                local pr = tonumber(progress) or 0
+
+                if th > 0 then
+                    local line
+                    if typeKey == "Raid" then
+                        line = string.format("Defeat %d raid %s", th, Pluralize(th, "boss"))
+                    elseif typeKey == "M+" then
+                        line = string.format("Complete %d %s", th, Pluralize(th, "dungeon"))
+                    elseif typeKey == "World" then
+                        line = string.format("Complete %d world %s", th, Pluralize(th, "activity", "activities"))
+                    else
+                        line = string.format("Complete %d %s", th, Pluralize(th, "activity", "activities"))
+                    end
+
+                    GameTooltip:AddLine(line, 1, 1, 1)
+
+                    local progText = string.format("%d/%d", pr, th)
+                    if pr >= th then
+                        GameTooltip:AddLine("Progress: " .. progText, 0.2, 1, 0.2)
+                    else
+                        GameTooltip:AddLine("Progress: " .. progText, 1, 0.82, 0)
+                    end
+                else
+                    GameTooltip:AddLine("No data available for this slot.", 0.6, 0.6, 0.6)
+                end
+
+                GameTooltip:Show()
+            end
+
             
             local vaultY = 15  -- Start padding
         
@@ -430,6 +528,14 @@ end)
             local slotsAreaWidth = cardWidth - typeColumnWidth - 30  -- 30px for padding
             local slotWidth = slotsAreaWidth / 3  -- Three slots evenly distributed
             
+            -- Default thresholds for each activity type (when no data exists)
+            local defaultThresholds = {
+                ["Raid"] = {2, 4, 6},
+                ["M+"] = {1, 4, 8},
+                ["World"] = {2, 4, 8},
+                ["PvP"] = {3, 3, 3}
+            }
+
             -- Table Header
             local headerBg = vaultCard:CreateTexture(nil, "BACKGROUND")
             headerBg:SetPoint("TOPLEFT", 10, -vaultY)
@@ -439,7 +545,7 @@ end)
             
             local headerText = vaultCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
             headerText:SetPoint("TOPLEFT", 15, -vaultY - 4)
-            headerText:SetText("|cffffff00Type|r")
+            headerText:SetText("|cffffff00Slot|r")
             
             -- Slot column headers
             for i = 1, 3 do
@@ -447,6 +553,21 @@ end)
                 local xPos = 10 + typeColumnWidth + ((i - 1) * slotWidth) + (slotWidth / 2)
                 slotHeader:SetPoint("TOPLEFT", xPos, -vaultY - 4)
                 slotHeader:SetText("|cffffff00" .. i .. "|r")
+
+                -- Hover tooltip for slot header (matches Great Vault columns)
+                local slotHover = CreateFrame("Frame", nil, vaultCard)
+                slotHover:SetSize(slotWidth, 18)
+                slotHover:SetPoint("TOPLEFT", xPos - 6, -vaultY - 6)
+                slotHover:EnableMouse(true)
+                slotHover:SetScript("OnEnter", function(self)
+                    if vaultByType and defaultThresholds then
+                        ShowGreatVaultSlotTooltip(self, i, vaultByType, defaultThresholds)
+                    end
+                end)
+                slotHover:SetScript("OnLeave", function()
+                    GameTooltip:Hide()
+                end)
+
             end
             
             vaultY = vaultY + 27
@@ -455,15 +576,6 @@ end)
             local cardContentHeight = cardHeight - vaultY - 10  -- 10px bottom padding
             local numTypes = 3  -- Raid, M+, World (PvP removed)
             local rowHeight = math.floor(cardContentHeight / numTypes)
-            
-            -- Default thresholds for each activity type (when no data exists)
-            local defaultThresholds = {
-                ["Raid"] = {2, 4, 6},
-                ["M+"] = {1, 4, 8},
-                ["World"] = {3, 3, 3},
-                ["PvP"] = {3, 3, 3}
-            }
-            
             -- Table Rows (3 TYPES - evenly distributed)
             local sortedTypes = {"Raid", "M+", "World"}
             local rowIndex = 0
@@ -512,7 +624,15 @@ end)
                     local progress = activity and activity.progress or 0
                     local isComplete = (threshold > 0 and progress >= threshold)
                     
-                    if activity and isComplete then
+slotFrame:EnableMouse(true)
+                    slotFrame:SetScript("OnEnter", function(self)
+                        ShowGreatVaultActivityTooltip(self, typeName, slotIndex, activity, threshold, progress)
+                    end)
+                    slotFrame:SetScript("OnLeave", function()
+                        GameTooltip:Hide()
+                    end)
+
+                                        if activity and isComplete then
                         -- Complete: Show checkmark (centered)
                         local checkIcon = slotFrame:CreateTexture(nil, "OVERLAY")
                         checkIcon:SetSize(14, 14)
