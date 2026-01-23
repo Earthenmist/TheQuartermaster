@@ -7,16 +7,15 @@ local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
 -- Current addon version
-local CURRENT_VERSION = "0.2.85"
+local CURRENT_VERSION = "0.2.93"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.85",
+    version = "0.2.93",
     date = "2026-01-23",
     changes = {
-        "Notifications: Toast titles now follow the active theme (no hard-coded purple).",
-        "Notifications: Fixed rare title-color formatting edge cases that could prevent some toasts from appearing.",
-        "Notifications: Update notes can now also show after a /reload (still only once per version).",
+        "Currency: Fixed War Within header name mismatch (\"The War Within\" vs \"War Within\") so base currencies and Season 3 subheading both show.",
+
     }
 }
 
@@ -893,7 +892,6 @@ function TheQuartermaster:TestVaultCheck()
     
     self:Print("|cff00ccff======================|r")
 end
-
 
 
 
