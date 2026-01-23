@@ -747,6 +747,39 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
                     bg:SetColorTexture(0.18, 0.18, 0.25, 1)
                 end
             end)
+
+            -- Click-to-open (current character only)
+            pBtn:RegisterForClicks("LeftButtonUp")
+            pBtn:SetScript("OnClick", function()
+                if not isCurrent then
+                    return
+                end
+
+                local skillLineID = prof.skillLine
+                if not skillLineID and prof.expansions and prof.expansions[1] then
+                    -- Fallback: newest expansion skillLine (if base skillLine is missing)
+                    skillLineID = prof.expansions[1].skillLine
+                end
+
+                if not skillLineID then
+                    TheQuartermaster:Print("Unable to open profession: missing skill line ID.")
+                    return
+                end
+
+                local ok = pcall(function()
+                    if C_TradeSkillUI and C_TradeSkillUI.OpenTradeSkill then
+                        C_TradeSkillUI.OpenTradeSkill(skillLineID)
+                    elseif TradeSkillFrame and TradeSkillFrame.OpenToSkillLine then
+                        TradeSkillFrame:OpenToSkillLine(skillLineID)
+                    else
+                        error("TradeSkill UI not available")
+                    end
+                end)
+
+                if not ok then
+                    TheQuartermaster:Print("Could not open profession window for " .. (prof.name or "profession") .. ".")
+                end
+            end)
             
             currentProfX = currentProfX + iconSize + iconSpacing
         end

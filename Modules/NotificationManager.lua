@@ -7,17 +7,15 @@ local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
 -- Current addon version
-local CURRENT_VERSION = "0.2.83"
+local CURRENT_VERSION = "0.2.84"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.83",
+    version = "0.2.84",
     date = "2026-01-23",
     changes = {
-        "Updated Time played box to match current theme. Gold colour no longer relevant for a non-currency box",
-        "Fixed Lvl typo on PvE screen",
-        "Changed Header from Guilds to Guild Summary",
-        "Version updated",
+        "Characters: Clicking a profession icon for your currently logged-in character now opens that profession.",
+        "Version bump housekeeping (TOC + NotificationManager).",
     }
 }
 
