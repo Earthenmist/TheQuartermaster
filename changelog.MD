@@ -1,3 +1,6 @@
+## v0.2.96 — 2026-01-23
+- Currency: Removed the view-mode toggle button and locked Currency tab to **Character Only** view (alts list visible).
+
 ## v0.2.93 — 2026-01-23
 - Currency: Fixed War Within header name mismatch ("The War Within" vs "War Within") so War Within currencies and Season 3 subheading both display correctly.
 

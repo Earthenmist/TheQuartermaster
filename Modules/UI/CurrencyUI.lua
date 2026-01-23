@@ -210,14 +210,10 @@ function TheQuartermaster:DrawCurrencyTab(parent)
     end
     
     -- View mode and zero toggle
-    -- currencyViewMode:
-    --   "warband"   = All Warband (default) - hides alt list, shows this character + warband/account-wide currencies
-    --   "character" = Character Only - shows alt list (current behaviour)
-    local viewMode = self.db.profile.currencyViewMode
-    if not viewMode or (viewMode ~= "warband" and viewMode ~= "character") then
-        viewMode = "warband"
-        self.db.profile.currencyViewMode = viewMode
-    end
+    -- Currency view is now locked to "Character Only" (alt list visible).
+    -- (The old All Warband view was removed along with the toggle button.)
+    local viewMode = "character"
+    self.db.profile.currencyViewMode = viewMode
     local showZero = self.db.profile.currencyShowZero
     if showZero == nil then showZero = true end
     
@@ -367,26 +363,6 @@ function TheQuartermaster:DrawCurrencyTab(parent)
     end)
 
 
-    -- All Warband / Character Only toggle
-    local toggleBtn = CreateHeaderActionButton(
-        btnHolder,
-        140,
-        viewMode == "warband" and "All Warband" or "Character Only",
-        "Currency View",
-        "All Warband: shows this character + warband/account-wide currencies (hides alt list).\nCharacter Only: shows each character and their currencies."
-    )
-    toggleBtn:SetPoint("RIGHT", zeroBtn, "LEFT", -8, 0)
-    toggleBtn:SetScript("OnClick", function(self)
-        if viewMode == "warband" then
-            viewMode = "character"
-        else
-            viewMode = "warband"
-        end
-        TheQuartermaster.db.profile.currencyViewMode = viewMode
-        self.text:SetText(viewMode == "warband" and "All Warband" or "Character Only")
-        TheQuartermaster:RefreshUI()
-    end)
-
 yOffset = yOffset + 78
     
     -- ===== RENDER CHARACTERS =====
@@ -498,11 +474,9 @@ yOffset = yOffset + 78
         "Legion",
         "Warlords of Draenor",
         "Mists of Pandaria",
+        "Cataclysm",
         "Wrath of the Lich King",
-        "Burning Crusade",
         "The Burning Crusade",
-        "Account-Wide",
-        "Other",
     }
 
     local function NormalizeHeaderName(name)

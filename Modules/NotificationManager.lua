@@ -7,13 +7,14 @@ local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
 -- Current addon version
-local CURRENT_VERSION = "0.2.93"
+local CURRENT_VERSION = "0.2.96"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.93",
+    version = "0.2.96",
     date = "2026-01-23",
     changes = {
+        "Currency: Removed the view-mode toggle button and locked Currency tab to Character Only view.",
         "Currency: Fixed War Within header name mismatch (\"The War Within\" vs \"War Within\") so base currencies and Season 3 subheading both show.",
 
     }
