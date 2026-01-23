@@ -100,40 +100,72 @@ function TheQuartermaster:ShowInfoDialog()
         yOffset = yOffset + 15
     end
     
+        -- Welcome
     AddText("Welcome to The Quartermaster!", "GameFontNormalHuge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8, true)
-    AddText("Your comprehensive addon for managing Warband features, banks, currencies, reputations, and more.", "GameFontNormal", {0.8, 0.8, 0.8}, 15)
-    
+
+    -- Version line (safe metadata lookup)
+    local addonVersion = "Unknown"
+    if C_AddOns and type(C_AddOns.GetAddOnMetadata) == "function" then
+        addonVersion = C_AddOns.GetAddOnMetadata(ADDON_NAME, "Version") or addonVersion
+    elseif type(GetAddOnMetadata) == "function" then
+        addonVersion = GetAddOnMetadata(ADDON_NAME, "Version") or addonVersion
+    end
+    AddText("Version: " .. tostring(addonVersion), "GameFontHighlightSmall", {0.75, 0.75, 0.75}, 10)
+
+    AddText("A clean, account-wide overview of your characters, currencies, reputations, inventory storage, and progression — built for modern Warband play.", "GameFontNormal", {0.85, 0.85, 0.85}, 12)
+
     AddDivider()
-    
+
+    -- How data is collected
+    AddText("How it works", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("The Quartermaster is view-only. It builds your account database as you play:", "GameFontNormal", {0.9, 0.9, 0.9}, 6)
+    AddText("• Log into characters at least once to capture their profile data.
+• Open Inventory/Bank/Warband Bank/Guild Bank to cache item lists.
+• Use search and filters to find items across all stored locations.", "GameFontNormal", {0.9, 0.9, 0.9}, 12)
+
+    AddText("Tip: If something looks missing, visit that character and open the relevant window once (then /reload if needed).", "GameFontHighlightSmall", {0.75, 0.75, 0.75}, 14)
+
+    AddDivider()
+
     -- Characters Tab
-    AddText("Characters Tab", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
-    AddText("Displays all characters you have logged into with a summary of their gold, levels, class colors, professions, and last played dates. Gold is automatically summed across all characters.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
-    
+    AddText("Characters", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("A roster view of every character you’ve logged into, including level, class, faction, professions, last played, and account-wide totals. Optional Discretion Mode can hide gold values.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
+
+    -- Experience Tab
+    AddText("Experience", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("Rested XP at a glance: total time played, how many characters are max level, how many are fully rested, and per-character rested status including time until fully rested.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
+
+    -- Guilds Tab
+    AddText("Guilds", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("See guild membership across your roster: guild name, rank, and reputation — plus quick account-wide counts so you can spot which guild you’re most represented in.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
+
     -- Items Tab
-    AddText("Items Tab", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
-    AddText("Updates automatically whenever you open your bank (including Warband Bank). This addon is view-only: it caches your items so you can browse and search them later. Use the search bar to find items across all Warband and character banks.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
-    
+    AddText("Items", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("Browse cached items by location (Inventory, Bank, Warband Bank, and Guild Bank). The list is searchable and designed to load fast even with large collections.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
+
     -- Storage Tab
-    AddText("Storage Tab", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
-    AddText("Aggregates all items from characters, Warband Bank, and Guild Bank. Search your entire inventory in one convenient location.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
-    
+    AddText("Storage", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("A unified item view that aggregates everything you’ve cached across characters and banks. Use filters and search to quickly answer: “Where is that item?”", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
+
     -- PvE Tab
-    AddText("PvE Tab", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
-    AddText("Track Great Vault progress, rewards, Mythic+ keystones, and raid lockouts across all your characters.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
-    
+    AddText("PvE", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("Track key progression details across your characters, including Mythic+ keystones, Great Vault status, and raid lockouts.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
+
     -- Reputations Tab
-    AddText("Reputations Tab", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
-    AddText("Two viewing modes:\n• Filtered: Smart filtering organized by 'Account-Wide' and 'Character-Specific' categories, displaying the highest progress across your account.\n• All Characters: Displays the standard Blizzard UI view for each character individually.\n\nNote: While active, you cannot collapse reputation headers in the default character panel.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
-    
+    AddText("Reputations", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("Choose between a smart, account-wide filtered view (highest progress) or a per-character view that mirrors Blizzard’s reputation panel.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
+
     -- Currency Tab
-    AddText("Currency Tab", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
-    AddText("Two filtering modes:\n• Filtered: Organizes and categorizes all currencies by expansion.\n• Non-Filtered: Matches the default Blizzard UI layout.\n• Hide Quantity 0: Automatically hides currencies with zero quantity.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
-    
+    AddText("Currency", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("View currencies in a filtered expansion-organized layout or the default Blizzard ordering. Optional “Hide Quantity 0” keeps the list clean.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
+
     -- Statistics Tab
-    AddText("Statistics Tab", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
-    AddText("Displays achievement points, mount collections, battle pets, toys, and bag/bank slot usage for all characters.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
-    
+    AddText("Statistics", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("Account-wide collection stats such as achievement points, mounts, companions, toys, and storage usage.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
+
     AddDivider()
+
+
     
     -- Footer
     AddText("Thank you for your support!", "GameFontNormalLarge", {0.2, 0.8, 0.2}, 8)

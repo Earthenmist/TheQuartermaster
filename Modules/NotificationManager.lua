@@ -7,13 +7,14 @@ local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
 -- Current addon version
-local CURRENT_VERSION = "0.2.81"
+local CURRENT_VERSION = "0.2.82"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.81",
-    date = "2026-01-22",
+    version = "0.2.82",
+    date = "2026-01-23",
     changes = {
+        "Rewrote the Information dialog content to match the current addon tabs and features",
         "Removed redundant/unused packaged files and trimmed library bundle",
         "Optimized internal event queue processor to run only while busy",
         "Replaced PvE weekly reset OnUpdate loop with a 60s ticker",

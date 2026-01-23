@@ -1,3 +1,15 @@
+📜 Changelog – Version 0.2.82
+
+📅 Release Date: 2026-01-23
+
+🛠️ Changes & Improvements
+
+– Rewrote the Information window text to reflect the current addon tabs and features  
+– Added a version line to the Information window (reads from addon metadata)  
+– Version bump housekeeping (TOC + NotificationManager)
+
+---
+
 📜 Changelog – Version 0.2.81 (Stable Baseline)
 
 🎯 Status: Internal stable build
