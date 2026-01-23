@@ -124,7 +124,7 @@ function TheQuartermaster:DrawGuildSummaryList(parent)
     local COLORS = GetCOLORS()
     local r, g, b = COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]
     local hexColor = string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
-    titleText:SetText("|cff" .. hexColor .. "Guilds|r")
+    titleText:SetText("|cff" .. hexColor .. "Guild Summary|r")
     
     local subtitleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)

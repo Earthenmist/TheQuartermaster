@@ -346,7 +346,7 @@ end)
         charNameText:SetPoint("LEFT", favButton, "RIGHT", 6, 0)
         local nameRealm = FormatCharacterNameRealm and FormatCharacterNameRealm(char.name, char.realm, char.classFile)
             or string.format("%s-%s", char.name or "Unknown", char.realm or "Unknown")
-        charNameText:SetText(string.format("%s |cff888888Lv %d|r", nameRealm, char.level or 1))
+        charNameText:SetText(string.format("%s |cff888888Lvl %d|r", nameRealm, char.level or 1))
         
         -- Vault badge (right side of header)
         if hasVaultReward then
