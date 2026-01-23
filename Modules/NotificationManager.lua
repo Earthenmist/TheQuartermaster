@@ -7,15 +7,16 @@ local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
 -- Current addon version
-local CURRENT_VERSION = "0.2.84"
+local CURRENT_VERSION = "0.2.85"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.84",
+    version = "0.2.85",
     date = "2026-01-23",
     changes = {
-        "Characters: Clicking a profession icon for your currently logged-in character now opens that profession.",
-        "Version bump housekeeping (TOC + NotificationManager).",
+        "Notifications: Toast titles now follow the active theme (no hard-coded purple).",
+        "Notifications: Fixed rare title-color formatting edge cases that could prevent some toasts from appearing.",
+        "Notifications: Update notes can now also show after a /reload (still only once per version).",
     }
 }
 
@@ -239,7 +240,7 @@ function TheQuartermaster:ShowToastNotification(config)
     
     -- Default values
     config = config or {}
-    local iconTexture = config.icon or "Interface\Icons\INV_Misc_QuestionMark"
+    local iconTexture = config.icon or "Interface\\Icons\\INV_Misc_QuestionMark"
     local titleText = config.title or "Notification"
     local messageText = config.message or ""
 
@@ -294,8 +295,16 @@ function TheQuartermaster:ShowToastNotification(config)
     local title = popup:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", icon, "BOTTOM", 0, -8)
     title:SetJustifyH("CENTER")
-    title:SetText(string.format("|cff%02x%02x%02x%s|r", 
-        titleColor[1] * 255, titleColor[2] * 255, titleColor[3] * 255, titleText))
+    -- Ensure we always pass integers to %02x (some theme colors may be fractional)
+    local function ToHexByte(v)
+        v = tonumber(v) or 1
+        if v < 0 then v = 0 end
+        if v > 1 then v = 1 end
+        return math.floor((v * 255) + 0.5)
+    end
+
+    title:SetText(string.format("|cff%02x%02x%02x%s|r",
+        ToHexByte(titleColor[1]), ToHexByte(titleColor[2]), ToHexByte(titleColor[3]), titleText))
     
     -- Message (centered, single line, below title)
     local message = popup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -443,7 +452,6 @@ function TheQuartermaster:ShowVaultReminder(data)
         icon = "Interface\\Icons\\achievement_guildperk_bountifulbags",
         title = "Weekly Vault Ready!",
         message = "You have unclaimed Weekly Vault Rewards",
-        titleColor = {0.6, 0.4, 0.9}, -- Purple
         autoDismiss = 10, -- 10 seconds
         onClose = function()
             -- Toast stacking system handles queue automatically
@@ -545,7 +553,6 @@ function TheQuartermaster:ShowLootNotification(itemID, itemLink, itemName, colle
         icon = icon,
         title = itemName,  -- Item name as title
         message = "You obtained this " .. collectionType:lower() .. "!",
-        titleColor = {0.6, 0.4, 0.9}, -- Purple (consistent with other notifications)
         autoDismiss = 8, -- 8 seconds
         sound = 44335, -- SOUNDKIT.UI_EPICLOOT_TOAST
     })
