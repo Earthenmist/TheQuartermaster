@@ -437,7 +437,7 @@ function TheQuartermaster:DrawGuildSummaryList(parent)
             self.db.profile.ui.favoritesExpanded = isExpanded
             self:RefreshUI()
         end,
-        "Interface\\Icons\\Achievement_GuildPerk_EverybodysFriend"  -- Heart/people icon
+        "Interface\\Icons\\trade_archaeology_tyrandesfavoritedoll"
     )
     favHeader:SetPoint("TOPLEFT", 10, -yOffset)
     favHeader:SetPoint("TOPRIGHT", -10, -yOffset)
