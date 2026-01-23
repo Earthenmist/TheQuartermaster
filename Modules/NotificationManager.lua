@@ -7,18 +7,17 @@ local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
 -- Current addon version
-local CURRENT_VERSION = "0.2.82"
+local CURRENT_VERSION = "0.2.83"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.82",
+    version = "0.2.83",
     date = "2026-01-23",
     changes = {
-        "Rewrote the Information dialog content to match the current addon tabs and features",
-        "Removed redundant/unused packaged files and trimmed library bundle",
-        "Optimized internal event queue processor to run only while busy",
-        "Replaced PvE weekly reset OnUpdate loop with a 60s ticker",
-        "Optimized Warband bag detection with O(1) lookup",
+        "Updated Time played box to match current theme. Gold colour no longer relevant for a non-currency box",
+        "Fixed Lvl typo on PvE screen",
+        "Changed Header from Guilds to Guild Summary",
+        "Version updated",
     }
 }
 
