@@ -99,8 +99,9 @@ function TheQuartermaster:DrawCharacterList(parent)
     local charGoldCard = CreateCard(parent, 90)
     charGoldCard:SetWidth(threeCardWidth)
     charGoldCard:SetPoint("TOPLEFT", leftMargin, -yOffset)
-    charGoldCard:SetBackdropColor(0.12, 0.10, 0.05, 1)
-    charGoldCard:SetBackdropBorderColor(0.6, 0.5, 0.2, 1)
+    local COLORS = GetCOLORS()
+    local ar, ag, ab = COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]
+    local accentHex = string.format("%02x%02x%02x", ar * 255, ag * 255, ab * 255)
     
     local cg1Icon = charGoldCard:CreateTexture(nil, "ARTWORK")
     cg1Icon:SetSize(36, 36)
