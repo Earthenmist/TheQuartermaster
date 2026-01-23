@@ -1,3 +1,26 @@
+📜 Changelog – Version 0.2.85
+
+📅 Release Date: 2026-01-23
+
+🛠️ Changes & Improvements
+
+– Notifications: Toast titles now follow the active theme (no hard-coded purple)
+– Notifications: Fixed rare title-color formatting edge cases that could prevent some toasts from appearing
+– Notifications: Update notes can now also show after a /reload (still only once per version)
+
+---
+
+📜 Changelog – Version 0.2.84
+
+📅 Release Date: 2026-01-23
+
+🛠️ Changes & Improvements
+
+– Characters: Clicking a profession icon for your currently logged-in character now opens that profession window
+– Version bump housekeeping (TOC + NotificationManager)
+
+---
+
 📜 Changelog – Version 0.2.82
 
 📅 Release Date: 2026-01-23

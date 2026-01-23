@@ -1957,11 +1957,12 @@ function TheQuartermaster:OnPlayerEnteringWorld(event, isInitialLogin, isReloadi
     -- Reset save flag on new login
     if isInitialLogin then
         self.characterSaved = false
-        
-        -- Check for notifications on initial login only (not on reload)
-        if self.CheckNotificationsOnLogin then
-            self:CheckNotificationsOnLogin()
-        end
+    end
+
+    -- Notifications: allow update/vault reminders after both login and /reload
+    -- (Update notes still only show once per version via lastSeenVersion.)
+    if (isInitialLogin or isReloadingUi) and self.CheckNotificationsOnLogin then
+        self:CheckNotificationsOnLogin()
     end
     
     -- Scan reputations on login (after 3 seconds to ensure API is ready)
