@@ -1343,6 +1343,11 @@ end
     
     local statsText = statsBar:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     statsText:SetPoint("LEFT", 10, 0)
+    -- Theme-coloured "X items" prefix (match current theme/class colour)
+    local COLORS = GetCOLORS()
+    local tr, tg, tb = COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]
+    local itemsHex = string.format("%02x%02x%02x", tr * 255, tg * 255, tb * 255)
+
     local bankStats = self:GetBankStatistics()
     
     if currentItemsSubTab == "inventory" then
@@ -1350,23 +1355,23 @@ end
         local used = tonumber(inv.usedSlots) or 0
         local total = tonumber(inv.totalSlots) or 0
         local last = tonumber(inv.lastScan) or 0
-        statsText:SetText(string.format("|cff88ff88%d items|r  •  %d/%d slots  •  Last: %s",
-            #items, used, total,
+        statsText:SetText(string.format("|cff%s%d items|r  •  %d/%d slots  •  Last: %s",
+            itemsHex, #items, used, total,
             last > 0 and date("%H:%M", last) or "Never"))
     elseif currentItemsSubTab == "warband" then
         local wb = bankStats.warband
-        statsText:SetText(string.format("|cffa335ee%d items|r  •  %d/%d slots  •  Last: %s",
-            #items, wb.usedSlots, wb.totalSlots,
+        statsText:SetText(string.format("|cff%s%d items|r  •  %d/%d slots  •  Last: %s",
+            itemsHex, #items, wb.usedSlots, wb.totalSlots,
             wb.lastScan > 0 and date("%H:%M", wb.lastScan) or "Never"))
     elseif currentItemsSubTab == "guild" then
         local gb = bankStats.guild or { usedSlots = 0, totalSlots = 0, lastScan = 0 }
-        statsText:SetText(string.format("|cff00ff00%d items|r  •  %d/%d slots  •  Last: %s",
-            #items, gb.usedSlots, gb.totalSlots,
+        statsText:SetText(string.format("|cff%s%d items|r  •  %d/%d slots  •  Last: %s",
+            itemsHex, #items, gb.usedSlots, gb.totalSlots,
             gb.lastScan > 0 and date("%H:%M", gb.lastScan) or "Never"))
     else
         local pb = bankStats.personal
-        statsText:SetText(string.format("|cff88ff88%d items|r  •  %d/%d slots  •  Last: %s",
-            #items, pb.usedSlots, pb.totalSlots,
+        statsText:SetText(string.format("|cff%s%d items|r  •  %d/%d slots  •  Last: %s",
+            itemsHex, #items, pb.usedSlots, pb.totalSlots,
             pb.lastScan > 0 and date("%H:%M", pb.lastScan) or "Never"))
     end
     statsText:SetTextColor(0.6, 0.6, 0.6)
@@ -1574,4 +1579,3 @@ end
     
     return yOffset + 20
 end
-

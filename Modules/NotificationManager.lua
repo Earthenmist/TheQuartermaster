@@ -7,14 +7,17 @@ local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
 -- Current addon version
-local CURRENT_VERSION = "0.2.97"
+local CURRENT_VERSION = "0.2.108"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.97",
-    date = "2026-01-23",
+    version = "0.2.108",
+    date = "2026-01-24",
     changes = {
-        "Refactored some icons to be more suitable.",
+        "Items tab: item count now uses theme/class colour",
+        "PvE: Added Great Vault header title and reflowed Great Vault card spacing.",
+        "PvE: Centred and enlarged the Raid Lockouts card title to match the Overall Score card.",
+        "Options: Show Item Locations is now enabled by default.",
     }
 }
 
@@ -891,9 +894,6 @@ function TheQuartermaster:TestVaultCheck()
     
     self:Print("|cff00ccff======================|r")
 end
-
-
-
 
 
 

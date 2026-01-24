@@ -1,3 +1,36 @@
+## 0.2.108 (2026-01-24)
+- Options: "Show Item Locations" (Tooltip Enhancements) is now enabled by default.
+## 0.2.107 (2026-01-24)
+- Items tab: item count label now uses the current theme/class colour.
+
+## v0.2.106 (2026-01-24)
+- PvE: Added a 'Great Vault' header to the left card (matching Raid Lockouts styling) and reflowed the vault grid spacing.
+
+## v0.2.105 (2026-01-24)
+- PvE: Centred and enlarged the Raid Lockouts card title to match the Overall Score card.
+
+## v0.2.104 (2026-01-24)
+- PvE: Replaced the right-side "Work in Progress" card with a Raid Lockouts summary (shows saved raid lockouts with bosses killed and reset timer).
+
+## v0.2.103 (2026-01-24)
+- PvE: Removed Great Vault header row (Slot/1/2/3) and reflowed progress rows to avoid empty space.
+
+## 0.2.101 - 2026-01-24
+## v0.2.102 (2026-01-24)
+- PvE: Improved visibility of Mythic+ dungeon key level overlays (stronger contrast + outlined text).
+
+- PvE: Vault slot tooltips now show **Status: Complete** when progress meets/exceeds requirement (prevents values like 3/1).
+
+## 0.2.100 - 2026-01-24
+- PvE: Great Vault progress tooltips now show earned level per individual slot cell (not headers).
+- PvE: Removed hover tooltip from Slot column headers.
+
+## v0.2.99 — 2026-01-24
+- PvE: Great Vault progress tooltips now show the earned level (e.g. +10) where available and are visible when viewing other characters.
+
+## v0.2.98 — 2026-01-24
+- PvE: Fixed a Mythic+ completion error where `GetCharacterKey()` could be missing and a `time` event argument could shadow the global `time()` function.
+
 ## v0.2.96 — 2026-01-23
 - Currency: Removed the view-mode toggle button and locked Currency tab to **Character Only** view (alts list visible).
 

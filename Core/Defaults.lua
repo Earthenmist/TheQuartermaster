@@ -57,6 +57,8 @@ ns.DEFAULTS = {
             tabHover = { 0.24, 0.14, 0.35 }, -- Hover tab background (0.6x)
         },
         showItemCount = true,
+        -- Tooltip enhancements
+        tooltipEnhancement = true, -- Show item locations in tooltips by default
 
         -- Gold settings
         goldReserve = 0, -- Minimum gold to keep when depositing

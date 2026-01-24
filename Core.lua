@@ -1864,21 +1864,43 @@ end
     Called when M+ dungeon run completes
     Update PvE cache with new data
 ]]
-function TheQuartermaster:CHALLENGE_MODE_COMPLETED(mapChallengeModeID, level, time, onTime, keystoneUpgradeLevels)
+function TheQuartermaster:CHALLENGE_MODE_COMPLETED(mapChallengeModeID, level, completionTime, onTime, keystoneUpgradeLevels)
     -- Re-collect PvE data for current character
     local pveData = self:CollectPvEData()
     
     -- Update cache
     local key = self:GetCharacterKey()
-    if self.db.global.characters[key] then
+    if key and self.db and self.db.global and self.db.global.characters and self.db.global.characters[key] then
         self.db.global.characters[key].pve = pveData
-        self.db.global.characters[key].lastSeen = time()
+        -- NOTE: "completionTime" is an event argument, so use the global time() here.
+        self.db.global.characters[key].lastSeen = _G.time()
     end
     
     -- Refresh UI if PvE tab is visible
     if self.UI and self.UI.activeTab == "pve" then
         self:RefreshUI()
     end
+end
+
+--[[
+    Return the saved-variable key for a character.
+    This addon stores characters using the pattern: "Name-Realm".
+]]
+function TheQuartermaster:GetCharacterKey(unit)
+    unit = unit or "player"
+
+    local name = UnitName(unit)
+    if not name or name == "" then
+        return nil
+    end
+
+    -- Prefer normalized realm names when available (avoids spaces, connected realms formatting, etc.)
+    local realm = (GetNormalizedRealmName and GetNormalizedRealmName()) or GetRealmName()
+    if not realm or realm == "" then
+        return nil
+    end
+
+    return name .. "-" .. realm
 end
 
 --[[

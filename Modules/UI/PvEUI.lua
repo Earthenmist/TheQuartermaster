@@ -387,6 +387,13 @@ end)
             local vaultCard = CreateCard(cardContainer, cardHeight)
             vaultCard:SetPoint("TOPLEFT", 0, 0)
             vaultCard:SetWidth(card1Width - cardSpacing)
+
+
+-- Great Vault header
+local vaultTitle = vaultCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+vaultTitle:SetPoint("TOP", vaultCard, "TOP", 0, -15)
+vaultTitle:SetJustifyH("CENTER")
+vaultTitle:SetText("|cffffcc00Great Vault|r")
             
             -- Helper function to get WoW icon textures for vault activity types
             local function GetVaultTypeIcon(typeName)
@@ -422,9 +429,20 @@ end)
                         local progText = string.format("%d/%d", progress, threshold)
                         GameTooltip:AddLine(displayName .. ": " .. reqText, 1, 1, 1)
                         if complete then
-                            GameTooltip:AddLine("Progress: " .. progText, 0.2, 1, 0.2)
+                            GameTooltip:AddLine("Status: Complete", 0.2, 1, 0.2)
                         else
                             GameTooltip:AddLine("Progress: " .. progText, 1, 0.82, 0)
+                        end
+
+                        local earned = activity and activity.level
+                        if earned and earned ~= 0 then
+                            local earnedText
+                            if typeKey == "M+" then
+                                earnedText = string.format("Earned at: +%d", earned)
+                            else
+                                earnedText = string.format("Earned at: %d", earned)
+                            end
+                            GameTooltip:AddLine(earnedText, 0.8, 0.8, 1)
                         end
                     else
                         GameTooltip:AddLine(displayName .. ": No data", 0.6, 0.6, 0.6)
@@ -484,9 +502,20 @@ end)
 
                     local progText = string.format("%d/%d", pr, th)
                     if pr >= th then
-                        GameTooltip:AddLine("Progress: " .. progText, 0.2, 1, 0.2)
+                        GameTooltip:AddLine("Status: Complete", 0.2, 1, 0.2)
                     else
                         GameTooltip:AddLine("Progress: " .. progText, 1, 0.82, 0)
+                    end
+
+                    local earned = activity and tonumber(activity.level)
+                    if earned and earned > 0 then
+                        local earnedText
+                        if typeKey == "M+" then
+                            earnedText = string.format("Earned at: +%d", earned)
+                        else
+                            earnedText = string.format("Earned at: %d", earned)
+                        end
+                        GameTooltip:AddLine(earnedText, 0.8, 0.8, 1)
                     end
                 else
                     GameTooltip:AddLine("No data available for this slot.", 0.6, 0.6, 0.6)
@@ -496,7 +525,7 @@ end)
             end
 
             
-            local vaultY = 15  -- Start padding
+            local vaultY = 50  -- Start padding (header row removed)
         
         if pve.greatVault and #pve.greatVault > 0 then
             local vaultByType = {}
@@ -535,43 +564,7 @@ end)
                 ["World"] = {2, 4, 8},
                 ["PvP"] = {3, 3, 3}
             }
-
-            -- Table Header
-            local headerBg = vaultCard:CreateTexture(nil, "BACKGROUND")
-            headerBg:SetPoint("TOPLEFT", 10, -vaultY)
-            headerBg:SetPoint("TOPRIGHT", -10, -vaultY)
-            headerBg:SetHeight(22)
-            headerBg:SetColorTexture(0.15, 0.15, 0.2, 0.8)
-            
-            local headerText = vaultCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-            headerText:SetPoint("TOPLEFT", 15, -vaultY - 4)
-            headerText:SetText("|cffffff00Slot|r")
-            
-            -- Slot column headers
-            for i = 1, 3 do
-                local slotHeader = vaultCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-                local xPos = 10 + typeColumnWidth + ((i - 1) * slotWidth) + (slotWidth / 2)
-                slotHeader:SetPoint("TOPLEFT", xPos, -vaultY - 4)
-                slotHeader:SetText("|cffffff00" .. i .. "|r")
-
-                -- Hover tooltip for slot header (matches Great Vault columns)
-                local slotHover = CreateFrame("Frame", nil, vaultCard)
-                slotHover:SetSize(slotWidth, 18)
-                slotHover:SetPoint("TOPLEFT", xPos - 6, -vaultY - 6)
-                slotHover:EnableMouse(true)
-                slotHover:SetScript("OnEnter", function(self)
-                    if vaultByType and defaultThresholds then
-                        ShowGreatVaultSlotTooltip(self, i, vaultByType, defaultThresholds)
-                    end
-                end)
-                slotHover:SetScript("OnLeave", function()
-                    GameTooltip:Hide()
-                end)
-
-            end
-            
-            vaultY = vaultY + 27
-            
+            -- Header row removed (Slot / 1 / 2 / 3). We start rows closer to the top to avoid empty space.
             -- Calculate available space for rows
             local cardContentHeight = cardHeight - vaultY - 10  -- 10px bottom padding
             local numTypes = 3  -- Raid, M+, World (PvP removed)
@@ -715,15 +708,33 @@ slotFrame:EnableMouse(true)
                         -- Darken background overlay for better contrast
                         local overlay = iconFrame:CreateTexture(nil, "BORDER")
                         overlay:SetAllPoints()
-                        overlay:SetColorTexture(0, 0, 0, 0.4)  -- Semi-transparent black
+                        overlay:SetColorTexture(0, 0, 0, 0.55)  -- Darker for better contrast  -- Semi-transparent black
                         
                         -- Key level INSIDE icon (centered, larger) - using GameFont
-                        local levelText = iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+                        local textBg = iconFrame:CreateTexture(nil, "OVERLAY")
+                        textBg:SetPoint("CENTER", iconFrame, "CENTER", 0, 0)
+                        textBg:SetSize(34, 20)
+                        textBg:SetColorTexture(0, 0, 0, 0.55)
+
+                        -- Key level INSIDE icon (centered, larger, outlined)
+                        local levelText = iconFrame:CreateFontString(nil, "OVERLAY")
                         levelText:SetPoint("CENTER", iconFrame, "CENTER", 0, 0)  -- Centered in icon
+                        do
+                            local font, size, flags = GameFontNormalHuge:GetFont()
+                            levelText:SetFont(font, (size or 18) + 2, "THICKOUTLINE")
+                            levelText:SetShadowColor(0, 0, 0, 1)
+                            levelText:SetShadowOffset(1, -1)
+                        end
                         levelText:SetText(string.format("|cffffcc00+%d|r", dungeon.bestLevel))  -- Gold/yellow
                         
                         -- Score BELOW icon - using GameFont
-                        local dungeonScore = iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+                        local dungeonScore = iconFrame:CreateFontString(nil, "OVERLAY")
+                        do
+                            local font, size, flags = GameFontNormalLarge:GetFont()
+                            dungeonScore:SetFont(font, size or 14, "OUTLINE")
+                            dungeonScore:SetShadowColor(0, 0, 0, 1)
+                            dungeonScore:SetShadowOffset(1, -1)
+                        end
                         dungeonScore:SetPoint("TOP", iconFrame, "BOTTOM", 0, -3)
                         dungeonScore:SetText(string.format("|cffffffff%d|r", dungeon.score or 0))
                     else
@@ -767,12 +778,73 @@ slotFrame:EnableMouse(true)
             lockoutCard:SetPoint("TOPLEFT", card1Width + card2Width, 0)
             lockoutCard:SetWidth(card3Width)
             
-            -- Work in Progress message
-            local wipText = lockoutCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-            wipText:SetPoint("CENTER", lockoutCard, "CENTER", 0, 0)
-            wipText:SetText("|cffffcc00Work in Progress|r")
-            
-            cardContainer:SetHeight(cardHeight)
+            -- Raid Lockouts header
+	            local lockoutTitle = lockoutCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+	            lockoutTitle:SetPoint("TOP", lockoutCard, "TOP", 0, -15)
+	            lockoutTitle:SetJustifyH("CENTER")
+	            lockoutTitle:SetText("|cffffcc00Raid Lockouts|r")
+
+            -- Pull saved raid lockouts for this character (captured during scan)
+            local lockouts = nil
+            if char and char.pve and char.pve.lockouts then
+                lockouts = char.pve.lockouts
+            elseif pveData and pveData.lockouts then
+                lockouts = pveData.lockouts
+            end
+
+            local raids = {}
+            if lockouts and type(lockouts) == "table" then
+                for _, l in ipairs(lockouts) do
+                    if l and l.isRaid then
+                        table.insert(raids, l)
+                    end
+                end
+            end
+
+            -- Sort: soonest reset first, then higher difficulty
+            table.sort(raids, function(a, b)
+                local ar = tonumber(a.reset) or 0
+                local br = tonumber(b.reset) or 0
+                if ar ~= br then return ar < br end
+                local ad = tonumber(a.difficultyID) or 0
+                local bd = tonumber(b.difficultyID) or 0
+                if ad ~= bd then return ad > bd end
+                return (a.name or "") < (b.name or "")
+            end)
+
+	            local lockoutY = 50
+
+            if #raids == 0 then
+                local noLockouts = lockoutCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                noLockouts:SetPoint("TOPLEFT", 15, -lockoutY)
+                noLockouts:SetText("|cff666666No active raid lockouts|r")
+            else
+                -- Show up to 3 lockouts (current tier usually appears here when saved)
+                local maxShow = math.min(3, #raids)
+                for i = 1, maxShow do
+                    local l = raids[i]
+
+                    local nameLine = lockoutCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+                    nameLine:SetPoint("TOPLEFT", 15, -lockoutY)
+                    nameLine:SetJustifyH("LEFT")
+                    nameLine:SetText(string.format("|cffffffff%s|r |cffaaaaaa(%s)|r", l.name or "Unknown", l.difficultyName or ""))
+
+                    lockoutY = lockoutY + 18
+
+                    local progress = tonumber(l.progress) or 0
+                    local total = tonumber(l.total) or 0
+                    local resetSec = tonumber(l.reset) or 0
+                    local resetText = (resetSec > 0) and FormatResetTime(resetSec) or "Unknown"
+
+                    local infoLine = lockoutCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                    infoLine:SetPoint("TOPLEFT", 15, -lockoutY)
+                    infoLine:SetJustifyH("LEFT")
+                    infoLine:SetText(string.format("|cff4DE64D%d/%d bosses|r |cff666666• Resets in %s|r", progress, total, resetText))
+
+                    lockoutY = lockoutY + 22
+                end
+            end
+cardContainer:SetHeight(cardHeight)
             yOffset = yOffset + cardHeight + 10
         end
         
