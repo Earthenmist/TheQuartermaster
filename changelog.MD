@@ -3,6 +3,8 @@
 ## 0.2.107 (2026-01-24)
 - Items tab: item count label now uses the current theme/class colour.
 
+## 0.2.109 (2026-01-24)
+- Fixed global color picker hook causing interference with other addons' color pickers.
 ## v0.2.106 (2026-01-24)
 - PvE: Added a 'Great Vault' header to the left card (matching Raid Lockouts styling) and reflowed the vault grid spacing.
 

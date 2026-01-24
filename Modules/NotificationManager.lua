@@ -7,14 +7,15 @@ local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
 -- Current addon version
-local CURRENT_VERSION = "0.2.108"
+local CURRENT_VERSION = "0.2.109"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.108",
+    version = "0.2.109",
     date = "2026-01-24",
     changes = {
-        "Items tab: item count now uses theme/class colour",
+        
+        "Fixed global color picker hook causing interference with other addons\' color pickers.","Items tab: item count now uses theme/class colour",
         "PvE: Added Great Vault header title and reflowed Great Vault card spacing.",
         "PvE: Centred and enlarged the Raid Lockouts card title to match the Overall Score card.",
         "Options: Show Item Locations is now enabled by default.",

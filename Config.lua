@@ -213,8 +213,6 @@ local options = {
                 return c[1], c[2], c[3]
             end,
             set = function(_, r, g, b)
-                colorPickerConfirmed = true
-                colorPickerOriginalColors = nil
                 
                 local finalColors = ns.UI_CalculateThemeColors(r, g, b)
                 TheQuartermaster.db.profile.themeMode = 'static'
@@ -398,8 +396,8 @@ local options = {
         tooltipEnhancement = {
             order = 62,
             type = "toggle",
-            name = "Show Item Counts in Tooltips",
-            desc = "Add item counts and location information to tooltips (Bags, Personal Bank, Warband Bank). Will display as per character or Warband Bank",
+            name = "Show Item Locations",
+            desc = "Add item location information to tooltips (Bags, Personal Bank, Warband Bank).",
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.tooltipEnhancement end,
             set = function(_, value)
@@ -785,102 +783,6 @@ local options = {
     },
 }
 
--- ===== COLOR PICKER REAL-TIME PREVIEW HOOK =====
-local colorPickerOriginalColors = nil
-local colorPickerHookInstalled = false
-local colorPickerTicker = nil
-local lastR, lastG, lastB = nil, nil, nil
-local colorPickerConfirmed = false
-
-local function InstallColorPickerPreviewHook()
-    if colorPickerHookInstalled then return end
-    colorPickerHookInstalled = true
-    
-    ColorPickerFrame:HookScript("OnShow", function()
-        colorPickerConfirmed = false
-        
-        if TheQuartermaster and TheQuartermaster.ShowMainWindow then
-            TheQuartermaster:ShowMainWindow()
-        end
-        
-        local current = TheQuartermaster.db.profile.themeColors
-        colorPickerOriginalColors = {
-            accent = {current.accent[1], current.accent[2], current.accent[3]},
-            accentDark = {current.accentDark[1], current.accentDark[2], current.accentDark[3]},
-            border = {current.border[1], current.border[2], current.border[3]},
-            tabActive = {current.tabActive[1], current.tabActive[2], current.tabActive[3]},
-            tabHover = {current.tabHover[1], current.tabHover[2], current.tabHover[3]},
-        }
-        
-        lastR, lastG, lastB = ColorPickerFrame:GetColorRGB()
-        
-        if colorPickerTicker then
-            colorPickerTicker:Cancel()
-        end
-        
-        colorPickerTicker = C_Timer.NewTicker(0.05, function()
-            if not ColorPickerFrame:IsShown() then
-                return
-            end
-            
-            local r, g, b = ColorPickerFrame:GetColorRGB()
-            
-            local tolerance = 0.001
-            if math.abs(r - (lastR or 0)) > tolerance or 
-               math.abs(g - (lastG or 0)) > tolerance or 
-               math.abs(b - (lastB or 0)) > tolerance then
-                
-                lastR, lastG, lastB = r, g, b
-                
-                local previewColors = ns.UI_CalculateThemeColors(r, g, b)
-                TheQuartermaster.db.profile.themeColors = previewColors
-                
-                if ns.UI_RefreshColors then
-                    ns.UI_RefreshColors()
-                end
-            end
-        end)
-    end)
-    
-    local okayButton = ColorPickerFrame.Footer and ColorPickerFrame.Footer.OkayButton or ColorPickerOkayButton
-    local cancelButton = ColorPickerFrame.Footer and ColorPickerFrame.Footer.CancelButton or ColorPickerCancelButton
-    
-    if okayButton then
-        okayButton:HookScript("OnClick", function()
-            colorPickerConfirmed = true
-        end)
-    end
-    
-    if cancelButton then
-        cancelButton:HookScript("OnClick", function()
-            colorPickerConfirmed = false
-        end)
-    end
-    
-    ColorPickerFrame:HookScript("OnHide", function()
-        if colorPickerTicker then
-            colorPickerTicker:Cancel()
-            colorPickerTicker = nil
-        end
-        
-        C_Timer.After(0.05, function()
-            if not colorPickerConfirmed and colorPickerOriginalColors then
-                TheQuartermaster.db.profile.themeColors = colorPickerOriginalColors
-                
-                if ns.UI_RefreshColors then
-                    ns.UI_RefreshColors()
-                end
-            end
-            
-            if not colorPickerConfirmed then
-                colorPickerOriginalColors = nil
-            end
-            colorPickerConfirmed = false
-            lastR, lastG, lastB = nil, nil, nil
-        end)
-    end)
-end
-
 --[[
     Show Wipe Data Confirmation Popup
 ]]
@@ -956,8 +858,6 @@ end
     Open the options panel
 ]]
 function TheQuartermaster:OpenOptions()
-    InstallColorPickerPreviewHook()
-
     -- Dragonflight/Midnight+ uses the Settings panel.
     if Settings then
         -- Fallback: numeric category ID
