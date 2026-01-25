@@ -9,14 +9,14 @@ local L = ns.L
 
 -- AceConfig options table
 local options = {
-    name = "The Quartermaster",
+    name = L["THE_QUARTERMASTER"],
     type = "group",
     args = {
         -- Header
         header = {
             order = 1,
             type = "description",
-            name = "|cff00ccffThe Quartermaster|r\nView and manage your Warband Bank items from anywhere.\n\n",
+            name = L["CFF00CCFFTHE_QUARTERMASTER_R_NVIEW_AND_MANAGE_YOUR_WARBAND_B"],
             fontSize = "medium",
         },
         
@@ -24,18 +24,18 @@ local options = {
         generalHeader = {
             order = 10,
             type = "header",
-            name = "General Settings",
+            name = L["GENERAL_SETTINGS"],
         },
         generalDesc = {
             order = 11,
             type = "description",
-            name = "Basic addon settings and minimap button configuration.\n",
+            name = L["BASIC_ADDON_SETTINGS_AND_MINIMAP_BUTTON_CONFIGURATION_N"],
         },
         enabled = {
             order = 12,
             type = "toggle",
-            name = "Enable Addon",
-            desc = "Turn the addon on or off.",
+            name = L["ENABLE_ADDON"],
+            desc = L["TURN_THE_ADDON_ON_OR_OFF"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.enabled end,
             set = function(_, value)
@@ -50,8 +50,8 @@ local options = {
         minimapIcon = {
             order = 13,
             type = "toggle",
-            name = "Minimap Button",
-            desc = "Show a button on the minimap to open The Quartermaster.",
+            name = L["MINIMAP_BUTTON"],
+            desc = L["SHOW_A_BUTTON_ON_THE_MINIMAP_TO_OPEN_THE_QUARTERMASTER"],
             width = 1.5,
             get = function() return not TheQuartermaster.db.profile.minimap.hide end,
             set = function(_, value)
@@ -96,18 +96,18 @@ local options = {
         automationHeader = {
             order = 30,
             type = "header",
-            name = "Automation",
+            name = L["AUTOMATION"],
         },
         automationDesc = {
             order = 31,
             type = "description",
-            name = "Control what happens automatically when you open your Warband Bank.\n",
+            name = L["CONTROL_WHAT_HAPPENS_AUTOMATICALLY_WHEN_YOU_OPEN_YOUR_WARBAN"],
         },
         autoScan = {
             order = 32,
             type = "toggle",
-            name = "Auto-Scan Items",
-            desc = "Automatically scan and cache your Warband Bank items when you open the bank.",
+            name = L["AUTO_SCAN_ITEMS"],
+            desc = L["AUTOMATICALLY_SCAN_AND_CACHE_YOUR_WARBAND_BANK_ITEMS_WHEN_YO"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.autoScan end,
             set = function(_, value) TheQuartermaster.db.profile.autoScan = value end,
@@ -115,8 +115,8 @@ local options = {
         autoOpenWindow = {
             order = 33,
             type = "toggle",
-            name = "Auto-Open Window",
-            desc = "Automatically open the The Quartermaster window when you open your Warband Bank.",
+            name = L["AUTO_OPEN_WINDOW"],
+            desc = L["AUTOMATICALLY_OPEN_THE_THE_QUARTERMASTER_WINDOW_WHEN_YOU_OPE"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.autoOpenWindow ~= false end,
             set = function(_, value) TheQuartermaster.db.profile.autoOpenWindow = value end,
@@ -124,8 +124,8 @@ local options = {
         autoSaveChanges = {
             order = 34,
             type = "toggle",
-            name = "Live Sync",
-            desc = "Keep the item cache updated in real-time while the bank is open. This lets you see accurate data even when away from the bank.",
+            name = L["LIVE_SYNC"],
+            desc = L["KEEP_THE_ITEM_CACHE_UPDATED_IN_REAL_TIME_WHILE_THE_BANK_IS_O"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.autoSaveChanges ~= false end,
             set = function(_, value) TheQuartermaster.db.profile.autoSaveChanges = value end,
@@ -133,8 +133,8 @@ local options = {
         autoOptimize = {
             order = 35,
             type = "toggle",
-            name = "Auto-Optimize Database",
-            desc = "Automatically clean up stale data and optimize the database every 7 days.",
+            name = L["AUTO_OPTIMIZE_DATABASE"],
+            desc = L["AUTOMATICALLY_CLEAN_UP_STALE_DATA_AND_OPTIMIZE_THE_DATABASE"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.autoOptimize ~= false end,
             set = function(_, value) TheQuartermaster.db.profile.autoOptimize = value end,
@@ -149,18 +149,18 @@ local options = {
         displayHeader = {
             order = 40,
             type = "header",
-            name = "Display",
+            name = L["DISPLAY"],
         },
         displayDesc = {
             order = 41,
             type = "description",
-            name = "Customize how items and information are displayed.\n",
+            name = L["CUSTOMIZE_HOW_ITEMS_AND_INFORMATION_ARE_DISPLAYED_N"],
         },
         showItemLevel = {
             order = 42,
             type = "toggle",
-            name = "Show Item Level",
-            desc = "Display item level badges on equipment in the item list.",
+            name = L["SHOW_ITEM_LEVEL"],
+            desc = L["DISPLAY_ITEM_LEVEL_BADGES_ON_EQUIPMENT_IN_THE_ITEM_LIST"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.showItemLevel end,
             set = function(_, value)
@@ -173,8 +173,8 @@ local options = {
         showItemCount = {
             order = 43,
             type = "toggle",
-            name = "Show Item Count",
-            desc = "Display stack count next to item names.",
+            name = L["SHOW_ITEM_COUNT"],
+            desc = L["DISPLAY_STACK_COUNT_NEXT_TO_ITEM_NAMES"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.showItemCount end,
             set = function(_, value)
@@ -194,18 +194,18 @@ local options = {
         themeHeader = {
             order = 50,
             type = "header",
-            name = "Theme & Appearance",
+            name = L["THEME_APPEARANCE"],
         },
         themeDesc = {
             order = 51,
             type = "description",
-            name = "Choose your primary theme color. All variations (borders, tabs, highlights) will be automatically generated. Changes apply in real-time!\n",
+            name = L["CHOOSE_YOUR_PRIMARY_THEME_COLOR_ALL_VARIATIONS_BORDERS_TABS_2"],
         },
         themeMasterColor = {
             order = 52,
             type = "color",
-            name = "Master Theme Color",
-            desc = "Choose your primary theme color. All variations (borders, tabs, highlights) will be automatically generated.",
+            name = L["MASTER_THEME_COLOR"],
+            desc = L["CHOOSE_YOUR_PRIMARY_THEME_COLOR_ALL_VARIATIONS_BORDERS_TABS"],
             hasAlpha = false,
             width = "full",
             get = function()
@@ -227,8 +227,8 @@ local options = {
         themePresetPurple = {
             order = 54,
             type = "execute",
-            name = "Purple Theme",
-            desc = "Classic purple theme",
+            name = L["PURPLE_THEME"],
+            desc = L["CLASSIC_PURPLE_THEME"],
             width = 0.5,
             func = function()
                 if TheQuartermaster.ShowMainWindow then
@@ -246,8 +246,8 @@ local options = {
         themePresetClass = {
             order = 53,
             type = "execute",
-            name = "Class Color Theme",
-            desc = "Use your current character's class color",
+            name = L["CLASS_COLOR_THEME"],
+            desc = L["USE_YOUR_CURRENT_CHARACTERS_CLASS_COLOR"],
             width = 0.5,
             func = function()
                 if TheQuartermaster.ShowMainWindow then
@@ -268,8 +268,8 @@ local options = {
         themePresetBlue = {
             order = 55,
             type = "execute",
-            name = "Blue Theme",
-            desc = "Cool blue theme",
+            name = L["BLUE_THEME"],
+            desc = L["COOL_BLUE_THEME"],
             width = 0.5,
             func = function()
                 if TheQuartermaster.ShowMainWindow then
@@ -286,8 +286,8 @@ local options = {
         themePresetGreen = {
             order = 56,
             type = "execute",
-            name = "Green Theme",
-            desc = "Nature green theme",
+            name = L["GREEN_THEME"],
+            desc = L["NATURE_GREEN_THEME"],
             width = 0.5,
             func = function()
                 if TheQuartermaster.ShowMainWindow then
@@ -304,8 +304,8 @@ local options = {
         themePresetRed = {
             order = 57,
             type = "execute",
-            name = "Red Theme",
-            desc = "Fiery red theme",
+            name = L["RED_THEME"],
+            desc = L["FIERY_RED_THEME"],
             width = 0.5,
             func = function()
                 if TheQuartermaster.ShowMainWindow then
@@ -322,8 +322,8 @@ local options = {
         themePresetOrange = {
             order = 58,
             type = "execute",
-            name = "Orange Theme",
-            desc = "Warm orange theme",
+            name = L["ORANGE_THEME"],
+            desc = L["WARM_ORANGE_THEME"],
             width = 0.5,
             func = function()
                 if TheQuartermaster.ShowMainWindow then
@@ -340,8 +340,8 @@ local options = {
         themePresetCyan = {
             order = 59,
             type = "execute",
-            name = "Cyan Theme",
-            desc = "Bright cyan theme",
+            name = L["CYAN_THEME"],
+            desc = L["BRIGHT_CYAN_THEME"],
             width = 0.5,
             func = function()
                 if TheQuartermaster.ShowMainWindow then
@@ -358,8 +358,8 @@ local options = {
         themeResetButton = {
             order = 59,
             type = "execute",
-            name = "Reset to Default (Class Color)",
-            desc = "Reset all theme colors to your current character's class color.",
+            name = L["RESET_TO_DEFAULT_CLASS_COLOR"],
+            desc = L["RESET_ALL_THEME_COLORS_TO_YOUR_CURRENT_CHARACTERS_CLASS_COLO"],
             width = "full",
             func = function()
                 if TheQuartermaster.ShowMainWindow then
@@ -386,18 +386,18 @@ local options = {
         tooltipHeader = {
             order = 60,
             type = "header",
-            name = "Tooltip Enhancements",
+            name = L["TOOLTIP_ENHANCEMENTS"],
         },
         tooltipDesc = {
             order = 61,
             type = "description",
-            name = "Add useful information to item tooltips.\n",
+            name = L["ADD_USEFUL_INFORMATION_TO_ITEM_TOOLTIPS_N"],
         },
         tooltipEnhancement = {
             order = 62,
             type = "toggle",
-            name = "Show Item Locations",
-            desc = "Add item location information to tooltips (Bags, Personal Bank, Warband Bank).",
+            name = L["SHOW_ITEM_LOCATIONS"],
+            desc = L["ADD_ITEM_LOCATION_INFORMATION_TO_TOOLTIPS_BAGS_PERSONAL_BANK"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.tooltipEnhancement end,
             set = function(_, value)
@@ -419,18 +419,18 @@ local options = {
         notificationsHeader = {
             order = 70,
             type = "header",
-            name = "Notifications",
+            name = L["NOTIFICATIONS"],
         },
         notificationsDesc = {
             order = 71,
             type = "description",
-            name = "Control in-game pop-up notifications and reminders.\n",
+            name = L["CONTROL_IN_GAME_POP_UP_NOTIFICATIONS_AND_REMINDERS_N"],
         },
         notificationsEnabled = {
             order = 72,
             type = "toggle",
-            name = "Enable Notifications",
-            desc = "Master toggle for all notification pop-ups.",
+            name = L["ENABLE_NOTIFICATIONS"],
+            desc = L["MASTER_TOGGLE_FOR_ALL_NOTIFICATION_POP_UPS"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.notifications.enabled end,
             set = function(_, value) TheQuartermaster.db.profile.notifications.enabled = value end,
@@ -438,8 +438,8 @@ local options = {
         showUpdateNotes = {
             order = 73,
             type = "toggle",
-            name = "Show Update Notes",
-            desc = "Display a pop-up with changelog when addon is updated to a new version.",
+            name = L["SHOW_UPDATE_NOTES"],
+            desc = L["DISPLAY_A_POP_UP_WITH_CHANGELOG_WHEN_ADDON_IS_UPDATED_TO_A_N"],
             width = 1.5,
             disabled = function() return not TheQuartermaster.db.profile.notifications.enabled end,
             get = function() return TheQuartermaster.db.profile.notifications.showUpdateNotes end,
@@ -448,8 +448,8 @@ local options = {
         showVaultReminder = {
             order = 74,
             type = "toggle",
-            name = "Weekly Vault Reminder",
-            desc = "Show a reminder when you have unclaimed Weekly Vault rewards on login.",
+            name = L["WEEKLY_VAULT_REMINDER"],
+            desc = L["SHOW_A_REMINDER_WHEN_YOU_HAVE_UNCLAIMED_WEEKLY_VAULT_REWARDS"],
             width = 1.5,
             disabled = function() return not TheQuartermaster.db.profile.notifications.enabled end,
             get = function() return TheQuartermaster.db.profile.notifications.showVaultReminder end,
@@ -458,8 +458,8 @@ local options = {
         showLootNotifications = {
             order = 75,
             type = "toggle",
-            name = "Mount/Pet/Toy Loot Alerts",
-            desc = "Show a notification when a NEW mount, pet, or toy enters your bag. Triggers when item is looted/bought, not when learned. Only shows for uncollected items.",
+            name = L["MOUNT_PET_TOY_LOOT_ALERTS"],
+            desc = L["SHOW_A_NOTIFICATION_WHEN_A_NEW_MOUNT_PET_OR_TOY_ENTERS_YOUR"],
             width = 1.5,
             disabled = function() return not TheQuartermaster.db.profile.notifications.enabled end,
             get = function() return TheQuartermaster.db.profile.notifications.showLootNotifications end,
@@ -468,8 +468,8 @@ local options = {
         resetVersionButton = {
             order = 76,
             type = "execute",
-            name = "Show Update Notes Again",
-            desc = "Reset the 'last seen version' to show the update notification again on next login.",
+            name = L["SHOW_UPDATE_NOTES_AGAIN"],
+            desc = L["RESET_THE_LAST_SEEN_VERSION_TO_SHOW_THE_UPDATE_NOTIFICATION"],
             width = 1.5,
             func = function()
                 TheQuartermaster.db.profile.notifications.lastSeenVersion = "0.0.0"
@@ -486,18 +486,18 @@ local options = {
         currencyHeader = {
             order = 80,
             type = "header",
-            name = "Currency",
+            name = L["CURRENCY"],
         },
         currencyDesc = {
             order = 81,
             type = "description",
-            name = "Configure how currencies are displayed in the Currency tab.\n",
+            name = L["CONFIGURE_HOW_CURRENCIES_ARE_DISPLAYED_IN_THE_CURRENCY_TAB_N"],
         },
         currencyFilterMode = {
             order = 82,
             type = "select",
-            name = "Filter Mode",
-            desc = "Choose which currencies to display in the Currency tab.",
+            name = L["FILTER_MODE"],
+            desc = L["CHOOSE_WHICH_CURRENCIES_TO_DISPLAY_IN_THE_CURRENCY_TAB"],
             width = 1.5,
             values = {
                 filtered = "Important Only (Recommended)",
@@ -514,8 +514,8 @@ local options = {
         currencyShowZero = {
             order = 83,
             type = "toggle",
-            name = "Show Zero Quantities",
-            desc = "Display currencies even if their quantity is 0.",
+            name = L["SHOW_ZERO_QUANTITIES"],
+            desc = L["DISPLAY_CURRENCIES_EVEN_IF_THEIR_QUANTITY_IS_0"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.currencyShowZero end,
             set = function(_, value)
@@ -535,18 +535,18 @@ local options = {
         tabHeader = {
             order = 100,
             type = "header",
-            name = "Tab Filtering",
+            name = L["TAB_FILTERING"],
         },
         tabDesc = {
             order = 101,
             type = "description",
-            name = "Exclude specific Warband Bank tabs from scanning. Useful if you want to ignore certain tabs.\n",
+            name = L["EXCLUDE_SPECIFIC_WARBAND_BANK_TABS_FROM_SCANNING_USEFUL_IF_Y"],
         },
         ignoredTab1 = {
             order = 102,
             type = "toggle",
-            name = "Ignore Tab 1",
-            desc = "Exclude this Warband Bank tab from automatic scanning",
+            name = L["IGNORE_TAB_1"],
+            desc = L["EXCLUDE_THIS_WARBAND_BANK_TAB_FROM_AUTOMATIC_SCANNING"],
             width = 1.2,
             get = function() return TheQuartermaster.db.profile.ignoredTabs[1] end,
             set = function(_, value) TheQuartermaster.db.profile.ignoredTabs[1] = value end,
@@ -554,8 +554,8 @@ local options = {
         ignoredTab2 = {
             order = 103,
             type = "toggle",
-            name = "Ignore Tab 2",
-            desc = "Exclude this Warband Bank tab from automatic scanning",
+            name = L["IGNORE_TAB_2"],
+            desc = L["EXCLUDE_THIS_WARBAND_BANK_TAB_FROM_AUTOMATIC_SCANNING"],
             width = 1.2,
             get = function() return TheQuartermaster.db.profile.ignoredTabs[2] end,
             set = function(_, value) TheQuartermaster.db.profile.ignoredTabs[2] = value end,
@@ -563,8 +563,8 @@ local options = {
         ignoredTab3 = {
             order = 104,
             type = "toggle",
-            name = "Ignore Tab 3",
-            desc = "Exclude this Warband Bank tab from automatic scanning",
+            name = L["IGNORE_TAB_3"],
+            desc = L["EXCLUDE_THIS_WARBAND_BANK_TAB_FROM_AUTOMATIC_SCANNING"],
             width = 1.2,
             get = function() return TheQuartermaster.db.profile.ignoredTabs[3] end,
             set = function(_, value) TheQuartermaster.db.profile.ignoredTabs[3] = value end,
@@ -572,8 +572,8 @@ local options = {
         ignoredTab4 = {
             order = 105,
             type = "toggle",
-            name = "Ignore Tab 4",
-            desc = "Exclude this Warband Bank tab from automatic scanning",
+            name = L["IGNORE_TAB_4"],
+            desc = L["EXCLUDE_THIS_WARBAND_BANK_TAB_FROM_AUTOMATIC_SCANNING"],
             width = 1.2,
             get = function() return TheQuartermaster.db.profile.ignoredTabs[4] end,
             set = function(_, value) TheQuartermaster.db.profile.ignoredTabs[4] = value end,
@@ -581,8 +581,8 @@ local options = {
         ignoredTab5 = {
             order = 106,
             type = "toggle",
-            name = "Ignore Tab 5",
-            desc = "Exclude this Warband Bank tab from automatic scanning",
+            name = L["IGNORE_TAB_5"],
+            desc = L["EXCLUDE_THIS_WARBAND_BANK_TAB_FROM_AUTOMATIC_SCANNING"],
             width = 1.2,
             get = function() return TheQuartermaster.db.profile.ignoredTabs[5] end,
             set = function(_, value) TheQuartermaster.db.profile.ignoredTabs[5] = value end,
@@ -597,18 +597,18 @@ local options = {
         characterManagementHeader = {
             order = 110,
             type = "header",
-            name = "Character Management",
+            name = L["CHARACTER_MANAGEMENT"],
         },
         characterManagementDesc = {
             order = 111,
             type = "description",
-            name = "Manage your tracked characters. You can delete character data that you no longer need.\n\n|cffff9900Warning:|r Deleting a character removes all saved data (gold, professions, PvE progress, etc.). This action cannot be undone.\n",
+            name = L["MANAGE_YOUR_TRACKED_CHARACTERS_YOU_CAN_DELETE_CHARACTER_DATA"],
         },
         deleteCharacterDropdown = {
             order = 112,
             type = "select",
-            name = "Select Character to Delete",
-            desc = "Choose a character from the list to delete their data",
+            name = L["SELECT_CHARACTER_TO_DELETE"],
+            desc = L["CHOOSE_A_CHARACTER_FROM_THE_LIST_TO_DELETE_THEIR_DATA"],
             width = "full",
             values = function()
                 local chars = {}
@@ -640,8 +640,8 @@ local options = {
         deleteCharacterButton = {
             order = 113,
             type = "execute",
-            name = "Delete Selected Character",
-            desc = "Permanently delete the selected character's data",
+            name = L["DELETE_SELECTED_CHARACTER"],
+            desc = L["PERMANENTLY_DELETE_THE_SELECTED_CHARACTERS_DATA"],
             width = "full",
             disabled = function()
                 return not TheQuartermaster.selectedCharacterToDelete
@@ -685,25 +685,25 @@ local options = {
         spacer10 = {
             order = 899,
             type = "description",
-            name = "\n\n",
+            name = L["N_N"],
         },
         
         -- ===== ADVANCED =====
         advancedHeader = {
             order = 900,
             type = "header",
-            name = "Advanced",
+            name = L["ADVANCED"],
         },
         advancedDesc = {
             order = 901,
             type = "description",
-            name = "Advanced settings and database management. Use with caution!\n",
+            name = L["ADVANCED_SETTINGS_AND_DATABASE_MANAGEMENT_USE_WITH_CAUTION_N"],
         },
         debugMode = {
             order = 902,
             type = "toggle",
-            name = "Debug Mode",
-            desc = "Enable verbose logging for debugging purposes. Only enable if troubleshooting issues.",
+            name = L["DEBUG_MODE"],
+            desc = L["ENABLE_VERBOSE_LOGGING_FOR_DEBUGGING_PURPOSES_ONLY_ENABLE_IF"],
             width = 1.5,
             get = function() return TheQuartermaster.db.profile.debugMode end,
             set = function(_, value)
@@ -718,8 +718,8 @@ local options = {
         databaseStatsButton = {
             order = 903,
             type = "execute",
-            name = "Show Database Statistics",
-            desc = "Display detailed information about your database size and content.",
+            name = L["SHOW_DATABASE_STATISTICS"],
+            desc = L["DISPLAY_DETAILED_INFORMATION_ABOUT_YOUR_DATABASE_SIZE_AND_CO"],
             width = 1.5,
             func = function()
                 if TheQuartermaster.PrintDatabaseStats then
@@ -732,8 +732,8 @@ local options = {
         optimizeDatabaseButton = {
             order = 904,
             type = "execute",
-            name = "Optimize Database Now",
-            desc = "Manually run database optimization to clean up stale data and reduce file size.",
+            name = L["OPTIMIZE_DATABASE_NOW"],
+            desc = L["MANUALLY_RUN_DATABASE_OPTIMIZATION_TO_CLEAN_UP_STALE_DATA_AN"],
             width = 1.5,
             func = function()
                 if TheQuartermaster.RunOptimization then
@@ -751,8 +751,8 @@ local options = {
         wipeAllData = {
             order = 999,
             type = "execute",
-            name = "|cffff0000Wipe All Data|r",
-            desc = "DELETE ALL addon data (characters, items, currency, reputations, settings). Cannot be undone!\n\n|cffff9900You will be prompted to type 'Accept' to confirm (case insensitive).|r",
+            name = L["CFFFF0000WIPE_ALL_DATA_R"],
+            desc = L["DELETE_ALL_ADDON_DATA_CHARACTERS_ITEMS_CURRENCY_REPUTATIONS"],
             width = "full",
             confirm = false,  -- We use custom confirmation
             func = function()
@@ -769,7 +769,7 @@ local options = {
         commandsHeader = {
             order = 950,
             type = "header",
-            name = "Slash Commands",
+            name = L["SLASH_COMMANDS"],
         },
         commandsDesc = {
             order = 951,
@@ -788,7 +788,7 @@ local options = {
 ]]
 function TheQuartermaster:ShowWipeDataConfirmation()
     StaticPopupDialogs["TheQuartermaster_WIPE_CONFIRM"] = {
-        text = "|cffff0000WIPE ALL DATA|r\n\n" ..
+        text = L["CFFFF0000WIPE_ALL_DATA_R_N_N"] ..
                "This will permanently delete ALL data:\n" ..
                "• All tracked characters\n" ..
                "• All cached items\n" ..

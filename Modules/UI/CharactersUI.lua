@@ -6,6 +6,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 -- Import shared UI components (always get fresh reference)
 local function GetCOLORS()
     return ns.UI_COLORS
@@ -110,7 +112,7 @@ function TheQuartermaster:DrawCharacterList(parent)
     
     local cg1Label = charGoldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     cg1Label:SetPoint("TOPLEFT", cg1Icon, "TOPRIGHT", 12, -2)
-    cg1Label:SetText("TOTAL PLAYED")
+    cg1Label:SetText(L["TOTAL_PLAYED"])
     cg1Label:SetTextColor(0.6, 0.6, 0.6)
     
     local cg1Value = charGoldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -137,7 +139,7 @@ function TheQuartermaster:DrawCharacterList(parent)
     
     local wb1Label = wbGoldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     wb1Label:SetPoint("TOPLEFT", wb1Icon, "TOPRIGHT", 12, -2)
-    wb1Label:SetText("WARBAND GOLD")
+    wb1Label:SetText(L["WARBAND_GOLD"])
     wb1Label:SetTextColor(0.6, 0.6, 0.6)
     
     local wb1Value = wbGoldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -165,7 +167,7 @@ function TheQuartermaster:DrawCharacterList(parent)
     
     local tg1Label = totalGoldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     tg1Label:SetPoint("TOPLEFT", tg1Icon, "TOPRIGHT", 12, -2)
-    tg1Label:SetText("TOTAL GOLD")
+    tg1Label:SetText(L["TOTAL_GOLD"])
     tg1Label:SetTextColor(0.6, 0.6, 0.6)
     
     local tg1Value = totalGoldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -276,12 +278,12 @@ function TheQuartermaster:DrawCharacterList(parent)
         
         local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         emptyText:SetPoint("TOP", 0, -yOffset - 90)
-        emptyText:SetText("|cff666666No characters tracked yet|r")
+        emptyText:SetText(L["CFF666666NO_CHARACTERS_TRACKED_YET_R"])
         
         local emptyDesc = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         emptyDesc:SetPoint("TOP", 0, -yOffset - 115)
         emptyDesc:SetTextColor(0.5, 0.5, 0.5)
-        emptyDesc:SetText("Characters are automatically registered on login")
+        emptyDesc:SetText(L["CHARACTERS_ARE_AUTOMATICALLY_REGISTERED_ON_LOGIN"])
         
         return yOffset + 200
     end
@@ -330,7 +332,7 @@ function TheQuartermaster:DrawCharacterList(parent)
             local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             emptyText:SetPoint("TOPLEFT", 30, -yOffset)
             emptyText:SetTextColor(0.5, 0.5, 0.5)
-            emptyText:SetText("No favorite characters yet. Click the star icon to favorite a character.")
+            emptyText:SetText(L["NO_FAVORITE_CHARACTERS_YET_CLICK_THE_STAR_ICON_TO_FAVORITE_A"])
             yOffset = yOffset + 35
         end
     end
@@ -367,7 +369,7 @@ function TheQuartermaster:DrawCharacterList(parent)
             local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             emptyText:SetPoint("TOPLEFT", 30, -yOffset)
             emptyText:SetTextColor(0.5, 0.5, 0.5)
-            emptyText:SetText("All characters are favorited!")
+            emptyText:SetText(L["ALL_CHARACTERS_ARE_FAVORITED"])
             yOffset = yOffset + 35
         end
     end
@@ -442,9 +444,9 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
     favButton:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         if isFavorite then
-            GameTooltip:SetText("|cffffd700Favorite Character|r\nClick to remove from favorites")
+            GameTooltip:SetText(L["CFFFFD700FAVORITE_CHARACTER_R_NCLICK_TO_REMOVE_FROM_FAVORITE"])
         else
-            GameTooltip:SetText("Click to add to favorites\n|cff888888Favorites are always shown at the top|r")
+            GameTooltip:SetText(L["CLICK_TO_ADD_TO_FAVORITES_N_CFF888888FAVORITES_ARE_ALWAYS_SH"])
         end
         GameTooltip:Show()
     end)
@@ -569,7 +571,7 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
             upBtn:SetScript("OnEnter", function(self)
                 row.reorderButtons:Show()
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
-                GameTooltip:SetText("Move Up")
+                GameTooltip:SetText(L["MOVE_UP"])
                 GameTooltip:Show()
             end)
             
@@ -601,7 +603,7 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
             downBtn:SetScript("OnEnter", function(self)
                 row.reorderButtons:Show()
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
-                GameTooltip:SetText("Move Down")
+                GameTooltip:SetText(L["MOVE_DOWN"])
                 GameTooltip:Show()
             end)
             
@@ -630,7 +632,7 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
     if ilvl then
         ilvlText:SetText(string.format("|cffcccccciLvl %.1f|r", ilvl))
     else
-        ilvlText:SetText("|cff666666--|r")
+        ilvlText:SetText(L["CFF666666_R"])
     end
 
     -- Keystone: show an icon when the character has a key, otherwise show dashes.
@@ -672,7 +674,7 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
         end)
         keyBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
     else
-        keyText:SetText("|cff666666--|r")
+        keyText:SetText(L["CFF666666_R"])
         keyIcon:Hide()
         keyBtn:EnableMouse(false)
         keyBtn:SetScript("OnEnter", nil)
@@ -865,7 +867,7 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
         
         deleteBtn:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-            GameTooltip:SetText("|cffff5555Delete Character|r\nClick to remove this character's data")
+            GameTooltip:SetText(L["CFFFF5555DELETE_CHARACTER_R_NCLICK_TO_REMOVE_THIS_CHARACTERS"])
             GameTooltip:Show()
         end)
         

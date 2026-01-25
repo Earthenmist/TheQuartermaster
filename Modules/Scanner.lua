@@ -1280,22 +1280,3 @@ function TheQuartermaster:ScanReputations()
     LogOperation("Rep Scan", "Finished", self.currentTrigger or "Manual")
     return true
 end
-
---[[
-    Categorize reputation (DEPRECATED - now using isRenown flag only)
-    This function is kept minimal for backward compatibility
-    @param factionID number
-    @return isRenown boolean (true if Major Faction/Renown, false otherwise)
-]]
-function TheQuartermaster:CategorizeReputation(factionID)
-    -- Future-proof: Only check if it's a Renown faction using API
-    -- No hardcoded expansion lists or faction ID ranges
-    if C_MajorFactions and C_MajorFactions.GetMajorFactionData then
-        local majorData = C_MajorFactions.GetMajorFactionData(factionID)
-        if majorData then
-            return true  -- Is a Renown/Major Faction
-        end
-    end
-    
-    return false  -- Regular reputation
-end

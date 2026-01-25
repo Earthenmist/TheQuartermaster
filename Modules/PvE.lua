@@ -48,7 +48,7 @@ function TheQuartermaster:CreatePvEFrame(parent)
     -- Title
     local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOPLEFT", 20, -20)
-    title:SetText("|cff00ff00PvE Progression|r")
+    title:SetText(L["CFF00FF00PVE_PROGRESSION_R"])
     frame.title = title
     
     -- Scroll frame for character list
@@ -169,7 +169,7 @@ function TheQuartermaster:CreateVaultSection(parent, vaultData)
     
     local title = section:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", 0, 0)
-    title:SetText("|cffffcc00Great Vault|r")
+    title:SetText(L["CFFFFCC00GREAT_VAULT_R"])
     
     -- Group activities by type
     local grouped = { Raid = {}, ["Mythic+"] = {}, PvP = {} }
@@ -202,7 +202,7 @@ function TheQuartermaster:CreateVaultSection(parent, vaultData)
     if #vaultData == 0 then
         local noData = section:CreateFontString(nil, "OVERLAY", "GameFontSmall")
         noData:SetPoint("TOPLEFT", 5, -20)
-        noData:SetText("|cff888888No vault data|r")
+        noData:SetText(L["CFF888888NO_VAULT_DATA_R"])
     end
     
     parent.vaultSection = section
@@ -220,7 +220,7 @@ function TheQuartermaster:CreateMythicPlusSection(parent, mythicData)
     
     local title = section:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", 0, 0)
-    title:SetText("|cffffcc00Mythic+|r")
+    title:SetText(L["CFFFFCC00MYTHIC_R"])
     
     local yOffset = -20
     
@@ -254,7 +254,7 @@ function TheQuartermaster:CreateMythicPlusSection(parent, mythicData)
     if not mythicData.keystone and not mythicData.weeklyBest then
         local noData = section:CreateFontString(nil, "OVERLAY", "GameFontSmall")
         noData:SetPoint("TOPLEFT", 5, -20)
-        noData:SetText("|cff888888No keystone|r")
+        noData:SetText(L["CFF888888NO_KEYSTONE_R"])
     end
     
     parent.mythicSection = section
@@ -272,7 +272,7 @@ function TheQuartermaster:CreateLockoutsSection(parent, lockoutData)
     
     local title = section:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     title:SetPoint("TOPLEFT", 0, 0)
-    title:SetText("|cffffcc00Raid Lockouts|r")
+    title:SetText(L["CFFFFCC00RAID_LOCKOUTS_R"])
     
     local yOffset = -20
     
@@ -309,7 +309,7 @@ function TheQuartermaster:CreateLockoutsSection(parent, lockoutData)
     if #lockoutData == 0 then
         local noData = section:CreateFontString(nil, "OVERLAY", "GameFontSmall")
         noData:SetPoint("TOPLEFT", 5, -20)
-        noData:SetText("|cff888888No lockouts|r")
+        noData:SetText(L["CFF888888NO_LOCKOUTS_R"])
     end
     
     -- Show "+ X more" if there are more lockouts

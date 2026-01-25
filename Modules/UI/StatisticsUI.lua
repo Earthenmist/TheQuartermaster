@@ -6,6 +6,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 -- Import shared UI components (always get fresh reference)
 local CreateCard = ns.UI_CreateCard
 local FormatGold = ns.UI_FormatGold
@@ -59,7 +61,7 @@ function TheQuartermaster:DrawStatistics(parent)
     local subtitleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)
     subtitleText:SetTextColor(0.6, 0.6, 0.6)
-    subtitleText:SetText("Collection progress, gold, and storage overview")
+    subtitleText:SetText(L["COLLECTION_PROGRESS_GOLD_AND_STORAGE_OVERVIEW"])
     
     yOffset = yOffset + 75 -- Reduced spacing
     
@@ -174,7 +176,7 @@ function TheQuartermaster:DrawStatistics(parent)
 
     local achLabel = achCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     achLabel:SetPoint("TOPLEFT", achIcon, "TOPRIGHT", 12, -2)
-    achLabel:SetText("ACHIEVEMENT POINTS")
+    achLabel:SetText(L["ACHIEVEMENT_POINTS"])
     achLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local achValue = achCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -183,7 +185,7 @@ function TheQuartermaster:DrawStatistics(parent)
 
     local achNote = achCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     achNote:SetPoint("BOTTOMRIGHT", -10, 10)
-    achNote:SetText("|cff888888Account-wide|r")
+    achNote:SetText(L["CFF888888ACCOUNT_WIDE_R"])
     achNote:SetTextColor(0.5, 0.5, 0.5)
 
     -- Total Characters
@@ -198,7 +200,7 @@ function TheQuartermaster:DrawStatistics(parent)
 
     local charLabel = charCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     charLabel:SetPoint("TOPLEFT", charIcon, "TOPRIGHT", 12, -2)
-    charLabel:SetText("TOTAL CHARACTERS")
+    charLabel:SetText(L["TOTAL_CHARACTERS"])
     charLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local COLORS = GetCOLORS()
@@ -211,7 +213,7 @@ function TheQuartermaster:DrawStatistics(parent)
 
     local charNote = charCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     charNote:SetPoint("BOTTOMRIGHT", -10, 10)
-    charNote:SetText("|cff888888Account-wide|r")
+    charNote:SetText(L["CFF888888ACCOUNT_WIDE_R"])
     charNote:SetTextColor(0.5, 0.5, 0.5)
 
     -- Total Gold (respects Discretion Mode via FormatGold)
@@ -227,7 +229,7 @@ function TheQuartermaster:DrawStatistics(parent)
 
     local goldLabel = goldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     goldLabel:SetPoint("TOPLEFT", goldIcon, "TOPRIGHT", 12, -2)
-    goldLabel:SetText("TOTAL GOLD")
+    goldLabel:SetText(L["TOTAL_GOLD"])
     goldLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local goldValue = goldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -236,7 +238,7 @@ function TheQuartermaster:DrawStatistics(parent)
 
     local goldNote = goldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     goldNote:SetPoint("BOTTOMRIGHT", -10, 10)
-    goldNote:SetText("|cff888888Account-wide|r")
+    goldNote:SetText(L["CFF888888ACCOUNT_WIDE_R"])
     goldNote:SetTextColor(0.5, 0.5, 0.5)
 
     yOffset = yOffset + 100
@@ -254,7 +256,7 @@ function TheQuartermaster:DrawStatistics(parent)
     
     local mountLabel = mountCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     mountLabel:SetPoint("TOPLEFT", mountIcon, "TOPRIGHT", 12, -2)
-    mountLabel:SetText("MOUNTS COLLECTED")
+    mountLabel:SetText(L["MOUNTS_COLLECTED"])
     mountLabel:SetTextColor(0.6, 0.6, 0.6)
     
     local mountValue = mountCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -263,7 +265,7 @@ function TheQuartermaster:DrawStatistics(parent)
     
     local mountNote = mountCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     mountNote:SetPoint("BOTTOMRIGHT", -10, 10)
-    mountNote:SetText("|cff888888Account-wide|r")
+    mountNote:SetText(L["CFF888888ACCOUNT_WIDE_R"])
     mountNote:SetTextColor(0.5, 0.5, 0.5)
     
     -- Pet Card (Center)
@@ -278,7 +280,7 @@ function TheQuartermaster:DrawStatistics(parent)
     
     local petLabel = petCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     petLabel:SetPoint("TOPLEFT", petIcon, "TOPRIGHT", 12, -2)
-    petLabel:SetText("TOTAL COMPANIONS")
+    petLabel:SetText(L["TOTAL_COMPANIONS"])
     petLabel:SetTextColor(0.6, 0.6, 0.6)
     
     local petValue = petCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -287,7 +289,7 @@ function TheQuartermaster:DrawStatistics(parent)
     
     local petNote = petCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     petNote:SetPoint("BOTTOMRIGHT", -10, 10)
-    petNote:SetText("|cff888888Account-wide|r")
+    petNote:SetText(L["CFF888888ACCOUNT_WIDE_R"])
     petNote:SetTextColor(0.5, 0.5, 0.5)
     
     -- Toys Card (Right)
@@ -313,7 +315,7 @@ function TheQuartermaster:DrawStatistics(parent)
     
     local toyNote = toyCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     toyNote:SetPoint("BOTTOMRIGHT", -10, 10)
-    toyNote:SetText("|cff888888Account-wide|r")
+    toyNote:SetText(L["CFF888888ACCOUNT_WIDE_R"])
     toyNote:SetTextColor(0.5, 0.5, 0.5)
     
     yOffset = yOffset + 100
@@ -449,7 +451,7 @@ function TheQuartermaster:DrawStatistics(parent)
 
     local playedLabel = playedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     playedLabel:SetPoint("TOPLEFT", playedIcon, "TOPRIGHT", 12, -2)
-    playedLabel:SetText("TOTAL PLAYED TIME")
+    playedLabel:SetText(L["TOTAL_PLAYED_TIME"])
     playedLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local playedValue = playedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -458,7 +460,7 @@ function TheQuartermaster:DrawStatistics(parent)
 
     local playedNote = playedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     playedNote:SetPoint("BOTTOMRIGHT", -10, 10)
-    playedNote:SetText("|cff888888Account-wide|r")
+    playedNote:SetText(L["CFF888888ACCOUNT_WIDE_R"])
     playedNote:SetTextColor(0.5, 0.5, 0.5)
 
     -- Highest Item Level
@@ -473,7 +475,7 @@ function TheQuartermaster:DrawStatistics(parent)
 
     local ilvlLabel = ilvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     ilvlLabel:SetPoint("TOPLEFT", ilvlIcon, "TOPRIGHT", 12, -2)
-    ilvlLabel:SetText("HIGHEST ITEM LEVEL")
+    ilvlLabel:SetText(L["HIGHEST_ITEM_LEVEL"])
     ilvlLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local ilvlNameText = ilvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -503,7 +505,7 @@ function TheQuartermaster:DrawStatistics(parent)
                 highestIlvlName))
         end
     else
-        ilvlNameText:SetText("|cff9aa0a6--|r")
+        ilvlNameText:SetText(L["CFF9AA0A6_R"])
     end
 
     local ilvlSub = ilvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -511,7 +513,7 @@ function TheQuartermaster:DrawStatistics(parent)
     if highestIlvl and highestIlvl > 0 then
         ilvlSub:SetText("|cff888888iLvl " .. string.format("%.1f", highestIlvl) .. "|r")
     else
-        ilvlSub:SetText("|cff888888--|r")
+        ilvlSub:SetText(L["CFF888888_R"])
     end
     ilvlSub:SetTextColor(0.5, 0.5, 0.5)
 
@@ -528,7 +530,7 @@ function TheQuartermaster:DrawStatistics(parent)
 
     local mostLabel = mostCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     mostLabel:SetPoint("TOPLEFT", mostIcon, "TOPRIGHT", 12, -2)
-    mostLabel:SetText("MOST PLAYED CHARACTER")
+    mostLabel:SetText(L["MOST_PLAYED_CHARACTER"])
     mostLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local mostValue = mostCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -559,7 +561,7 @@ function TheQuartermaster:DrawStatistics(parent)
         end
         mostValue:SetTextColor(1, 1, 1)
     else
-        mostValue:SetText("|cff9aa0a6--|r")
+        mostValue:SetText(L["CFF9AA0A6_R"])
         mostValue:SetTextColor(1, 1, 1)
     end
 

@@ -6,6 +6,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 -- Import shared UI components (always get fresh reference)
 local CreateCard = ns.UI_CreateCard
 local CreateCollapsibleHeader = ns.UI_CreateCollapsibleHeader
@@ -166,7 +168,7 @@ function TheQuartermaster:DrawPvEProgress(parent)
     local subtitleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)
     subtitleText:SetTextColor(0.6, 0.6, 0.6)
-    subtitleText:SetText("Great Vault, Raid Lockouts & Mythic+ across your Warband")
+    subtitleText:SetText(L["GREAT_VAULT_RAID_LOCKOUTS_MYTHIC_ACROSS_YOUR_WARBAND"])
     
     -- Weekly reset timer
     local resetText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -256,17 +258,17 @@ end)
         
         local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
         emptyText:SetPoint("TOP", 0, -yOffset - 130)
-        emptyText:SetText("|cff666666No Characters Found|r")
+        emptyText:SetText(L["CFF666666NO_CHARACTERS_FOUND_R"])
         
         local emptyDesc = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         emptyDesc:SetPoint("TOP", 0, -yOffset - 160)
         emptyDesc:SetTextColor(0.6, 0.6, 0.6)
-        emptyDesc:SetText("Log in to any character to start tracking PvE progress")
+        emptyDesc:SetText(L["LOG_IN_TO_ANY_CHARACTER_TO_START_TRACKING_PVE_PROGRESS"])
         
         local emptyHint = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         emptyHint:SetPoint("TOP", 0, -yOffset - 185)
         emptyHint:SetTextColor(0.5, 0.5, 0.5)
-        emptyHint:SetText("Great Vault, Mythic+ and Raid Lockouts will be displayed here")
+        emptyHint:SetText(L["GREAT_VAULT_MYTHIC_AND_RAID_LOCKOUTS_WILL_BE_DISPLAYED_HERE"])
         
         return yOffset + 240
     end
@@ -333,9 +335,9 @@ end)
         favButton:SetScript("OnEnter", function(btn)
             GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
             if isFavorite then
-                GameTooltip:SetText("|cffffd700Favorite|r\nClick to remove")
+                GameTooltip:SetText(L["CFFFFD700FAVORITE_R_NCLICK_TO_REMOVE"])
             else
-                GameTooltip:SetText("Add to favorites")
+                GameTooltip:SetText(L["ADD_TO_FAVORITES"])
             end
             GameTooltip:Show()
         end)
@@ -361,7 +363,7 @@ end)
             
             local vaultText = vaultContainer:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             vaultText:SetPoint("LEFT", vaultIcon, "RIGHT", 4, 0)
-            vaultText:SetText("Great Vault")
+            vaultText:SetText(L["GREAT_VAULT"])
             vaultText:SetTextColor(0.9, 0.9, 0.9)
             
             local checkmark = vaultContainer:CreateTexture(nil, "OVERLAY")
@@ -393,7 +395,7 @@ end)
 local vaultTitle = vaultCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 vaultTitle:SetPoint("TOP", vaultCard, "TOP", 0, -15)
 vaultTitle:SetJustifyH("CENTER")
-vaultTitle:SetText("|cffffcc00Great Vault|r")
+vaultTitle:SetText(L["CFFFFCC00GREAT_VAULT_R"])
             
             -- Helper function to get WoW icon textures for vault activity types
             local function GetVaultTypeIcon(typeName)
@@ -644,7 +646,7 @@ slotFrame:EnableMouse(true)
                         if threshold > 0 then
                             emptyText:SetText(string.format("|cff888888%d|r|cff666666/|r|cff888888%d|r", 0, threshold))
                         else
-                            emptyText:SetText("|cff666666-|r")
+                            emptyText:SetText(L["CFF666666_R_2"])
                         end
                     end
                 end
@@ -655,7 +657,7 @@ slotFrame:EnableMouse(true)
         else
                 local noVault = vaultCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
                 noVault:SetPoint("CENTER", vaultCard, "CENTER", 0, 0)
-            noVault:SetText("|cff666666No vault data|r")
+            noVault:SetText(L["CFF666666NO_VAULT_DATA_R"])
             end
             
             -- === CARD 2: M+ DUNGEONS (35%) ===
@@ -746,12 +748,12 @@ slotFrame:EnableMouse(true)
                         -- "Not Done" text inside icon - using GameFont
                         local notDone = iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
                         notDone:SetPoint("CENTER", iconFrame, "CENTER", 0, 0)
-                        notDone:SetText("|cff888888?|r")  -- Question mark instead of dash
+                        notDone:SetText(L["CFF888888_R_2"])  -- Question mark instead of dash
                         
                         -- Dash below - using GameFont
                         local zeroScore = iconFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
                         zeroScore:SetPoint("TOP", iconFrame, "BOTTOM", 0, -3)
-                        zeroScore:SetText("|cff666666-|r")
+                        zeroScore:SetText(L["CFF666666_R_2"])
                     end
                     
                     iconFrame:SetScript("OnEnter", function(self)
@@ -770,7 +772,7 @@ slotFrame:EnableMouse(true)
             else
                 local noData = mplusCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
                 noData:SetPoint("TOPLEFT", 15, -mplusY)
-                noData:SetText("|cff666666No data|r")
+                noData:SetText(L["CFF666666NO_DATA_R"])
             end
             
             -- === CARD 3: RAID LOCKOUTS (35%) ===
@@ -782,7 +784,7 @@ slotFrame:EnableMouse(true)
 	            local lockoutTitle = lockoutCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 	            lockoutTitle:SetPoint("TOP", lockoutCard, "TOP", 0, -15)
 	            lockoutTitle:SetJustifyH("CENTER")
-	            lockoutTitle:SetText("|cffffcc00Raid Lockouts|r")
+	            lockoutTitle:SetText(L["CFFFFCC00RAID_LOCKOUTS_R"])
 
             -- Pull saved raid lockouts for this character (captured during scan)
             local lockouts = nil
@@ -817,7 +819,7 @@ slotFrame:EnableMouse(true)
             if #raids == 0 then
                 local noLockouts = lockoutCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
                 noLockouts:SetPoint("TOPLEFT", 15, -lockoutY)
-                noLockouts:SetText("|cff666666No active raid lockouts|r")
+                noLockouts:SetText(L["CFF666666NO_ACTIVE_RAID_LOCKOUTS_R"])
             else
                 -- Show up to 3 lockouts (current tier usually appears here when saved)
                 local maxShow = math.min(3, #raids)
@@ -853,4 +855,3 @@ cardContainer:SetHeight(cardHeight)
     
     return yOffset + 20
 end
-

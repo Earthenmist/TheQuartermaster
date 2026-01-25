@@ -6,6 +6,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 -- Feature Flags
 local ENABLE_GUILD_BANK = false -- Set to true when ready to enable Guild Bank features
 
@@ -151,7 +153,7 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
         local msg = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         msg:SetPoint("TOPLEFT", 18, -yOffset)
         msg:SetTextColor(0.7, 0.7, 0.7)
-        msg:SetText("No slot data cached yet. Open your bank to scan this tab.")
+        msg:SetText(L["NO_SLOT_DATA_CACHED_YET_OPEN_YOUR_BANK_TO_SCAN_THIS_TAB"])
         return yOffset + 30
     end
 
@@ -334,7 +336,7 @@ local function DrawWarbandBankSlotView(self, parent, yOffset, width, itemsSearch
         local msg = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         msg:SetPoint("TOPLEFT", 18, -yOffset)
         msg:SetTextColor(0.7, 0.7, 0.7)
-        msg:SetText("No slot data cached yet. Open your Warband Bank to scan this tab.")
+        msg:SetText(L["NO_SLOT_DATA_CACHED_YET_OPEN_YOUR_WARBAND_BANK_TO_SCAN_THIS"])
         return yOffset + 30
     end
 
@@ -539,7 +541,7 @@ end
     end
     local invText = inventoryBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     invText:SetPoint("CENTER")
-    invText:SetText("Inventory")
+    invText:SetText(L["INVENTORY"])
     invText:SetTextColor(1, 1, 1)
     inventoryBtn:SetScript("OnClick", function()
         if (TheQuartermaster.db and TheQuartermaster.db.profile and TheQuartermaster.db.profile.inventoryViewMode) == "list" then
@@ -598,7 +600,7 @@ end
     
     local personalText = personalBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     personalText:SetPoint("CENTER")
-    personalText:SetText("Personal Bank")
+    personalText:SetText(L["PERSONAL_BANK"])
     personalText:SetTextColor(1, 1, 1)  -- Fixed white color
     
     personalBtn:SetScript("OnClick", function()
@@ -655,7 +657,7 @@ end
     
     local warbandText = warbandBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     warbandText:SetPoint("CENTER")
-    warbandText:SetText("Warband Bank")
+    warbandText:SetText(L["WARBAND_BANK"])
     warbandText:SetTextColor(1, 1, 1)  -- Fixed white color
     
     warbandBtn:SetScript("OnClick", function()
@@ -713,7 +715,7 @@ end
         
         local guildText = guildBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         guildText:SetPoint("CENTER")
-        guildText:SetText("Guild Bank")
+        guildText:SetText(L["GUILD_BANK"])
         guildText:SetTextColor(1, 1, 1)  -- Fixed white color
         
         -- Check if player is in a guild
@@ -1083,7 +1085,7 @@ end
                 local msg = grid:CreateFontString(nil, "OVERLAY", "GameFontNormal")
                 msg:SetPoint("TOPLEFT", 6, -6)
                 msg:SetTextColor(0.7, 0.7, 0.7)
-                msg:SetText("No slot data cached yet.")
+                msg:SetText(L["NO_SLOT_DATA_CACHED_YET"])
                 grid:SetHeight(30)
                 return gridY + 34
             end
@@ -1227,7 +1229,7 @@ end
                 local msg = grid:CreateFontString(nil, "OVERLAY", "GameFontNormal")
                 msg:SetPoint("TOPLEFT", 6, -6)
                 msg:SetTextColor(0.7, 0.7, 0.7)
-                msg:SetText("No slot data cached yet. Open your bank once to scan slots.")
+                msg:SetText(L["NO_SLOT_DATA_CACHED_YET_OPEN_YOUR_BANK_ONCE_TO_SCAN_SLOTS"])
                 grid:SetHeight(30)
                 return gridY + 34
             end

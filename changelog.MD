@@ -1,3 +1,20 @@
+## 0.2.139 - 2026-01-25
+- Hotfix: Restored AceLocale locale access across modules after localization pass.
+- Hotfix: Fixed "What's New" update popup close button soft-lock.
+- Localization: Added common button label fallbacks (OK/Continue/Close).
+
+## 0.2.138 - 2026-01-25
+- Localization maintenance: refreshed enUS locale, localized UI/options text, and removed unused strings.
+
+## 0.2.137
+- Fixed Scanner.lua syntax error caused by leftover end after cleanup pass.
+- No functional changes.
+
+## 0.2.136 - 2026-01-25
+- Maintenance: Removed unused deprecated reputation categorization helper
+- Maintenance: Fixed defaults table structure for per-character inventory cache
+- Maintenance: Minor code tidy-up (no functional UI changes)
+
 ## 0.2.135 - 2026-01-25
 - Reputations: Fixed Paragon detection for sub-factions (Classic reps only show Paragon once Exalted and the base bar is capped)
 - Reputations: Renown factions only show Paragon once max Renown is reached
@@ -219,3 +236,6 @@ This version is the first internal “stable” baseline and is not a public rel
 ## 0.2.134 (2026-01-25)
 - Reputations: Fixed premature Paragon detection for sub-factions; Paragon now only displays when actually active (maxed Renown or Exalted & capped).
 - Slash: `/tq resetrep` now prompts for a safe reload instead of calling protected reload functions.
+
+## 0.2.138 (2026-01-25)
+- Localization maintenance: refreshed enUS locale, localized UI/options text, and removed unused strings.

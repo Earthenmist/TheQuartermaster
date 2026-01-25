@@ -220,7 +220,7 @@ function TheQuartermaster:CreateMainWindow()
     -- Title
     local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("LEFT", icon, "RIGHT", 8, 0)
-    title:SetText("|cffffffffThe Quartermaster|r")  -- Always white
+    title:SetText(L["CFFFFFFFFTHE_QUARTERMASTER_R"])  -- Always white
     title:SetTextColor(1, 1, 1)  -- Force white color
     f.title = title  -- Store reference (but don't change color)
     
@@ -250,7 +250,7 @@ function TheQuartermaster:CreateMainWindow()
     end
 
     local discretionLabel = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    discretionLabel:SetText("Discretion Mode")
+    discretionLabel:SetText(L["DISCRETION_MODE"])
 	-- Text colour must remain readable against dynamic (class-colour) headers.
 	-- We auto-pick a light/dark colour based on the header's current theme colour.
 	local function ApplyDiscretionLabelColor()
@@ -282,7 +282,7 @@ function TheQuartermaster:CreateMainWindow()
     end)
     discretionCB:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText("Discretion Mode")
+        GameTooltip:SetText(L["DISCRETION_MODE"])
         GameTooltip:AddLine("When enabled, all gold amounts are hidden across the addon.", 0.8, 0.8, 0.8, true)
         GameTooltip:Show()
     end)
@@ -461,7 +461,7 @@ function TheQuartermaster:CreateMainWindow()
     local classicBtn = CreateFrame("Button", nil, footer, "UIPanelButtonTemplate, BackdropTemplate")
     classicBtn:SetSize(90, 24)
     classicBtn:SetPoint("RIGHT", -10, 0)
-    classicBtn:SetText("Classic Bank")
+    classicBtn:SetText(L["CLASSIC_BANK"])
     -- Theme this footer button to match the Quartermaster UI
     do
         -- Remove Blizzard button textures so our backdrop is the visual
@@ -492,7 +492,7 @@ function TheQuartermaster:CreateMainWindow()
     settingsBtn:SetScript("OnClick", function() TheQuartermaster:OpenOptions() end)
     settingsBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText("Settings")
+        GameTooltip:SetText(L["SETTINGS"])
         GameTooltip:Show()
     end)
     settingsBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -505,7 +505,7 @@ function TheQuartermaster:CreateMainWindow()
     infoBtn:SetScript("OnClick", function() TheQuartermaster:ShowInfoDialog() end)
     infoBtn:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText("Information")
+        GameTooltip:SetText(L["INFORMATION"])
         GameTooltip:Show()
     end)
     infoBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -874,12 +874,12 @@ function TheQuartermaster:UpdateFooter()
         -- Check if recently scanned (within 60 seconds while bank is open)
         local isUpToDate = self.bankIsOpen and lastScan > 0 and (time() - lastScan < 60)
         if isUpToDate then
-            mainFrame.scanStatus:SetText("|cff00ff00Up-to-Date|r")
+            mainFrame.scanStatus:SetText(L["CFF00FF00UP_TO_DATE_R"])
         elseif lastScan > 0 then
             local scanText = date("%m/%d %H:%M", lastScan)
             mainFrame.scanStatus:SetText("|cffaaaaaa" .. scanText .. "|r")
         else
-            mainFrame.scanStatus:SetText("|cffff6600Never Scanned|r")
+            mainFrame.scanStatus:SetText(L["CFFFF6600NEVER_SCANNED_R"])
         end
     end
 end

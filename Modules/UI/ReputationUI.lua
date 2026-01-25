@@ -8,6 +8,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 -- Import shared UI components
 local CreateCard = ns.UI_CreateCard
 local CreateCollapsibleHeader = ns.UI_CreateCollapsibleHeader
@@ -507,7 +509,7 @@ local function CreateReputationRow(parent, reputation, factionID, rowIndex, inde
         -- Separator - always at the same position now
         local separator = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         separator:SetPoint("LEFT", numberText, "RIGHT", 4, 0)
-        separator:SetText("|cff666666-|r")
+        separator:SetText(L["CFF666666_R_2"])
         
         -- Faction Name (starts after separator)
         local nameText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -538,7 +540,7 @@ local function CreateReputationRow(parent, reputation, factionID, rowIndex, inde
         badgeText:SetWidth(150)
         
         if characterInfo.isAccountWide then
-            badgeText:SetText("|cff666666(|r|cff00ff00Account-Wide|r|cff666666)|r")
+            badgeText:SetText(L["CFF666666_R_CFF00FF00ACCOUNT_WIDE_R_CFF666666_R"])
         elseif characterInfo.name then
             local classColor = RAID_CLASS_COLORS[characterInfo.class] or {r=1, g=1, b=1}
             local classHex = format("%02x%02x%02x", classColor.r*255, classColor.g*255, classColor.b*255)
@@ -871,14 +873,14 @@ function TheQuartermaster:DrawReputationTab(parent)
         errorText:SetPoint("LEFT", errorIcon, "RIGHT", 10, 5)
         errorText:SetPoint("RIGHT", -10, 5)
         errorText:SetJustifyH("LEFT")
-        errorText:SetText("|cffff4444Reputation API Not Available|r")
+        errorText:SetText(L["CFFFF4444REPUTATION_API_NOT_AVAILABLE_R"])
         
         local errorDesc = errorFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         errorDesc:SetPoint("TOPLEFT", errorIcon, "TOPRIGHT", 10, -15)
         errorDesc:SetPoint("RIGHT", -10, 0)
         errorDesc:SetJustifyH("LEFT")
         errorDesc:SetTextColor(0.9, 0.9, 0.9)
-        errorDesc:SetText("The C_Reputation API is not available on this server. This feature requires WoW 11.0+ (The War Within).")
+        errorDesc:SetText(L["THE_C_REPUTATION_API_IS_NOT_AVAILABLE_ON_THIS_SERVER_THIS_FE"])
         
         return yOffset + 120
     end
@@ -954,7 +956,7 @@ function TheQuartermaster:DrawReputationTab(parent)
     local subtitleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)
     subtitleText:SetTextColor(0.6, 0.6, 0.6)
-    subtitleText:SetText("Track all active reputations and Renown in Blizzard's order")
+    subtitleText:SetText(L["TRACK_ALL_ACTIVE_REPUTATIONS_AND_RENOWN_IN_BLIZZARDS_ORDER"])
     
     -- Toggle button for Filtered/Non-Filtered view
     local viewMode = self.db.profile.reputationViewMode or "all"
@@ -990,9 +992,9 @@ function TheQuartermaster:DrawReputationTab(parent)
     local toggleText = toggleBtn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     toggleText:SetPoint("LEFT", toggleIcon, "RIGHT", 6, 0)
     if viewMode == "filtered" then
-        toggleText:SetText("View: Filtered")
+        toggleText:SetText(L["VIEW_FILTERED"])
     else
-        toggleText:SetText("View: All Characters")
+        toggleText:SetText(L["VIEW_ALL_CHARACTERS"])
     end
     toggleText:SetTextColor(0.9, 0.9, 0.9)
     
@@ -1238,7 +1240,7 @@ function TheQuartermaster:DrawReputationTab(parent)
                 local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
                 emptyText:SetPoint("TOPLEFT", 30, -yOffset)
                 emptyText:SetTextColor(0.6, 0.6, 0.6)
-                emptyText:SetText("No account-wide reputations")
+                emptyText:SetText(L["NO_ACCOUNT_WIDE_REPUTATIONS"])
                 yOffset = yOffset + 30
             else
         
@@ -1398,7 +1400,7 @@ function TheQuartermaster:DrawReputationTab(parent)
                 local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
                 emptyText:SetPoint("TOPLEFT", 30, -yOffset)
                 emptyText:SetTextColor(0.6, 0.6, 0.6)
-                emptyText:SetText("No character-based reputations")
+                emptyText:SetText(L["NO_CHARACTER_BASED_REPUTATIONS"])
                 yOffset = yOffset + 30
             else
                 -- Render each expansion header (Character-Based)
@@ -1765,14 +1767,14 @@ function TheQuartermaster:DrawReputationTab(parent)
     noticeText:SetPoint("LEFT", noticeIcon, "RIGHT", 10, 5)
     noticeText:SetPoint("RIGHT", -10, 5)
     noticeText:SetJustifyH("LEFT")
-    noticeText:SetText("|cffffcc00Reputation Tracking|r")
+    noticeText:SetText(L["CFFFFCC00REPUTATION_TRACKING_R"])
     
     local noticeSubText = noticeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     noticeSubText:SetPoint("TOPLEFT", noticeIcon, "TOPRIGHT", 10, -15)
     noticeSubText:SetPoint("RIGHT", -10, 0)
     noticeSubText:SetJustifyH("LEFT")
     noticeSubText:SetTextColor(0.8, 0.8, 0.8)
-    noticeSubText:SetText("Reputations are scanned automatically on login and when changed. Use the in-game reputation panel to view detailed information and rewards.")
+    noticeSubText:SetText(L["REPUTATIONS_ARE_SCANNED_AUTOMATICALLY_ON_LOGIN_AND_WHEN_CHAN"])
     
     yOffset = yOffset + 75
     

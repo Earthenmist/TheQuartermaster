@@ -6,18 +6,20 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 -- Current addon version
-local CURRENT_VERSION = "0.2.135"
+local CURRENT_VERSION = "0.2.142"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.135",
+    version = "0.2.142",
     date = "2026-01-25",
     changes = {
-        "Reputations: Fixed Paragon detection for sub-factions (Classic reps only show Paragon once Exalted and the base bar is capped)",
-        "Reputations: Renown factions only show Paragon once max Renown is reached",
-        "Reputations: /tq resetrep now prompts for a user-confirmed reload (prevents ADDON_ACTION_BLOCKED)",
-        "Fix: Resolved a Lua syntax error introduced in 0.2.134",
+        
+        "Localization maintenance: refreshed enUS locale, localized UI/options text, and removed unused strings.","Maintenance: Removed unused deprecated reputation categorization helper",
+        "Maintenance: Fixed defaults table structure for per-character inventory cache",
+        "Maintenance: Minor code tidy-up (no functional UI changes)",
     }
 }
 --[[============================================================================
@@ -186,7 +188,7 @@ function TheQuartermaster:ShowUpdateNotification(changelogData)
     
     local closeBtnText = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     closeBtnText:SetPoint("CENTER")
-    closeBtnText:SetText("Got it!")
+    closeBtnText:SetText(L["GOT_IT"])
     
     closeBtn:SetScript("OnClick", function()
         -- Mark version as seen
@@ -354,18 +356,18 @@ function TheQuartermaster:ShowToastNotification(config)
     
     local closeBtnText = closeBtn:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     closeBtnText:SetPoint("CENTER")
-    closeBtnText:SetText("|cff888888×|r")
+    closeBtnText:SetText(L["CFF888888_R_3"])
     
     closeBtn:SetScript("OnClick", function()
         CloseToast()
     end)
     
     closeBtn:SetScript("OnEnter", function()
-        closeBtnText:SetText("|cffffffff×|r")
+        closeBtnText:SetText(L["CFFFFFFFF_R"])
     end)
     
     closeBtn:SetScript("OnLeave", function()
-        closeBtnText:SetText("|cff888888×|r")
+        closeBtnText:SetText(L["CFF888888_R_3"])
     end)
     
     -- Auto-dismiss after animation completes + delay
@@ -450,7 +452,7 @@ function TheQuartermaster:ShowVaultReminder(data)
     -- Use the generic toast notification system (with stacking support)
     self:ShowToastNotification({
         icon = "Interface\\Icons\\achievement_guildperk_bountifulbags",
-        title = "Weekly Vault Ready!",
+        title = L["WEEKLY_VAULT_READY"],
         message = "You have unclaimed Weekly Vault Rewards",
         autoDismiss = 10, -- 10 seconds
         onClose = function()
@@ -893,6 +895,5 @@ function TheQuartermaster:TestVaultCheck()
     
     self:Print("|cff00ccff======================|r")
 end
-
 
 

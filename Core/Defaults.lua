@@ -183,11 +183,21 @@ ns.DEFAULTS = {
         -- Personal bank cache (per-character)
         personalBank = {
             items = {},
-        inventory = { items = {}, bagSizes = {}, bagIDs = {}, usedSlots = 0, totalSlots = 0, lastScan = 0 },
             bagSizes = {}, -- { [bagIndex] = numSlots }
             bagIDs = {},   -- { [bagIndex] = bagID }
             lastScan = 0,
         },
+
+        -- Inventory cache (per-character)
+        inventory = {
+            items = {},
+            bagSizes = {},
+            bagIDs = {},
+            usedSlots = 0,
+            totalSlots = 0,
+            lastScan = 0,
+        },
+
         lastKnownGold = 0,
     },
 }

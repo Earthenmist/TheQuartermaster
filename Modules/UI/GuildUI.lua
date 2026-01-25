@@ -6,6 +6,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 -- Import shared UI components (always get fresh reference)
 local function GetCOLORS()
     return ns.UI_COLORS
@@ -206,7 +208,7 @@ function TheQuartermaster:DrawGuildSummaryList(parent)
 
     local pLabel = playedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     pLabel:SetPoint("TOPLEFT", pIcon, "TOPRIGHT", 12, -2)
-    pLabel:SetText("MOST POPULAR GUILD")
+    pLabel:SetText(L["MOST_POPULAR_GUILD"])
     pLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local pValue = playedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -231,7 +233,7 @@ function TheQuartermaster:DrawGuildSummaryList(parent)
 
     local mLabel = maxLvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     mLabel:SetPoint("TOPLEFT", mIcon, "TOPRIGHT", 12, -2)
-    mLabel:SetText("CHARACTERS IN A GUILD")
+    mLabel:SetText(L["CHARACTERS_IN_A_GUILD"])
     mLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local mValue = maxLvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -257,7 +259,7 @@ function TheQuartermaster:DrawGuildSummaryList(parent)
 
     local rLabel = restedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     rLabel:SetPoint("TOPLEFT", rIcon, "TOPRIGHT", 12, -2)
-    rLabel:SetText("CHARACTERS UNGUILDED")
+    rLabel:SetText(L["CHARACTERS_UNGUILDED"])
     rLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local rValue = restedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -367,12 +369,12 @@ function TheQuartermaster:DrawGuildSummaryList(parent)
         
         local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         emptyText:SetPoint("TOP", 0, -yOffset - 90)
-        emptyText:SetText("|cff666666No characters tracked yet|r")
+        emptyText:SetText(L["CFF666666NO_CHARACTERS_TRACKED_YET_R"])
         
         local emptyDesc = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         emptyDesc:SetPoint("TOP", 0, -yOffset - 115)
         emptyDesc:SetTextColor(0.5, 0.5, 0.5)
-        emptyDesc:SetText("Characters are automatically registered on login")
+        emptyDesc:SetText(L["CHARACTERS_ARE_AUTOMATICALLY_REGISTERED_ON_LOGIN"])
         
         return yOffset + 200
     end
@@ -460,7 +462,7 @@ function TheQuartermaster:DrawGuildSummaryList(parent)
             local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             emptyText:SetPoint("TOPLEFT", 30, -yOffset)
             emptyText:SetTextColor(0.5, 0.5, 0.5)
-            emptyText:SetText("No favorite characters yet. Click the star icon to favorite a character.")
+            emptyText:SetText(L["NO_FAVORITE_CHARACTERS_YET_CLICK_THE_STAR_ICON_TO_FAVORITE_A"])
             yOffset = yOffset + 35
         end
     end
@@ -497,7 +499,7 @@ function TheQuartermaster:DrawGuildSummaryList(parent)
             local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             emptyText:SetPoint("TOPLEFT", 30, -yOffset)
             emptyText:SetTextColor(0.5, 0.5, 0.5)
-            emptyText:SetText("All characters are favorited!")
+            emptyText:SetText(L["ALL_CHARACTERS_ARE_FAVORITED"])
             yOffset = yOffset + 35
         end
     end
@@ -572,9 +574,9 @@ function TheQuartermaster:DrawGuildSummaryRow(parent, char, index, width, yOffse
     favButton:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         if isFavorite then
-            GameTooltip:SetText("|cffffd700Favorite Character|r\nClick to remove from favorites")
+            GameTooltip:SetText(L["CFFFFD700FAVORITE_CHARACTER_R_NCLICK_TO_REMOVE_FROM_FAVORITE"])
         else
-            GameTooltip:SetText("Click to add to favorites\n|cff888888Favorites are always shown at the top|r")
+            GameTooltip:SetText(L["CLICK_TO_ADD_TO_FAVORITES_N_CFF888888FAVORITES_ARE_ALWAYS_SH"])
         end
         GameTooltip:Show()
     end)
@@ -691,7 +693,7 @@ function TheQuartermaster:DrawGuildSummaryRow(parent, char, index, width, yOffse
             upBtn:SetScript("OnEnter", function(self)
                 row.reorderButtons:Show()
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
-                GameTooltip:SetText("Move Up")
+                GameTooltip:SetText(L["MOVE_UP"])
                 GameTooltip:Show()
             end)
             
@@ -723,7 +725,7 @@ function TheQuartermaster:DrawGuildSummaryRow(parent, char, index, width, yOffse
             downBtn:SetScript("OnEnter", function(self)
                 row.reorderButtons:Show()
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
-                GameTooltip:SetText("Move Down")
+                GameTooltip:SetText(L["MOVE_DOWN"])
                 GameTooltip:Show()
             end)
             
@@ -874,7 +876,7 @@ function TheQuartermaster:DrawGuildSummaryRow(parent, char, index, width, yOffse
         
         deleteBtn:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-            GameTooltip:SetText("|cffff5555Delete Character|r\nClick to remove this character's data")
+            GameTooltip:SetText(L["CFFFF5555DELETE_CHARACTER_R_NCLICK_TO_REMOVE_THIS_CHARACTERS"])
             GameTooltip:Show()
         end)
         

@@ -1401,7 +1401,7 @@ end
 function TheQuartermaster:ShowReloadPopup()
     -- Create reload confirmation popup
     StaticPopupDialogs["TheQuartermaster_RELOAD_UI"] = {
-        text = "|cff00ff00Addon settings changed!|r\n\nA UI reload is required to apply changes.\n\nReload now?",
+        text = L["CFF00FF00ADDON_SETTINGS_CHANGED_R_N_NA_UI_RELOAD_IS_REQUIRED"],
         button1 = "Reload",
         button2 = "Later",
         OnAccept = function()

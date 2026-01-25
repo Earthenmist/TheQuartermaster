@@ -12,6 +12,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 local function RGBToHex(r, g, b)
     r = math.max(0, math.min(1, tonumber(r) or 1))
     g = math.max(0, math.min(1, tonumber(g) or 1))
@@ -127,7 +129,7 @@ function TheQuartermaster:InitializeMinimapButton()
     -- Create DataBroker object
     local dataObj = LDB:NewDataObject(ADDON_NAME, {
         type = "launcher",
-        text = "The Quartermaster",
+        text = L["THE_QUARTERMASTER"],
         icon = "Interface\\AddOns\\TheQuartermaster\\Media\\icon",
         
         -- Left-click: Toggle main window

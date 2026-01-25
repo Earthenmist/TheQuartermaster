@@ -6,6 +6,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 --[[
     Show Information Dialog
     Displays addon information, features, and usage instructions
@@ -58,7 +60,7 @@ function TheQuartermaster:ShowInfoDialog()
     -- Title (centered)
     local title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
     title:SetPoint("CENTER", dialog, "TOP", 0, -25)
-    title:SetText("|cffffffffThe Quartermaster|r")
+    title:SetText(L["CFFFFFFFFTHE_QUARTERMASTER_R"])
     
     -- X Close Button (top right)
     local closeBtn = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")
@@ -177,4 +179,3 @@ function TheQuartermaster:ShowInfoDialog()
     
     dialog:Show()
 end
-

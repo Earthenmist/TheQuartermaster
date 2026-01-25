@@ -1,167 +1,236 @@
---[[
-    The Quartermaster - English Localization (Base)
-    
-    This is the default/fallback locale for all other languages.
-    
-    NOTE: Many strings use Blizzard's built-in GlobalStrings for automatic localization!
-    Examples:
-    - CLOSE, SETTINGS, REFRESH, SEARCH → Blizzard globals
-    - ITEM_QUALITY0_DESC through ITEM_QUALITY7_DESC → Quality names (Poor, Common, Rare, etc.)
-    - BAG_FILTER_* → Category names (Equipment, Consumables, etc.)
-    - CHARACTER, STATISTICS, LOCATION_COLON → Tooltip strings
-    
-    These strings are automatically localized by WoW in all supported languages:
-    enUS, deDE, esES, esMX, frFR, itIT, koKR, ptBR, ruRU, zhCN, zhTW
-    
-    Custom strings (The Quartermaster specific) are defined here as fallback.
-]]
+-- TheQuartermaster Localization (enUS)
 
 local ADDON_NAME, ns = ...
+local L = LibStub("AceLocale-3.0"):NewLocale(ADDON_NAME, "enUS", true)
 
----@class TheQuartermasterLocale
-local L = LibStub("AceLocale-3.0"):NewLocale(ADDON_NAME, "enUS", true, true)
 if not L then return end
 
+-- ==============================
 -- General
-L["ADDON_NAME"] = "The Quartermaster"
+-- ==============================
+L["ACHIEVEMENT_POINTS"] = "ACHIEVEMENT POINTS"
 L["ADDON_LOADED"] = "The Quartermaster loaded. Type /tq to open."
-L["VERSION"] = "Version"
-
--- Slash Commands
-L["SLASH_HELP"] = "Available commands:"
-L["SLASH_OPTIONS"] = "Open options panel"
-L["SLASH_SCAN"] = "Scan Warband bank"
-L["SLASH_SHOW"] = "Show/hide main window"
-L["SLASH_DEPOSIT"] = "Open deposit queue"
-L["SLASH_SEARCH"] = "Search for an item"
-
--- Options Panel - General
-L["GENERAL_SETTINGS"] = "General Settings"
-L["GENERAL_SETTINGS_DESC"] = "Configure general addon behavior"
-L["ENABLE_ADDON"] = "Enable Addon"
-L["ENABLE_ADDON_DESC"] = "Enable or disable The Quartermaster functionality"
-L["MINIMAP_ICON"] = "Show Minimap Icon"
-L["MINIMAP_ICON_DESC"] = "Show or hide the minimap button"
-L["DEBUG_MODE"] = "Debug Mode"
-L["DEBUG_MODE_DESC"] = "Enable debug messages in chat"
-
--- Options Panel - Scanning
-L["SCANNING_SETTINGS"] = "Scanning Settings"
-L["SCANNING_SETTINGS_DESC"] = "Configure bank scanning behavior"
-L["AUTO_SCAN"] = "Auto-Scan on Bank Open"
-L["AUTO_SCAN_DESC"] = "Automatically scan Warband bank when opened"
-L["SCAN_DELAY"] = "Scan Throttle Delay"
-L["SCAN_DELAY_DESC"] = "Delay between scan operations (in seconds)"
-
--- Options Panel - Deposit
-L["DEPOSIT_SETTINGS"] = "Deposit Settings"
-L["DEPOSIT_SETTINGS_DESC"] = "Configure item deposit behavior"
-L["GOLD_RESERVE"] = "Gold Reserve"
-L["GOLD_RESERVE_DESC"] = "Minimum gold to keep in personal inventory (in gold)"
-L["AUTO_DEPOSIT_REAGENTS"] = "Auto-Deposit Reagents"
-L["AUTO_DEPOSIT_REAGENTS_DESC"] = "Queue reagents for deposit when bank is opened"
-
--- Options Panel - Display
-L["DISPLAY_SETTINGS"] = "Display Settings"
-L["DISPLAY_SETTINGS_DESC"] = "Configure visual appearance"
-L["SHOW_ITEM_LEVEL"] = "Show Item Level"
-L["SHOW_ITEM_LEVEL_DESC"] = "Display item level on equipment"
-L["SHOW_ITEM_COUNT"] = "Show Item Count"
-L["SHOW_ITEM_COUNT_DESC"] = "Display stack counts on items"
-L["HIGHLIGHT_QUALITY"] = "Highlight by Quality"
-L["HIGHLIGHT_QUALITY_DESC"] = "Add colored borders based on item quality"
-
--- Options Panel - Tabs
-L["TAB_SETTINGS"] = "Tab Settings"
-L["TAB_SETTINGS_DESC"] = "Configure Warband bank tab behavior"
-L["IGNORED_TABS"] = "Ignored Tabs"
-L["IGNORED_TABS_DESC"] = "Select tabs to exclude from scanning and operations"
-L["TAB_1"] = "Warband Tab 1"
-L["TAB_2"] = "Warband Tab 2"
-L["TAB_3"] = "Warband Tab 3"
-L["TAB_4"] = "Warband Tab 4"
-L["TAB_5"] = "Warband Tab 5"
-
--- Scanner Module
-L["SCAN_STARTED"] = "Scanning Warband bank..."
-L["SCAN_COMPLETE"] = "Scan complete. Found %d items in %d slots."
-L["SCAN_FAILED"] = "Scan failed: Warband bank is not open."
-L["SCAN_TAB"] = "Scanning tab %d..."
-L["CACHE_CLEARED"] = "Item cache cleared."
-L["CACHE_UPDATED"] = "Item cache updated."
-
--- Banker Module
+L["ADD_TO_FAVORITES"] = "Add to favorites"
+L["ADVANCED"] = "Advanced"
+L["ALL_CHARACTERS_ARE_FAVORITED"] = "All characters are favorited!"
+L["AMOUNT"] = "Amount:"
+L["AUTOMATICALLY_SCAN_AND_CACHE_YOUR_WARBAND_BANK_ITEMS_WHEN_YO"] = "Automatically scan and cache your Warband Bank items when you open the bank."
+L["AUTOMATION"] = "Automation"
+L["AUTO_SCAN_ITEMS"] = "Auto-Scan Items"
 L["BANK_NOT_OPEN"] = "Warband bank is not open."
-L["DEPOSIT_STARTED"] = "Starting deposit operation..."
-L["DEPOSIT_COMPLETE"] = "Deposit complete. Transferred %d items."
-L["DEPOSIT_CANCELLED"] = "Deposit cancelled."
-L["DEPOSIT_QUEUE_EMPTY"] = "Deposit queue is empty."
+L["BLIZZARD_API_DOES_NOT_SUPPORT_AUTOMATED_CURRENCY_TRANSFERS_P"] = "Blizzard API does not support automated currency transfers. Please use the in-game currency frame to manually transfer Warband currencies."
+L["BLUE_THEME"] = "Blue Theme"
+L["BRIGHT_CYAN_THEME"] = "Bright cyan theme"
+L["BROWSE_ALL_ITEMS_ORGANIZED_BY_TYPE"] = "Browse all items organized by type"
+L["CANCEL"] = "Cancel"
+L["CFF00CCFFTHE_QUARTERMASTER_R_NVIEW_AND_MANAGE_YOUR_WARBAND_B"] = "|cff00ccffThe Quartermaster|r\nView and manage your Warband Bank items from anywhere.\n\n"
+L["CFF00FF00PVE_PROGRESSION_R"] = "|cff00ff00PvE Progression|r"
+L["CFF00FF00UP_TO_DATE_R"] = "|cff00ff00Up-to-Date|r"
+L["CFF666666NO_ACTIVE_RAID_LOCKOUTS_R"] = "|cff666666No active raid lockouts|r"
+L["CFF666666NO_CHARACTERS_FOUND_R"] = "|cff666666No Characters Found|r"
+L["CFF666666NO_CHARACTERS_TRACKED_YET_R"] = "|cff666666No characters tracked yet|r"
+L["CFF666666NO_DATA_R"] = "|cff666666No data|r"
+L["CFF666666NO_VAULT_DATA_R"] = "|cff666666No vault data|r"
+L["CFF666666_R"] = "|cff666666--|r"
+L["CFF666666_R_2"] = "|cff666666-|r"
+L["CFF666666_R_CFF00FF00ACCOUNT_WIDE_R_CFF666666_R"] = "|cff666666(|r|cff00ff00Account-Wide|r|cff666666)|r"
+L["CFF6A0DADTRANSFER_CURRENCY_R"] = "|cff6a0dadTransfer Currency|r"
+L["CFF888888ACCOUNT_WIDE_R"] = "|cff888888Account-wide|r"
+L["CFF888888NO_KEYSTONE_R"] = "|cff888888No keystone|r"
+L["CFF888888NO_LOCKOUTS_R"] = "|cff888888No lockouts|r"
+L["CFF888888NO_VAULT_DATA_R"] = "|cff888888No vault data|r"
+L["CFF888888SELECT_CHARACTER_R"] = "|cff888888Select character...|r"
+L["CFF888888_R"] = "|cff888888--|r"
+L["CFF888888_R_2"] = "|cff888888?|r"
+L["CFF888888_R_3"] = "|cff888888×|r"
+L["CFF88FF88FULLY_RESTED_R"] = "|cff88ff88Fully Rested|r"
+L["CFF9AA0A6_R"] = "|cff9aa0a6--|r"
+L["CFFAAAAAAMAX_LEVEL_R"] = "|cffaaaaaaMax Level|r"
+L["CFFFF0000WIPE_ALL_DATA_R"] = "|cffff0000Wipe All Data|r"
+L["CFFFF0000WIPE_ALL_DATA_R_N_N"] = "|cffff0000WIPE ALL DATA|r\n\n"
+L["CFFFF4444REPUTATION_API_NOT_AVAILABLE_R"] = "|cffff4444Reputation API Not Available|r"
+L["CFFFF5555DELETE_CHARACTER_R_NCLICK_TO_REMOVE_THIS_CHARACTERS"] = "|cffff5555Delete Character|r\nClick to remove this character's data"
+L["CFFFF6600NEVER_SCANNED_R"] = "|cffff6600Never Scanned|r"
+L["CFFFFCC00CURRENCY_TRANSFER_LIMITATION_R"] = "|cffffcc00Currency Transfer Limitation|r"
+L["CFFFFCC00GREAT_VAULT_R"] = "|cffffcc00Great Vault|r"
+L["CFFFFCC00MYTHIC_R"] = "|cffffcc00Mythic+|r"
+L["CFFFFCC00RAID_LOCKOUTS_R"] = "|cffffcc00Raid Lockouts|r"
+L["CFFFFCC00REPUTATION_TRACKING_R"] = "|cffffcc00Reputation Tracking|r"
+L["CFFFFD700FAVORITE_CHARACTER_R_NCLICK_TO_REMOVE_FROM_FAVORITE"] = "|cffffd700Favorite Character|r\nClick to remove from favorites"
+L["CFFFFD700FAVORITE_R_NCLICK_TO_REMOVE"] = "|cffffd700Favorite|r\nClick to remove"
+L["CFFFFFFFFTHE_QUARTERMASTER_R"] = "|cffffffffThe Quartermaster|r"
+L["CFFFFFFFF_R"] = "|cffffffff×|r"
+L["CHARACTERS_ARE_AUTOMATICALLY_REGISTERED_ON_LOGIN"] = "Characters are automatically registered on login"
+L["CHARACTERS_IN_A_GUILD"] = "CHARACTERS IN A GUILD"
+L["CHARACTERS_UNGUILDED"] = "CHARACTERS UNGUILDED"
+L["CHARACTER_MANAGEMENT"] = "Character Management"
+L["CHOOSE_A_CHARACTER_FROM_THE_LIST_TO_DELETE_THEIR_DATA"] = "Choose a character from the list to delete their data"
+L["CLASSIC_BANK"] = "Classic Bank"
+L["CLASSIC_PURPLE_THEME"] = "Classic purple theme"
+L["CLASS_COLOR_THEME"] = "Class Color Theme"
+L["CLICK_TO_ADD_TO_FAVORITES_N_CFF888888FAVORITES_ARE_ALWAYS_SH"] = "Click to add to favorites\n|cff888888Favorites are always shown at the top|r"
+L["COLLECTION_PROGRESS_GOLD_AND_STORAGE_OVERVIEW"] = "Collection progress, gold, and storage overview"
+L["CONTROL_IN_GAME_POP_UP_NOTIFICATIONS_AND_REMINDERS_N"] = "Control in-game pop-up notifications and reminders.\n"
+L["CONTROL_WHAT_HAPPENS_AUTOMATICALLY_WHEN_YOU_OPEN_YOUR_WARBAN"] = "Control what happens automatically when you open your Warband Bank.\n"
+L["COOL_BLUE_THEME"] = "Cool blue theme"
+L["CURRENCY"] = "Currency"
+L["CUSTOMIZE_HOW_ITEMS_AND_INFORMATION_ARE_DISPLAYED_N"] = "Customize how items and information are displayed.\n"
+L["CYAN_THEME"] = "Cyan Theme"
+L["DEBUG_MODE"] = "Debug Mode"
+L["DELETE_SELECTED_CHARACTER"] = "Delete Selected Character"
 L["DEPOSIT_QUEUE_CLEARED"] = "Deposit queue cleared."
+L["DEPOSIT_QUEUE_EMPTY"] = "Deposit queue is empty."
+L["DISCRETION_MODE"] = "Discretion Mode"
+L["DISPLAY"] = "Display"
+L["DISPLAY_CURRENCIES_EVEN_IF_THEIR_QUANTITY_IS_0"] = "Display currencies even if their quantity is 0."
+L["DISPLAY_ITEM_LEVEL_BADGES_ON_EQUIPMENT_IN_THE_ITEM_LIST"] = "Display item level badges on equipment in the item list."
+L["DISPLAY_STACK_COUNT_NEXT_TO_ITEM_NAMES"] = "Display stack count next to item names."
+L["ENABLE_ADDON"] = "Enable Addon"
+L["ENABLE_NOTIFICATIONS"] = "Enable Notifications"
+L["ENABLE_VERBOSE_LOGGING_FOR_DEBUGGING_PURPOSES_ONLY_ENABLE_IF"] = "Enable verbose logging for debugging purposes. Only enable if troubleshooting issues."
+L["FIERY_RED_THEME"] = "Fiery red theme"
+L["FILTER_MODE"] = "Filter Mode"
+L["FULLY_RESTED"] = "FULLY RESTED"
+L["GOLD_DEPOSITED"] = "%s gold deposited to Warband bank."
+L["GOT_IT"] = "Got it!"
+L["GREAT_VAULT"] = "Great Vault"
+L["GREAT_VAULT_MYTHIC_AND_RAID_LOCKOUTS_WILL_BE_DISPLAYED_HERE"] = "Great Vault, Mythic+ and Raid Lockouts will be displayed here"
+L["GREAT_VAULT_RAID_LOCKOUTS_MYTHIC_ACROSS_YOUR_WARBAND"] = "Great Vault, Raid Lockouts & Mythic+ across your Warband"
+L["GREEN_THEME"] = "Green Theme"
+L["GUILD_BANK"] = "Guild Bank"
+L["HIGHEST_ITEM_LEVEL"] = "HIGHEST ITEM LEVEL"
+L["INFORMATION"] = "Information"
+L["INSUFFICIENT_GOLD"] = "Insufficient gold for deposit."
+L["INVENTORY"] = "Inventory"
 L["ITEM_QUEUED"] = "%s queued for deposit."
 L["ITEM_REMOVED"] = "%s removed from queue."
-L["GOLD_DEPOSITED"] = "%s gold deposited to Warband bank."
-L["INSUFFICIENT_GOLD"] = "Insufficient gold for deposit."
+L["LIVE_SYNC"] = "Live Sync"
+L["LOG_IN_TO_ANY_CHARACTER_TO_START_TRACKING_PVE_PROGRESS"] = "Log in to any character to start tracking PvE progress"
+L["MANAGE_YOUR_TRACKED_CHARACTERS_YOU_CAN_DELETE_CHARACTER_DATA"] = "Manage your tracked characters. You can delete character data that you no longer need.\n\n|cffff9900Warning:|r Deleting a character removes all saved data (gold, professions, PvE progress, etc.). This action cannot be undone.\n"
+L["MASTER_THEME_COLOR"] = "Master Theme Color"
+L["MASTER_TOGGLE_FOR_ALL_NOTIFICATION_POP_UPS"] = "Master toggle for all notification pop-ups."
+L["MAX"] = "Max"
+L["MAX_LEVEL"] = "MAX LEVEL"
+L["MOST_PLAYED_CHARACTER"] = "MOST PLAYED CHARACTER"
+L["MOST_POPULAR_GUILD"] = "MOST POPULAR GUILD"
+L["MOUNTS_COLLECTED"] = "MOUNTS COLLECTED"
+L["MOUNT_PET_TOY_LOOT_ALERTS"] = "Mount/Pet/Toy Loot Alerts"
+L["MOVE_DOWN"] = "Move Down"
+L["MOVE_UP"] = "Move Up"
+L["NATURE_GREEN_THEME"] = "Nature green theme"
+L["NOTIFICATIONS"] = "Notifications"
+L["NO_ACCOUNT_WIDE_REPUTATIONS"] = "No account-wide reputations"
+L["NO_CHARACTER_BASED_REPUTATIONS"] = "No character-based reputations"
+L["NO_FAVORITE_CHARACTERS_YET_CLICK_THE_STAR_ICON_TO_FAVORITE_A"] = "No favorite characters yet. Click the star icon to favorite a character."
+L["NO_ITEMS_IN_PERSONAL_BANK"] = "    No items in personal bank"
+L["NO_ITEMS_IN_WARBAND_BANK"] = "  No items in Warband Bank"
+L["NO_SLOT_DATA_CACHED_YET"] = "No slot data cached yet."
+L["NO_SLOT_DATA_CACHED_YET_OPEN_YOUR_BANK_ONCE_TO_SCAN_SLOTS"] = "No slot data cached yet. Open your bank once to scan slots."
+L["N_N"] = "\n\n"
+L["OPEN_GUIDE"] = "Open & Guide"
+L["ORANGE_THEME"] = "Orange Theme"
+L["PERMANENTLY_DELETE_THE_SELECTED_CHARACTERS_DATA"] = "Permanently delete the selected character's data"
+L["PERSONAL_BANK"] = "Personal Bank"
+L["PURPLE_THEME"] = "Purple Theme"
+L["RED_THEME"] = "Red Theme"
+L["REPUTATIONS_ARE_SCANNED_AUTOMATICALLY_ON_LOGIN_AND_WHEN_CHAN"] = "Reputations are scanned automatically on login and when changed. Use the in-game reputation panel to view detailed information and rewards."
+L["RESET_ALL_THEME_COLORS_TO_YOUR_CURRENT_CHARACTERS_CLASS_COLO"] = "Reset all theme colors to your current character's class color."
+L["RESET_TO_DEFAULT_CLASS_COLOR"] = "Reset to Default (Class Color)"
+L["SELECT_CHARACTER_TO_DELETE"] = "Select Character to Delete"
+L["SHOW_A_NOTIFICATION_WHEN_A_NEW_MOUNT_PET_OR_TOY_ENTERS_YOUR"] = "Show a notification when a NEW mount, pet, or toy enters your bag. Triggers when item is looted/bought, not when learned. Only shows for uncollected items."
+L["SHOW_A_REMINDER_WHEN_YOU_HAVE_UNCLAIMED_WEEKLY_VAULT_REWARDS"] = "Show a reminder when you have unclaimed Weekly Vault rewards on login."
+L["SHOW_ITEM_COUNT"] = "Show Item Count"
+L["SHOW_ITEM_LEVEL"] = "Show Item Level"
+L["SHOW_ITEM_LOCATIONS"] = "Show Item Locations"
+L["SHOW_ZERO_QUANTITIES"] = "Show Zero Quantities"
+L["SLASH_COMMANDS"] = "Slash Commands"
+L["THEME_APPEARANCE"] = "Theme & Appearance"
+L["THE_C_REPUTATION_API_IS_NOT_AVAILABLE_ON_THIS_SERVER_THIS_FE"] = "The C_Reputation API is not available on this server. This feature requires WoW 11.0+ (The War Within)."
+L["THE_QUARTERMASTER"] = "The Quartermaster"
+L["TOTAL_CHARACTERS"] = "TOTAL CHARACTERS"
+L["TOTAL_COMPANIONS"] = "TOTAL COMPANIONS"
+L["TOTAL_GOLD"] = "TOTAL GOLD"
+L["TOTAL_PLAYED"] = "TOTAL PLAYED"
+L["TOTAL_PLAYED_TIME"] = "TOTAL PLAYED TIME"
+L["TO_CHARACTER"] = "To Character:"
+L["TRACK_ALL_ACTIVE_REPUTATIONS_AND_RENOWN_IN_BLIZZARDS_ORDER"] = "Track all active reputations and Renown in Blizzard's order"
+L["TRACK_ALL_CURRENCIES_ACROSS_YOUR_CHARACTERS"] = "Track all currencies across your characters"
+L["TURN_THE_ADDON_ON_OR_OFF"] = "Turn the addon on or off."
+L["USE_YOUR_CURRENT_CHARACTERS_CLASS_COLOR"] = "Use your current character's class color"
+L["VIEW_ALL_CHARACTERS"] = "View: All Characters"
+L["VIEW_FILTERED"] = "View: Filtered"
+L["WARBAND_BANK"] = "Warband Bank"
+L["WARBAND_GOLD"] = "WARBAND GOLD"
+L["WARM_ORANGE_THEME"] = "Warm orange theme"
+L["WEEKLY_VAULT_READY"] = "Weekly Vault Ready!"
+L["WEEKLY_VAULT_REMINDER"] = "Weekly Vault Reminder"
 
--- UI Module
-L["MAIN_WINDOW_TITLE"] = "The Quartermaster"
-L["SEARCH_PLACEHOLDER"] = SEARCH .. "..." -- Blizzard Global: SEARCH
-L["BTN_SCAN"] = "Scan Bank"
-L["BTN_DEPOSIT"] = "Deposit Queue"
-L["BTN_SORT"] = "Sort Bank"
-L["BTN_CLOSE"] = CLOSE -- Blizzard Global: CLOSE
-L["BTN_SETTINGS"] = SETTINGS -- Blizzard Global: SETTINGS
-L["BTN_REFRESH"] = REFRESH -- Blizzard Global: REFRESH (if available, fallback below)
-L["BTN_CLEAR_QUEUE"] = "Clear Queue"
-L["BTN_DEPOSIT_ALL"] = "Deposit All"
-L["BTN_DEPOSIT_GOLD"] = "Deposit Gold"
+-- ==============================
+-- UI Titles
+-- ==============================
+L["AUTOMATICALLY_CLEAN_UP_STALE_DATA_AND_OPTIMIZE_THE_DATABASE"] = "Automatically clean up stale data and optimize the database every 7 days."
+L["AUTOMATICALLY_OPEN_THE_THE_QUARTERMASTER_WINDOW_WHEN_YOU_OPE"] = "Automatically open the The Quartermaster window when you open your Warband Bank."
+L["AUTO_OPEN_WINDOW"] = "Auto-Open Window"
+L["AUTO_OPTIMIZE_DATABASE"] = "Auto-Optimize Database"
+L["CFF00FF00_R_CURRENCY_WINDOW_WILL_BE_OPENED_AUTOMATICALLY_N_C"] = "|cff00ff00✓|r Currency window will be opened automatically.\n|cff888888You'll need to manually right-click the currency to transfer.|r"
+L["CHOOSE_WHICH_CURRENCIES_TO_DISPLAY_IN_THE_CURRENCY_TAB"] = "Choose which currencies to display in the Currency tab."
+L["CHOOSE_YOUR_PRIMARY_THEME_COLOR_ALL_VARIATIONS_BORDERS_TABS"] = "Choose your primary theme color. All variations (borders, tabs, highlights) will be automatically generated."
+L["CHOOSE_YOUR_PRIMARY_THEME_COLOR_ALL_VARIATIONS_BORDERS_TABS_2"] = "Choose your primary theme color. All variations (borders, tabs, highlights) will be automatically generated. Changes apply in real-time!\n"
+L["DISPLAY_DETAILED_INFORMATION_ABOUT_YOUR_DATABASE_SIZE_AND_CO"] = "Display detailed information about your database size and content."
+L["EXCLUDE_SPECIFIC_WARBAND_BANK_TABS_FROM_SCANNING_USEFUL_IF_Y"] = "Exclude specific Warband Bank tabs from scanning. Useful if you want to ignore certain tabs.\n"
+L["EXCLUDE_THIS_WARBAND_BANK_TAB_FROM_AUTOMATIC_SCANNING"] = "Exclude this Warband Bank tab from automatic scanning"
+L["IGNORE_TAB_1"] = "Ignore Tab 1"
+L["IGNORE_TAB_2"] = "Ignore Tab 2"
+L["IGNORE_TAB_3"] = "Ignore Tab 3"
+L["IGNORE_TAB_4"] = "Ignore Tab 4"
+L["IGNORE_TAB_5"] = "Ignore Tab 5"
+L["MANUALLY_RUN_DATABASE_OPTIMIZATION_TO_CLEAN_UP_STALE_DATA_AN"] = "Manually run database optimization to clean up stale data and reduce file size."
+L["NO_SLOT_DATA_CACHED_YET_OPEN_YOUR_BANK_TO_SCAN_THIS_TAB"] = "No slot data cached yet. Open your bank to scan this tab."
+L["NO_SLOT_DATA_CACHED_YET_OPEN_YOUR_WARBAND_BANK_TO_SCAN_THIS"] = "No slot data cached yet. Open your Warband Bank to scan this tab."
+L["OPTIMIZE_DATABASE_NOW"] = "Optimize Database Now"
+L["SHOW_DATABASE_STATISTICS"] = "Show Database Statistics"
+L["TAB_FILTERING"] = "Tab Filtering"
 
--- Item Categories (Using Blizzard Globals where available)
-L["CATEGORY_ALL"] = "All Items"
-L["CATEGORY_EQUIPMENT"] = BAG_FILTER_EQUIPMENT or "Equipment" -- Blizzard Global
-L["CATEGORY_CONSUMABLES"] = BAG_FILTER_CONSUMABLES or "Consumables" -- Blizzard Global
-L["CATEGORY_REAGENTS"] = PROFESSIONS_MODIFIED_REAGENTS or "Reagents" -- Blizzard Global
-L["CATEGORY_TRADE_GOODS"] = BAG_FILTER_TRADE_GOODS or "Trade Goods" -- Blizzard Global
-L["CATEGORY_QUEST"] = BAG_FILTER_QUEST_ITEMS or "Quest Items" -- Blizzard Global
-L["CATEGORY_MISCELLANEOUS"] = BAG_FILTER_MISCELLANEOUS or "Miscellaneous" -- Blizzard Global
+-- ==============================
+-- Buttons
+-- ==============================
+L["BASIC_ADDON_SETTINGS_AND_MINIMAP_BUTTON_CONFIGURATION_N"] = "Basic addon settings and minimap button configuration.\n"
+L["CLOSE"] = "Close"
+L["CONTINUE"] = "Continue"
+L["MINIMAP_BUTTON"] = "Minimap Button"
+L["OK"] = "OK"
+L["SHOW_A_BUTTON_ON_THE_MINIMAP_TO_OPEN_THE_QUARTERMASTER"] = "Show a button on the minimap to open The Quartermaster."
 
--- Quality Filters (Using Blizzard Globals - automatically localized!)
-L["QUALITY_POOR"] = ITEM_QUALITY0_DESC -- Blizzard Global: "Poor"
-L["QUALITY_COMMON"] = ITEM_QUALITY1_DESC -- Blizzard Global: "Common"
-L["QUALITY_UNCOMMON"] = ITEM_QUALITY2_DESC -- Blizzard Global: "Uncommon"
-L["QUALITY_RARE"] = ITEM_QUALITY3_DESC -- Blizzard Global: "Rare"
-L["QUALITY_EPIC"] = ITEM_QUALITY4_DESC -- Blizzard Global: "Epic"
-L["QUALITY_LEGENDARY"] = ITEM_QUALITY5_DESC -- Blizzard Global: "Legendary"
-L["QUALITY_ARTIFACT"] = ITEM_QUALITY6_DESC -- Blizzard Global: "Artifact"
-L["QUALITY_HEIRLOOM"] = ITEM_QUALITY7_DESC -- Blizzard Global: "Heirloom"
-
--- Statistics
-L["STATS_HEADER"] = STATISTICS or "Statistics" -- Blizzard Global: STATISTICS
-L["STATS_TOTAL_ITEMS"] = "Total Items"
-L["STATS_TOTAL_SLOTS"] = "Total Slots"
-L["STATS_FREE_SLOTS"] = "Free Slots"
-L["STATS_USED_SLOTS"] = "Used Slots"
-L["STATS_TOTAL_VALUE"] = "Total Value"
-
+-- ==============================
 -- Tooltips
-L["TOOLTIP_CHARACTER"] = CHARACTER or "Character" -- Blizzard Global: CHARACTER
-L["TOOLTIP_LOCATION"] = LOCATION_COLON or "Location" -- Blizzard Global
-L["TOOLTIP_WARBAND_BANK"] = "Warband Bank"
-L["TOOLTIP_TAB"] = "Tab"
-L["TOOLTIP_SLOT"] = "Slot"
-L["TOOLTIP_COUNT"] = "Count"
+-- ==============================
+L["ADD_ITEM_LOCATION_INFORMATION_TO_TOOLTIPS_BAGS_PERSONAL_BANK"] = "Add item location information to tooltips (Bags, Personal Bank, Warband Bank)."
+L["ADD_USEFUL_INFORMATION_TO_ITEM_TOOLTIPS_N"] = "Add useful information to item tooltips.\n"
+L["TOOLTIP_ENHANCEMENTS"] = "Tooltip Enhancements"
 
--- Error Messages
-L["ERROR_GENERIC"] = "An error occurred."
+-- ==============================
+-- Options
+-- ==============================
+L["ADVANCED_SETTINGS_AND_DATABASE_MANAGEMENT_USE_WITH_CAUTION_N"] = "Advanced settings and database management. Use with caution!\n"
+L["CFF00FF00ADDON_SETTINGS_CHANGED_R_N_NA_UI_RELOAD_IS_REQUIRED"] = "|cff00ff00Addon settings changed!|r\n\nA UI reload is required to apply changes.\n\nReload now?"
+L["CONFIGURE_HOW_CURRENCIES_ARE_DISPLAYED_IN_THE_CURRENCY_TAB_N"] = "Configure how currencies are displayed in the Currency tab.\n"
+L["DELETE_ALL_ADDON_DATA_CHARACTERS_ITEMS_CURRENCY_REPUTATIONS"] = "DELETE ALL addon data (characters, items, currency, reputations, settings). Cannot be undone!\n\n|cffff9900You will be prompted to type 'Accept' to confirm (case insensitive).|r"
+L["GENERAL_SETTINGS"] = "General Settings"
+L["SETTINGS"] = "Settings"
+
+-- ==============================
+-- Notifications
+-- ==============================
+L["DISPLAY_A_POP_UP_WITH_CHANGELOG_WHEN_ADDON_IS_UPDATED_TO_A_N"] = "Display a pop-up with changelog when addon is updated to a new version."
+L["KEEP_THE_ITEM_CACHE_UPDATED_IN_REAL_TIME_WHILE_THE_BANK_IS_O"] = "Keep the item cache updated in real-time while the bank is open. This lets you see accurate data even when away from the bank."
+L["RESET_THE_LAST_SEEN_VERSION_TO_SHOW_THE_UPDATE_NOTIFICATION"] = "Reset the 'last seen version' to show the update notification again on next login."
+L["SHOW_UPDATE_NOTES"] = "Show Update Notes"
+L["SHOW_UPDATE_NOTES_AGAIN"] = "Show Update Notes Again"
+
+-- ==============================
+-- Errors
+-- ==============================
 L["ERROR_API_UNAVAILABLE"] = "Required API is not available."
-L["ERROR_BANK_CLOSED"] = "Cannot perform operation: bank is closed."
 L["ERROR_INVALID_ITEM"] = "Invalid item specified."
 L["ERROR_PROTECTED_FUNCTION"] = "Cannot call protected function in combat."
 
--- Confirmation Dialogs
-L["CONFIRM_DEPOSIT"] = "Deposit %d items to Warband bank?"
-L["CONFIRM_CLEAR_QUEUE"] = "Clear all items from deposit queue?"
-L["CONFIRM_DEPOSIT_GOLD"] = "Deposit %s gold to Warband bank?"
-
--- Profiles (AceDB)
-L["PROFILES"] = "Profiles"
-L["PROFILES_DESC"] = "Manage addon profiles"

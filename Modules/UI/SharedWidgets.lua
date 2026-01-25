@@ -6,6 +6,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 --============================================================================
 -- COLOR CONSTANTS
 --============================================================================
@@ -1058,7 +1060,7 @@ local function CreateCurrencyTransferPopup(currencyData, currentCharacterKey, on
     -- Title
     local title = popup:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     title:SetPoint("TOP", 0, -15)
-    title:SetText("|cff6a0dadTransfer Currency|r")
+    title:SetText(L["CFF6A0DADTRANSFER_CURRENCY_R"])
     
     -- Get TheQuartermaster and current character info
     local TheQuartermaster = ns.TheQuartermaster
@@ -1092,7 +1094,7 @@ local function CreateCurrencyTransferPopup(currencyData, currentCharacterKey, on
     -- Amount Input Label
     local amountLabel = popup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     amountLabel:SetPoint("TOPLEFT", 30, -155)
-    amountLabel:SetText("Amount:")
+    amountLabel:SetText(L["AMOUNT"])
     
     -- Amount Input Box
     local amountBox = CreateFrame("EditBox", nil, popup, "BackdropTemplate")
@@ -1116,7 +1118,7 @@ local function CreateCurrencyTransferPopup(currencyData, currentCharacterKey, on
     local maxBtn = CreateFrame("Button", nil, popup, "UIPanelButtonTemplate")
     maxBtn:SetSize(45, 24)
     maxBtn:SetPoint("LEFT", amountBox, "RIGHT", 5, 0)
-    maxBtn:SetText("Max")
+    maxBtn:SetText(L["MAX"])
     maxBtn:SetScript("OnClick", function()
         amountBox:SetText(tostring(currencyData.quantity or 0))
     end)
@@ -1125,14 +1127,14 @@ local function CreateCurrencyTransferPopup(currencyData, currentCharacterKey, on
     local confirmBtn = CreateFrame("Button", nil, popup, "UIPanelButtonTemplate")
     confirmBtn:SetSize(120, 28)
     confirmBtn:SetPoint("BOTTOMRIGHT", -20, 15)
-    confirmBtn:SetText("Open & Guide")  -- Changed text
+    confirmBtn:SetText(L["OPEN_GUIDE"])  -- Changed text
     confirmBtn:Disable() -- Initially disabled until character selected
     
     -- Cancel Button
     local cancelBtn = CreateFrame("Button", nil, popup, "UIPanelButtonTemplate")
     cancelBtn:SetSize(80, 28)
     cancelBtn:SetPoint("RIGHT", confirmBtn, "LEFT", -5, 0)
-    cancelBtn:SetText("Cancel")
+    cancelBtn:SetText(L["CANCEL"])
     cancelBtn:SetScript("OnClick", function()
         overlay:Hide()
     end)
@@ -1141,14 +1143,14 @@ local function CreateCurrencyTransferPopup(currencyData, currentCharacterKey, on
     local infoNote = popup:CreateFontString(nil, "OVERLAY", "GameFontNormalTiny")
     infoNote:SetPoint("BOTTOM", 0, 50)
     infoNote:SetWidth(360)
-    infoNote:SetText("|cff00ff00✓|r Currency window will be opened automatically.\n|cff888888You'll need to manually right-click the currency to transfer.|r")
+    infoNote:SetText(L["CFF00FF00_R_CURRENCY_WINDOW_WILL_BE_OPENED_AUTOMATICALLY_N_C"])
     infoNote:SetJustifyH("CENTER")
     infoNote:SetWordWrap(true)
     
     -- Target Character Label
     local targetLabel = popup:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     targetLabel:SetPoint("TOPLEFT", 30, -195)
-    targetLabel:SetText("To Character:")
+    targetLabel:SetText(L["TO_CHARACTER"])
     
     -- Get TheQuartermaster addon reference
     local TheQuartermaster = ns.TheQuartermaster
@@ -1191,7 +1193,7 @@ local function CreateCurrencyTransferPopup(currencyData, currentCharacterKey, on
     
     local charText = charDropdown:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     charText:SetPoint("LEFT", 10, 0)
-    charText:SetText("|cff888888Select character...|r")
+    charText:SetText(L["CFF888888SELECT_CHARACTER_R"])
     charText:SetJustifyH("LEFT")
     
     -- Dropdown arrow icon

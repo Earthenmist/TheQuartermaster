@@ -6,6 +6,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 -- Determine whether a saved character should be treated as "Max Level".
 -- Retail pre-patch can report a future level cap; we prefer "effective max level" signals captured at scan time.
 local function IsCharacterMaxLevel(char, effectiveCap)
@@ -196,7 +198,7 @@ function TheQuartermaster:DrawExperienceList(parent)
 
     local pLabel = playedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     pLabel:SetPoint("TOPLEFT", pIcon, "TOPRIGHT", 12, -2)
-    pLabel:SetText("TOTAL PLAYED")
+    pLabel:SetText(L["TOTAL_PLAYED"])
     pLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local pValue = playedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -221,7 +223,7 @@ function TheQuartermaster:DrawExperienceList(parent)
 
     local mLabel = maxLvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     mLabel:SetPoint("TOPLEFT", mIcon, "TOPRIGHT", 12, -2)
-    mLabel:SetText("MAX LEVEL")
+    mLabel:SetText(L["MAX_LEVEL"])
     mLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local mValue = maxLvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -247,7 +249,7 @@ function TheQuartermaster:DrawExperienceList(parent)
 
     local rLabel = restedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     rLabel:SetPoint("TOPLEFT", rIcon, "TOPRIGHT", 12, -2)
-    rLabel:SetText("FULLY RESTED")
+    rLabel:SetText(L["FULLY_RESTED"])
     rLabel:SetTextColor(0.6, 0.6, 0.6)
 
     local rValue = restedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
@@ -357,12 +359,12 @@ function TheQuartermaster:DrawExperienceList(parent)
         
         local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         emptyText:SetPoint("TOP", 0, -yOffset - 90)
-        emptyText:SetText("|cff666666No characters tracked yet|r")
+        emptyText:SetText(L["CFF666666NO_CHARACTERS_TRACKED_YET_R"])
         
         local emptyDesc = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
         emptyDesc:SetPoint("TOP", 0, -yOffset - 115)
         emptyDesc:SetTextColor(0.5, 0.5, 0.5)
-        emptyDesc:SetText("Characters are automatically registered on login")
+        emptyDesc:SetText(L["CHARACTERS_ARE_AUTOMATICALLY_REGISTERED_ON_LOGIN"])
         
         return yOffset + 200
     end
@@ -452,7 +454,7 @@ function TheQuartermaster:DrawExperienceList(parent)
             local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             emptyText:SetPoint("TOPLEFT", 30, -yOffset)
             emptyText:SetTextColor(0.5, 0.5, 0.5)
-            emptyText:SetText("No favorite characters yet. Click the star icon to favorite a character.")
+            emptyText:SetText(L["NO_FAVORITE_CHARACTERS_YET_CLICK_THE_STAR_ICON_TO_FAVORITE_A"])
             yOffset = yOffset + 35
         end
     end
@@ -489,7 +491,7 @@ function TheQuartermaster:DrawExperienceList(parent)
             local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             emptyText:SetPoint("TOPLEFT", 30, -yOffset)
             emptyText:SetTextColor(0.5, 0.5, 0.5)
-            emptyText:SetText("All characters are favorited!")
+            emptyText:SetText(L["ALL_CHARACTERS_ARE_FAVORITED"])
             yOffset = yOffset + 35
         end
     end
@@ -564,9 +566,9 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
     favButton:SetScript("OnEnter", function(self)
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         if isFavorite then
-            GameTooltip:SetText("|cffffd700Favorite Character|r\nClick to remove from favorites")
+            GameTooltip:SetText(L["CFFFFD700FAVORITE_CHARACTER_R_NCLICK_TO_REMOVE_FROM_FAVORITE"])
         else
-            GameTooltip:SetText("Click to add to favorites\n|cff888888Favorites are always shown at the top|r")
+            GameTooltip:SetText(L["CLICK_TO_ADD_TO_FAVORITES_N_CFF888888FAVORITES_ARE_ALWAYS_SH"])
         end
         GameTooltip:Show()
     end)
@@ -686,7 +688,7 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
             upBtn:SetScript("OnEnter", function(self)
                 row.reorderButtons:Show()
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
-                GameTooltip:SetText("Move Up")
+                GameTooltip:SetText(L["MOVE_UP"])
                 GameTooltip:Show()
             end)
             
@@ -718,7 +720,7 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
             downBtn:SetScript("OnEnter", function(self)
                 row.reorderButtons:Show()
                 GameTooltip:SetOwner(self, "ANCHOR_TOP")
-                GameTooltip:SetText("Move Down")
+                GameTooltip:SetText(L["MOVE_DOWN"])
                 GameTooltip:Show()
             end)
             
@@ -751,13 +753,13 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
     restText:SetJustifyH("CENTER")
 
     if isMaxLevel then
-        restText:SetText("|cffaaaaaaMax Level|r")
+        restText:SetText(L["CFFAAAAAAMAX_LEVEL_R"])
     elseif type(restXP) == "number" and type(maxXP) == "number" and maxXP > 0 and restXP >= 0 then
         local pct = (restXP / maxXP) * 100
         if pct > 150 then pct = 150 end
         restText:SetText(string.format("|cffcccccc%.0f%%|r", pct))
     else
-        restText:SetText("|cff666666--|r")
+        restText:SetText(L["CFF666666_R"])
     end
 
     -- Tooltip (Rest XP)
@@ -772,12 +774,12 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
     maxText:SetJustifyH("CENTER")
 
     if isMaxLevel then
-        maxText:SetText("|cffaaaaaaMax Level|r")
+        maxText:SetText(L["CFFAAAAAAMAX_LEVEL_R"])
     elseif type(maxXP) == "number" and maxXP > 0 then
         local capXP = math.floor(maxXP * 1.5)
         maxText:SetText("|cffcccccc" .. BreakUpLargeNumbers(capXP) .. "|r")
     else
-        maxText:SetText("|cff666666--|r")
+        maxText:SetText(L["CFF666666_R"])
     end
 
     -- Tooltip (Max XP)
@@ -792,11 +794,11 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
     fullText:SetJustifyH("CENTER")
 
     if isMaxLevel then
-        fullText:SetText("|cffaaaaaaMax Level|r")
+        fullText:SetText(L["CFFAAAAAAMAX_LEVEL_R"])
     else
         local capXP = (type(maxXP) == "number" and maxXP > 0) and (maxXP * 1.5) or nil
         if capXP and type(restXP) == "number" and restXP >= capXP - 1 then
-            fullText:SetText("|cff88ff88Fully Rested|r")
+            fullText:SetText(L["CFF88FF88FULLY_RESTED_R"])
         else
             local fullyRestedSeconds = char.fullyRestedIn or char.fullyRestedSeconds or char.fullyRested or nil
             if type(fullyRestedSeconds) == "number" and fullyRestedSeconds > 0 then
@@ -806,7 +808,7 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
                 local s = math.floor(fullyRestedSeconds % 60)
                 fullText:SetText(string.format("|cff888888%02dd %02dh|r", d, h))
             else
-                fullText:SetText("|cff666666--|r")
+                fullText:SetText(L["CFF666666_R"])
             end
         end
     end
@@ -910,7 +912,7 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
         
         deleteBtn:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_LEFT")
-            GameTooltip:SetText("|cffff5555Delete Character|r\nClick to remove this character's data")
+            GameTooltip:SetText(L["CFFFF5555DELETE_CHARACTER_R_NCLICK_TO_REMOVE_THIS_CHARACTERS"])
             GameTooltip:Show()
         end)
         

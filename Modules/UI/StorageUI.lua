@@ -6,6 +6,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 -- Import shared UI components (always get fresh reference)
 local CreateCard = ns.UI_CreateCard
 local CreateCollapsibleHeader = ns.UI_CreateCollapsibleHeader
@@ -70,7 +72,7 @@ function TheQuartermaster:DrawStorageTab(parent)
     local subtitleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)
     subtitleText:SetTextColor(0.6, 0.6, 0.6)
-    subtitleText:SetText("Browse all items organized by type")
+    subtitleText:SetText(L["BROWSE_ALL_ITEMS_ORGANIZED_BY_TYPE"])
     
     yOffset = yOffset + 78 -- Header height + spacing
     
@@ -560,7 +562,7 @@ end
             local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
             emptyText:SetPoint("TOPLEFT", 10 + indent, -yOffset)
             emptyText:SetTextColor(0.5, 0.5, 0.5)
-            emptyText:SetText("  No items in Warband Bank")
+            emptyText:SetText(L["NO_ITEMS_IN_WARBAND_BANK"])
             yOffset = yOffset + SECTION_SPACING
         end
     end
@@ -786,7 +788,7 @@ end
                         local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
                         emptyText:SetPoint("TOPLEFT", 10 + indent * 2, -yOffset)
                         emptyText:SetTextColor(0.5, 0.5, 0.5)
-                        emptyText:SetText("    No items in personal bank")
+                        emptyText:SetText(L["NO_ITEMS_IN_PERSONAL_BANK"])
                         yOffset = yOffset + SECTION_SPACING
                     end
                     end
@@ -797,4 +799,3 @@ end
     
     return yOffset + 20
 end
-

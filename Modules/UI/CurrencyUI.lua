@@ -11,6 +11,8 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
 -- Import shared UI components (always get fresh reference)
 local CreateCard = ns.UI_CreateCard
 local CreateCollapsibleHeader = ns.UI_CreateCollapsibleHeader
@@ -262,7 +264,7 @@ function TheQuartermaster:DrawCurrencyTab(parent)
     local subtitleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)
     subtitleText:SetTextColor(0.6, 0.6, 0.6)
-    subtitleText:SetText("Track all currencies across your characters")
+    subtitleText:SetText(L["TRACK_ALL_CURRENCIES_ACROSS_YOUR_CHARACTERS"])
 
     -- Small themed action buttons (match the rest of The Quartermaster UI)
     local function StripDefaultButtonTextures(btn)
@@ -864,14 +866,14 @@ yOffset = yOffset + 78
     noticeText:SetPoint("LEFT", noticeIcon, "RIGHT", 10, 5)
     noticeText:SetPoint("RIGHT", -10, 5)
     noticeText:SetJustifyH("LEFT")
-    noticeText:SetText("|cffffcc00Currency Transfer Limitation|r")
+    noticeText:SetText(L["CFFFFCC00CURRENCY_TRANSFER_LIMITATION_R"])
     
     local noticeSubText = noticeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     noticeSubText:SetPoint("TOPLEFT", noticeIcon, "TOPRIGHT", 10, -15)
     noticeSubText:SetPoint("RIGHT", -10, 0)
     noticeSubText:SetJustifyH("LEFT")
     noticeSubText:SetTextColor(0.8, 0.8, 0.8)
-    noticeSubText:SetText("Blizzard API does not support automated currency transfers. Please use the in-game currency frame to manually transfer Warband currencies.")
+    noticeSubText:SetText(L["BLIZZARD_API_DOES_NOT_SUPPORT_AUTOMATED_CURRENCY_TRANSFERS_P"])
     
     yOffset = yOffset + 75
     
