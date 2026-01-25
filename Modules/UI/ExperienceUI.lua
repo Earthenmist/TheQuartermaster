@@ -6,6 +6,24 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+-- Determine whether a saved character should be treated as "Max Level".
+-- Retail pre-patch can report a future level cap; we prefer "effective max level" signals captured at scan time.
+local function IsCharacterMaxLevel(char, effectiveCap)
+    if not char then return false end
+
+    -- Prefer explicit scan-time value when present
+    if char.isMaxLevel == true then return true end
+    if char.isMaxLevel == false then return false end
+
+    local lvl = tonumber(char.level) or 0
+    if effectiveCap and type(effectiveCap) == "number" and effectiveCap > 0 then
+        return lvl >= effectiveCap
+    end
+
+    return false
+end
+
+
 -- Import shared UI components (always get fresh reference)
 local function GetCOLORS()
     return ns.UI_COLORS
@@ -91,13 +109,37 @@ function TheQuartermaster:DrawExperienceList(parent)
     local totalPlayedSeconds = 0
     local maxLevelCount = 0
     local fullyRestedCount = 0
-
-    local maxLevel = 80
+    local apiCap = 0
     if type(GetMaxPlayerLevel) == "function" then
         local ml = GetMaxPlayerLevel()
         if type(ml) == "number" and ml > 0 then
-            maxLevel = ml
+            apiCap = ml
         end
+    end
+
+    -- Infer the "current practical cap" from your tracked roster.
+    -- This avoids Retail pre-patch reporting a future cap (e.g. 90) while most players are still capped at 80.
+    local inferredCap = 0
+    for _, c in ipairs(characters) do
+        local lvl = tonumber(c and c.level) or 0
+        if lvl > inferredCap then inferredCap = lvl end
+    end
+
+    local effectiveCap = apiCap
+    if effectiveCap <= 0 then effectiveCap = inferredCap end
+
+    -- Only trust inferredCap as an override when it looks like you're at/near endgame levels.
+    -- (Prevents a roster of lowbies from being treated as "max level".)
+    if apiCap > 0 and inferredCap >= 70 and apiCap > inferredCap then
+        effectiveCap = inferredCap
+    end
+
+    -- Some older saved-data builds used different keys for rested values.
+    -- Keep the summary cards resilient by mirroring the row rendering logic.
+    local function GetRestValues(c)
+        local rx = c and (c.restXP or c.restXp or c.restedXP or c.restedXp)
+        local mx = c and (c.maxXP or c.maxXp or c.xpMax or c.xpmax)
+        return rx, mx
     end
 
     for _, char in ipairs(characters) do
@@ -105,14 +147,15 @@ function TheQuartermaster:DrawExperienceList(parent)
             totalPlayedSeconds = totalPlayedSeconds + char.playedTime
         end
 
-        if (char.level or 0) >= maxLevel then
+        if IsCharacterMaxLevel(char, effectiveCap) then
             maxLevelCount = maxLevelCount + 1
         else
             -- Fully rested = rested pool at cap (150% of a level)
-            local restXP = tonumber(char.restXP) or 0
-            local maxXP = tonumber(char.maxXP) or 0
-            local cap = math.floor(maxXP * 1.5 + 0.5)
-            if maxXP > 0 and restXP >= cap then
+            local restXP, maxXP = GetRestValues(char)
+            restXP = tonumber(restXP)
+            maxXP = tonumber(maxXP)
+            local cap = (maxXP and maxXP > 0) and math.floor(maxXP * 1.5 + 0.5) or nil
+            if cap and restXP and restXP >= cap - 1 then
                 fullyRestedCount = fullyRestedCount + 1
             end
         end
@@ -354,7 +397,7 @@ function TheQuartermaster:DrawExperienceList(parent)
         local maxX   = restX + 70 + 14
         local fullX  = maxX + 70 + 14
         local playedX = fullX + 95 + 16
-        local statusX = playedX + 70 + 16
+        local statusX = playedX + 110 + 16
 
         local function AddLabel(text, x, w, justify)
             local fs = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -370,7 +413,7 @@ function TheQuartermaster:DrawExperienceList(parent)
         AddLabel("Rested XP", restX, 70, "CENTER")
         AddLabel("Max XP", maxX, 70, "CENTER")
         AddLabel("Rested In", fullX, 95, "CENTER")
-        AddLabel("Played", playedX, 70, "LEFT")
+        AddLabel("Played", playedX, 110, "LEFT")
         AddLabel("Status", statusX, 90, "LEFT")
 
         yOffset = yOffset + 26
@@ -402,7 +445,7 @@ function TheQuartermaster:DrawExperienceList(parent)
         yOffset = yOffset + 3  -- Small spacing after header
         if #favorites > 0 then
             for i, char in ipairs(favorites) do
-                yOffset = self:DrawExperienceRow(parent, char, i, width, yOffset, true, true, favorites, "favorites", i, #favorites, currentPlayerKey)
+                yOffset = self:DrawExperienceRow(parent, char, i, width, yOffset, true, true, favorites, "favorites", i, #favorites, effectiveCap, currentPlayerKey)
             end
         else
             -- Empty state
@@ -439,7 +482,7 @@ function TheQuartermaster:DrawExperienceList(parent)
         yOffset = yOffset + 3  -- Small spacing after header
         if #regular > 0 then
             for i, char in ipairs(regular) do
-                yOffset = self:DrawExperienceRow(parent, char, i, width, yOffset, false, true, regular, "regular", i, #regular, currentPlayerKey)
+                yOffset = self:DrawExperienceRow(parent, char, i, width, yOffset, false, true, regular, "regular", i, #regular, effectiveCap, currentPlayerKey)
             end
         else
             -- Empty state
@@ -458,7 +501,7 @@ end
 -- DRAW SINGLE CHARACTER ROW
 --============================================================================
 
-function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset, isFavorite, showReorder, charList, listKey, positionInList, totalInList, currentPlayerKey)
+function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset, isFavorite, showReorder, charList, listKey, positionInList, totalInList, effectiveCap, currentPlayerKey)
     local row = CreateFrame("Frame", nil, parent)
     row:SetSize(width, 38)  -- Taller row height
     row:SetPoint("TOPLEFT", 10, -yOffset)
@@ -591,7 +634,7 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
     local fullWidth   = 95
 
     local playedOffset = fullOffset + fullWidth + 16
-    local playedWidth  = 70
+    local playedWidth  = 140
 
     local statusOffset = playedOffset + playedWidth + 16
     local statusWidth  = 90
@@ -696,8 +739,7 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
     
 
     -- Rest/XP values
-    local maxPlayerLevel = (GetMaxPlayerLevel and GetMaxPlayerLevel()) or 80
-    local isMaxLevel = (type(char.level) == "number" and char.level >= maxPlayerLevel)
+    local isMaxLevel = IsCharacterMaxLevel(char, effectiveCap)
 
     local restXP = char.restXP or char.restXp or char.restedXP or char.restedXp
     local maxXP = char.maxXP or char.maxXp or char.xpMax or char.xpmax
@@ -785,11 +827,9 @@ function TheQuartermaster:DrawExperienceRow(parent, char, index, width, yOffset,
     if playedSeconds and playedSeconds > 0 then
         local days = math.floor(playedSeconds / 86400)
         local hours = math.floor((playedSeconds % 86400) / 3600)
-        if days > 0 then
-            playedStr = string.format("%dd %dh", days, hours)
-        else
-            playedStr = string.format("%dh", hours)
-        end
+        local mins = math.floor((playedSeconds % 3600) / 60)
+        local secs = math.floor(playedSeconds % 60)
+        playedStr = string.format("%dd %02dh %02dm %02ds", days, hours, mins, secs)
     end
     playedText:SetText("|cff888888" .. playedStr .. "|r")
 
@@ -950,4 +990,3 @@ end
 --============================================================================
 -- REORDER CHARACTER IN LIST
 --============================================================================
-

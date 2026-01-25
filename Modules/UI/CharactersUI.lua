@@ -504,7 +504,7 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
 
     -- Item level (equipped)
     local ilvlOffset = levelOffset + levelWidth + 10
-    local ilvlWidth = 52
+    local ilvlWidth = 80
 
     -- Keystone level
     local keyOffset = ilvlOffset + ilvlWidth + 10
@@ -518,12 +518,8 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
     local profOffset = goldOffset + goldAmountWidth + 15
     local profWidth = 160
 
-    -- Played time (total)
-    local playedOffset = profOffset + profWidth + 15
-    local playedWidth = 62
-
-    -- Last Seen positioned after played time
-    local lastSeenOffset = playedOffset + playedWidth + 15
+    -- Last Seen positioned after professions
+    local lastSeenOffset = profOffset + profWidth + 15
     local lastSeenWidth = 90
     
     -- Character name with realm (combined) (in class color)
@@ -632,7 +628,7 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
     ilvlText:SetJustifyH("CENTER")
     local ilvl = char.ilvlEquipped or char.ilvlAvg
     if ilvl then
-        ilvlText:SetText(string.format("|cffcccccc%.1f|r", ilvl))
+        ilvlText:SetText(string.format("|cffcccccciLvl %.1f|r", ilvl))
     else
         ilvlText:SetText("|cff666666--|r")
     end
@@ -794,23 +790,7 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
         if char.professions.archaeology then DrawProfIcon(char.professions.archaeology) end
     end
     
-    -- Played time (total) positioned after professions area
-    local playedText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    playedText:SetPoint("LEFT", playedOffset, 0)
-    playedText:SetWidth(playedWidth)
-    playedText:SetJustifyH("LEFT")
-
-    local playedSeconds = char.playedTime or 0
-    local playedStr = "--"
-    if playedSeconds and playedSeconds > 0 then
-        local days = math.floor(playedSeconds / 86400)
-        local hours = math.floor((playedSeconds % 86400) / 3600)
-        playedStr = string.format("%dd %dh", days, hours)
-    end
-    playedText:SetText("|cff888888" .. playedStr .. "|r")
-
-    -- Last Seen positioned after played time
-
+    -- Last Seen (kept compact in the list; full details are in the tooltip)
     local lastSeenText = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     lastSeenText:SetPoint("LEFT", lastSeenOffset, 0)  -- Positioned after profession area
     lastSeenText:SetWidth(lastSeenWidth)

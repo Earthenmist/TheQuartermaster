@@ -13,6 +13,17 @@ local function GetCOLORS()
     return ns.UI_COLORS
 end
 
+local function FormatPlayedTime(seconds)
+    if not seconds or seconds <= 0 then
+        return "--"
+    end
+    local days = math.floor(seconds / 86400)
+    local hours = math.floor((seconds % 86400) / 3600)
+    local mins = math.floor((seconds % 3600) / 60)
+    local secs = math.floor(seconds % 60)
+    return string.format("%dd %02dh %02dm %02ds", days, hours, mins, secs)
+end
+
 -- Performance: Local function references
 local format = string.format
 local date = date
@@ -58,6 +69,53 @@ function TheQuartermaster:DrawStatistics(parent)
     -- ===== PLAYER STATS CARDS =====
     -- TWW Note: Achievements are now account-wide (warband), no separate character score
     local achievementPoints = GetTotalAchievementPoints() or 0
+
+    -- Account-wide aggregates (from saved character cache)
+    local characters = (TheQuartermaster and TheQuartermaster.db and TheQuartermaster.db.global and TheQuartermaster.db.global.characters) or {}
+    local totalCharacters = 0
+    local totalGold = 0
+    local totalPlayedSeconds = 0
+    local highestIlvl = 0
+    local highestIlvlName = nil
+    local highestIlvlRealm = nil
+    local highestIlvlClassFile = nil
+    local mostPlayedCharacterName = nil
+    local mostPlayedCharacterRealm = nil
+    local mostPlayedCharacterClassFile = nil
+    local mostPlayedSeconds = 0
+
+    for _, char in pairs(characters) do
+        totalCharacters = totalCharacters + 1
+
+        local g = tonumber(char and char.gold) or 0
+        totalGold = totalGold + g
+
+        local played = tonumber(char and char.playedTime) or 0
+        totalPlayedSeconds = totalPlayedSeconds + played
+
+        -- Track highest equipped item level (account-wide)
+        local ilvl = tonumber(char and (char.ilvlEquipped or char.ilvlAvg)) or 0
+        if ilvl > highestIlvl then
+            highestIlvl = ilvl
+            highestIlvlName = char.name or highestIlvlName
+            highestIlvlRealm = char.realm or highestIlvlRealm
+            highestIlvlClassFile = char.classFile or highestIlvlClassFile
+        end
+
+        if played > mostPlayedSeconds then
+            mostPlayedSeconds = played
+            mostPlayedCharacterName = char.name or mostPlayedCharacterName
+            mostPlayedCharacterRealm = char.realm or mostPlayedCharacterRealm
+            mostPlayedCharacterClassFile = char.classFile or mostPlayedCharacterClassFile
+        end
+    end
+
+    -- Include Warband Bank gold (if available) in the account-wide total
+    local wb = (TheQuartermaster and TheQuartermaster.db and TheQuartermaster.db.global and TheQuartermaster.db.global.warbandBank) or nil
+    if wb and tonumber(wb.gold) then
+        totalGold = totalGold + (tonumber(wb.gold) or 0)
+    end
+
     
     -- Calculate card width for 3 cards in a row
     -- Formula: (Total width - left margin - right margin - total spacing) / 3
@@ -85,38 +143,14 @@ function TheQuartermaster:DrawStatistics(parent)
     
     -- Get companion (battle pet) counts
     -- We want: collected / total species in game.
-    -- C_PetJournal.GetNumPets() return order can vary, and may not represent total species.
-    local numPets = 0
+    -- C_PetJournal.GetNumPets() returns multiple values (commonly: numDisplayed, numCollected).
+    -- The first value can be affected by Pet Journal filters/search; the second is the account-wide collected count.
+    local TOTAL_COMPANIONS_IN_GAME = 1964 -- confirmed total companions (pets) available in game
+    local numPets = TOTAL_COMPANIONS_IN_GAME
     local numCollectedPets = 0
     if C_PetJournal and C_PetJournal.GetNumPets then
-        -- Clear any journal filters that could affect counts
-        if C_PetJournal.SetSearchFilter then C_PetJournal.SetSearchFilter("") end
-        if C_PetJournal.ClearSearchFilter then C_PetJournal.ClearSearchFilter() end
-
-        local a, b = C_PetJournal.GetNumPets()
-        a = tonumber(a) or 0
-        b = tonumber(b) or 0
-
-        -- Collected is reliably the larger value in practice (e.g. 435).
-        -- If Blizzard ever changes this, the max() still gives a sane collected count.
-        local collected = math.max(a, b)
-
-        -- Total species in game (preferred denominator)
-        local total = 0
-        if C_PetJournal.GetNumPetSpecies then
-            total = tonumber(C_PetJournal.GetNumPetSpecies()) or 0
-        end
-
-        -- Fallback: if total species isn't available/loaded yet, don't show nonsense.
-        if total <= 0 then
-            total = collected
-        elseif total < collected then
-            -- Safety: never allow total < collected
-            total = collected
-        end
-
-        numPets = total
-        numCollectedPets = collected
+        local displayed, collected = C_PetJournal.GetNumPets()
+        numCollectedPets = tonumber(collected) or tonumber(displayed) or 0
     end
 
     -- Get toy count
@@ -128,31 +162,85 @@ function TheQuartermaster:DrawStatistics(parent)
         numCollectedToys = C_ToyBox.GetNumLearnedDisplayedToys() or 0
     end
     
-    -- Achievement Card (Account-wide since TWW) - Full width
+    -- Row 1 (3-column layout): Achievement Points, Total Characters, Total Gold
     local achCard = CreateCard(parent, 90)
-    achCard:SetPoint("TOPLEFT", 10, -yOffset)
-    achCard:SetPoint("TOPRIGHT", -10, -yOffset)
-    
+    achCard:SetWidth(threeCardWidth)
+    achCard:SetPoint("TOPLEFT", leftMargin, -yOffset)
+
     local achIcon = achCard:CreateTexture(nil, "ARTWORK")
     achIcon:SetSize(36, 36)
     achIcon:SetPoint("LEFT", 15, 0)
     achIcon:SetTexture("Interface\\Icons\\Achievement_General_StayClassy")
-    
+
     local achLabel = achCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     achLabel:SetPoint("TOPLEFT", achIcon, "TOPRIGHT", 12, -2)
     achLabel:SetText("ACHIEVEMENT POINTS")
     achLabel:SetTextColor(0.6, 0.6, 0.6)
-    
+
     local achValue = achCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
     achValue:SetPoint("BOTTOMLEFT", achIcon, "BOTTOMRIGHT", 12, 0)
     achValue:SetText("|cffffcc00" .. achievementPoints .. "|r")
-    
+
     local achNote = achCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     achNote:SetPoint("BOTTOMRIGHT", -10, 10)
     achNote:SetText("|cff888888Account-wide|r")
     achNote:SetTextColor(0.5, 0.5, 0.5)
-    
+
+    -- Total Characters
+    local charCard = CreateCard(parent, 90)
+    charCard:SetWidth(threeCardWidth)
+    charCard:SetPoint("TOPLEFT", achCard, "TOPRIGHT", cardSpacing, 0)
+
+    local charIcon = charCard:CreateTexture(nil, "ARTWORK")
+    charIcon:SetSize(36, 36)
+    charIcon:SetPoint("LEFT", 15, 0)
+    charIcon:SetTexture("Interface\\Icons\\INV_Misc_GroupLooking")
+
+    local charLabel = charCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    charLabel:SetPoint("TOPLEFT", charIcon, "TOPRIGHT", 12, -2)
+    charLabel:SetText("TOTAL CHARACTERS")
+    charLabel:SetTextColor(0.6, 0.6, 0.6)
+
+    local COLORS = GetCOLORS()
+    local r, g, b = COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]
+    local themeHex = string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
+
+    local charValue = charCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+    charValue:SetPoint("BOTTOMLEFT", charIcon, "BOTTOMRIGHT", 12, 0)
+    charValue:SetText("|cff" .. themeHex .. totalCharacters .. "|r")
+
+    local charNote = charCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    charNote:SetPoint("BOTTOMRIGHT", -10, 10)
+    charNote:SetText("|cff888888Account-wide|r")
+    charNote:SetTextColor(0.5, 0.5, 0.5)
+
+    -- Total Gold (respects Discretion Mode via FormatGold)
+    local goldCard = CreateCard(parent, 90)
+    goldCard:SetWidth(threeCardWidth)
+    goldCard:SetPoint("TOPLEFT", charCard, "TOPRIGHT", cardSpacing, 0)
+    goldCard:SetPoint("RIGHT", -rightMargin, 0)
+
+    local goldIcon = goldCard:CreateTexture(nil, "ARTWORK")
+    goldIcon:SetSize(36, 36)
+    goldIcon:SetPoint("LEFT", 15, 0)
+    goldIcon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
+
+    local goldLabel = goldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    goldLabel:SetPoint("TOPLEFT", goldIcon, "TOPRIGHT", 12, -2)
+    goldLabel:SetText("TOTAL GOLD")
+    goldLabel:SetTextColor(0.6, 0.6, 0.6)
+
+    local goldValue = goldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+    goldValue:SetPoint("BOTTOMLEFT", goldIcon, "BOTTOMRIGHT", 12, 0)
+    goldValue:SetText(FormatGold(totalGold))
+
+    local goldNote = goldCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    goldNote:SetPoint("BOTTOMRIGHT", -10, 10)
+    goldNote:SetText("|cff888888Account-wide|r")
+    goldNote:SetTextColor(0.5, 0.5, 0.5)
+
     yOffset = yOffset + 100
+
     
     -- Mount Card (3-column layout)
     local mountCard = CreateCard(parent, 90)
@@ -271,32 +359,219 @@ function TheQuartermaster:DrawStatistics(parent)
     AddStat(storageCard, "INVENTORY SLOTS", (inv.usedSlots or 0) .. "/" .. (inv.totalSlots or 0), 285, -40)
     AddStat(storageCard, "TOTAL FREE", tostring(freeSlots), 420, -40, {0.3, 0.9, 0.3})
     AddStat(storageCard, "TOTAL ITEMS", tostring((wb.itemCount or 0) + (pb.itemCount or 0) + (inv.itemCount or 0)), 535, -40)
-    
-    -- Progress bar (Warband usage)
-    local wbPct = (wb.totalSlots or 0) > 0 and floor(((wb.usedSlots or 0) / (wb.totalSlots or 1)) * 100) or 0
-    
-    local barBg = storageCard:CreateTexture(nil, "ARTWORK")
-    barBg:SetSize(storageCard:GetWidth() - 30, 8)
-    barBg:SetPoint("BOTTOMLEFT", 15, 15)
-    barBg:SetColorTexture(0.2, 0.2, 0.2, 1)
-    
-    local barFill = storageCard:CreateTexture(nil, "ARTWORK")
-    barFill:SetHeight(8)
-    barFill:SetPoint("BOTTOMLEFT", 15, 15)
-    barFill:SetWidth(math.max(1, (storageCard:GetWidth() - 30) * (wbPct / 100)))
-    
-    if wbPct > 90 then
-        barFill:SetColorTexture(0.9, 0.3, 0.3, 1)
-    elseif wbPct > 70 then
-        barFill:SetColorTexture(0.9, 0.7, 0.2, 1)
-    else
-        barFill:SetColorTexture(0, 0.8, 0.9, 1)  -- Cyan for warband
+
+    -- Progress bar (Total storage usage)
+    -- NOTE: In Midnight, frame widths can be 0 during initial layout, so we use a real StatusBar
+    -- and refresh its value on show/resize.
+    local function ApplyBarColor(pct)
+        if pct > 90 then
+            storageCard.__tqStorageBar:SetStatusBarColor(0.9, 0.3, 0.3, 1)
+        elseif pct > 70 then
+            storageCard.__tqStorageBar:SetStatusBarColor(0.9, 0.7, 0.2, 1)
+        else
+            storageCard.__tqStorageBar:SetStatusBarColor(0, 0.8, 0.9, 1)
+        end
     end
+
+    local function UpdateStorageBar()
+        local latest = (self.GetBankStatistics and self:GetBankStatistics()) or stats or {}
+        local wb2 = latest.warband or wb or {}
+        local pb2 = latest.personal or pb or {}
+        local inv2 = latest.inventory or inv or {}
+
+        local total = (tonumber(wb2.totalSlots) or 0) + (tonumber(pb2.totalSlots) or 0) + (tonumber(inv2.totalSlots) or 0)
+        local used = (tonumber(wb2.usedSlots) or 0) + (tonumber(pb2.usedSlots) or 0) + (tonumber(inv2.usedSlots) or 0)
+
+        if total <= 0 then
+            total = 1
+            used = 0
+        end
+
+        storageCard.__tqStorageBar:SetMinMaxValues(0, total)
+        storageCard.__tqStorageBar:SetValue(used)
+
+        -- Cache tooltip values
+        storageCard.__tqStorageBar.__tqUsed = used
+        storageCard.__tqStorageBar.__tqTotal = total
+        storageCard.__tqStorageBar.__tqPct = (total > 0) and ((used / total) * 100) or 0
+
+        local pct = floor((used / total) * 100)
+        ApplyBarColor(pct)
+    end
+
+    -- Create once per draw
+    local bar = CreateFrame("StatusBar", nil, storageCard)
+    storageCard.__tqStorageBar = bar
+    bar:SetHeight(10)
+    bar:SetPoint("BOTTOMLEFT", 15, 15)
+    bar:SetPoint("BOTTOMRIGHT", -15, 15)
+    bar:SetMinMaxValues(0, 1)
+    bar:SetValue(0)
+    bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    bar:SetFrameLevel(storageCard:GetFrameLevel() + 2)
+
+    -- Background
+    local barBg = bar:CreateTexture(nil, "BACKGROUND")
+    barBg:SetAllPoints(bar)
+    barBg:SetColorTexture(0.2, 0.2, 0.2, 1)
+
+    -- Tooltip (total slots used)
+    bar:EnableMouse(true)
+    bar:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        local used = tonumber(self.__tqUsed) or 0
+        local total = tonumber(self.__tqTotal) or 0
+        local pct = tonumber(self.__tqPct) or 0
+        GameTooltip:AddLine("Storage Usage", 1, 0.82, 0)
+        GameTooltip:AddLine(string.format("%d / %d total slots used (%.1f%%)", used, total, pct), 1, 1, 1)
+        GameTooltip:Show()
+    end)
+    bar:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+
+    -- Initial update + refresh after layout
+    UpdateStorageBar()
+    bar:HookScript("OnShow", UpdateStorageBar)
+    bar:HookScript("OnSizeChanged", UpdateStorageBar)
     
     yOffset = yOffset + 130
-    
+
+    -- Row 4 (3-column layout): Total Played, Oldest Character, Most Played Character
+    local playedCard = CreateCard(parent, 90)
+    playedCard:SetWidth(threeCardWidth)
+    playedCard:SetPoint("TOPLEFT", leftMargin, -yOffset)
+
+    local playedIcon = playedCard:CreateTexture(nil, "ARTWORK")
+    playedIcon:SetSize(36, 36)
+    playedIcon:SetPoint("LEFT", 15, 0)
+    playedIcon:SetTexture("Interface\\Icons\\INV_Misc_PocketWatch_01")
+
+    local playedLabel = playedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    playedLabel:SetPoint("TOPLEFT", playedIcon, "TOPRIGHT", 12, -2)
+    playedLabel:SetText("TOTAL PLAYED TIME")
+    playedLabel:SetTextColor(0.6, 0.6, 0.6)
+
+    local playedValue = playedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
+    playedValue:SetPoint("BOTTOMLEFT", playedIcon, "BOTTOMRIGHT", 12, 0)
+    playedValue:SetText("|cffffcc00" .. FormatPlayedTime(totalPlayedSeconds) .. "|r")
+
+    local playedNote = playedCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    playedNote:SetPoint("BOTTOMRIGHT", -10, 10)
+    playedNote:SetText("|cff888888Account-wide|r")
+    playedNote:SetTextColor(0.5, 0.5, 0.5)
+
+    -- Highest Item Level
+    local ilvlCard = CreateCard(parent, 90)
+    ilvlCard:SetWidth(threeCardWidth)
+    ilvlCard:SetPoint("TOPLEFT", playedCard, "TOPRIGHT", cardSpacing, 0)
+
+    local ilvlIcon = ilvlCard:CreateTexture(nil, "ARTWORK")
+    ilvlIcon:SetSize(36, 36)
+    ilvlIcon:SetPoint("LEFT", 15, 0)
+    ilvlIcon:SetTexture("Interface\\Icons\\ui_mission_itemupgrade")
+
+    local ilvlLabel = ilvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    ilvlLabel:SetPoint("TOPLEFT", ilvlIcon, "TOPRIGHT", 12, -2)
+    ilvlLabel:SetText("HIGHEST ITEM LEVEL")
+    ilvlLabel:SetTextColor(0.6, 0.6, 0.6)
+
+    local ilvlNameText = ilvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    ilvlNameText:SetPoint("BOTTOMLEFT", ilvlIcon, "BOTTOMRIGHT", 12, 6)
+    ilvlNameText:SetWordWrap(false)
+    ilvlNameText:SetMaxLines(1)
+    ilvlNameText:SetJustifyH("LEFT")
+    ilvlNameText:SetWidth(threeCardWidth - 15 - 36 - 12 - 20)
+
+    do
+        local font, size, flags = ilvlNameText:GetFont()
+        if font and size then
+            ilvlNameText:SetFont(font, size + 1, flags)
+        end
+    end
+
+    if highestIlvlName then
+        local cc = (highestIlvlClassFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[highestIlvlClassFile]) or { r = 1, g = 1, b = 1 }
+        if highestIlvlRealm and highestIlvlRealm ~= "" then
+            ilvlNameText:SetText(string.format("|cff%02x%02x%02x%s|r|cff808080-%s|r",
+                (cc.r or 1) * 255, (cc.g or 1) * 255, (cc.b or 1) * 255,
+                highestIlvlName,
+                highestIlvlRealm))
+        else
+            ilvlNameText:SetText(string.format("|cff%02x%02x%02x%s|r",
+                (cc.r or 1) * 255, (cc.g or 1) * 255, (cc.b or 1) * 255,
+                highestIlvlName))
+        end
+    else
+        ilvlNameText:SetText("|cff9aa0a6--|r")
+    end
+
+    local ilvlSub = ilvlCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    ilvlSub:SetPoint("TOPLEFT", ilvlNameText, "BOTTOMLEFT", 0, -2)
+    if highestIlvl and highestIlvl > 0 then
+        ilvlSub:SetText("|cff888888iLvl " .. string.format("%.1f", highestIlvl) .. "|r")
+    else
+        ilvlSub:SetText("|cff888888--|r")
+    end
+    ilvlSub:SetTextColor(0.5, 0.5, 0.5)
+
+    -- Most Played Character
+    local mostCard = CreateCard(parent, 90)
+    mostCard:SetWidth(threeCardWidth)
+    mostCard:SetPoint("TOPLEFT", ilvlCard, "TOPRIGHT", cardSpacing, 0)
+    mostCard:SetPoint("RIGHT", -rightMargin, 0)
+
+    local mostIcon = mostCard:CreateTexture(nil, "ARTWORK")
+    mostIcon:SetSize(36, 36)
+    mostIcon:SetPoint("LEFT", 15, 0)
+    mostIcon:SetTexture("Interface\\Icons\\Achievement_General_StayClassy")
+
+    local mostLabel = mostCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    mostLabel:SetPoint("TOPLEFT", mostIcon, "TOPRIGHT", 12, -2)
+    mostLabel:SetText("MOST PLAYED CHARACTER")
+    mostLabel:SetTextColor(0.6, 0.6, 0.6)
+
+    local mostValue = mostCard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    mostValue:SetPoint("BOTTOMLEFT", mostIcon, "BOTTOMRIGHT", 12, 6)
+    mostValue:SetWordWrap(false)
+    mostValue:SetMaxLines(1)
+    mostValue:SetJustifyH("LEFT")
+    mostValue:SetWidth(threeCardWidth - 15 - 36 - 12 - 20)
+
+    do
+        local font, size, flags = mostValue:GetFont()
+        if font and size then
+            mostValue:SetFont(font, size + 1, flags)
+        end
+    end
+
+    if mostPlayedCharacterName then
+        local cc = (mostPlayedCharacterClassFile and RAID_CLASS_COLORS and RAID_CLASS_COLORS[mostPlayedCharacterClassFile]) or { r = 1, g = 1, b = 1 }
+        if mostPlayedCharacterRealm and mostPlayedCharacterRealm ~= "" then
+            mostValue:SetText(string.format("|cff%02x%02x%02x%s|r|cff808080-%s|r",
+                (cc.r or 1) * 255, (cc.g or 1) * 255, (cc.b or 1) * 255,
+                mostPlayedCharacterName,
+                mostPlayedCharacterRealm))
+        else
+            mostValue:SetText(string.format("|cff%02x%02x%02x%s|r",
+                (cc.r or 1) * 255, (cc.g or 1) * 255, (cc.b or 1) * 255,
+                mostPlayedCharacterName))
+        end
+        mostValue:SetTextColor(1, 1, 1)
+    else
+        mostValue:SetText("|cff9aa0a6--|r")
+        mostValue:SetTextColor(1, 1, 1)
+    end
+
+    local mostSub = mostCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    mostSub:SetPoint("TOPLEFT", mostValue, "BOTTOMLEFT", 0, -2)
+    mostSub:SetText("|cff888888" .. FormatPlayedTime(mostPlayedSeconds) .. "|r")
+    mostSub:SetTextColor(0.5, 0.5, 0.5)
+
+    yOffset = yOffset + 100
+
     -- Last scan info removed - now only shown in footer
-    
+
+    yOffset = yOffset + 30
     return yOffset
 end
-

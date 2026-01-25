@@ -1,3 +1,69 @@
+## v0.2.130 - 2026-01-25
+- Statistics: Highest Item Level card now uses `Interface\Icons\ui_mission_itemupgrade` icon.
+
+## v0.2.127 - 2026-01-25
+- Statistics: Total Companions now uses the **account-wide collected** count from `C_PetJournal.GetNumPets()` (fixes undercount when filters are active)
+- Statistics: Replaced **Oldest Character** card with **Highest Item Level** (more reliable than firstSeen tracking)
+
+## v0.2.126 - 2026-01-25
+- Statistics: Slightly increased Oldest/Most Played character name font size (name class-coloured, realm grey)
+
+## v0.2.125 - 2026-01-25
+- Statistics: Oldest/Most Played cards now use smaller name text and render the realm in grey (matching the Characters screen)
+
+## v0.2.124 - 2026-01-25
+- Statistics: Oldest/Most Played now show **Name-Realm** in the character's class color
+- Statistics: Total Companions now uses `C_PetJournal.GetNumPets()` owned count (numerator)
+
+# 📜 Changelog – Version 0.2.123
+
+📅 Release Date: 2026-01-25
+
+🛠️ Changes & Improvements
+
+– Statistics: Aligned Row 1 and Row 4 card edges to match the 3-card grid.
+
+---
+
+## 0.2.122 - 2026-01-25
+– Statistics: Row 1 rebuilt into 3 cards (Achievement Points, Total Characters, Total Gold).
+– Statistics: Added Row 4 cards (Total Played Time, Oldest Character, Most Played Character).
+– Data: Added firstSeen tracking for characters to support Oldest Character statistic.
+
+---
+
+## 0.2.121 - 2026-01-25
+- Total Companions: Card now displays collected pets out of 1964 total in-game companions.
+- Experience: Increased Played column width to prevent wrapping (dd hh mm ss format).
+
+## 0.2.117 - 2026-01-25
+- Characters: Removed the Played column from the list view
+- Experience: Played time column now displays dd hh mm ss
+- Experience: Hardened Max Level detection for Retail pre-patch (effective/inferred cap)
+- Experience: Fixed Fully Rested summary count to match the list
+- Statistics: Added tooltip to storage usage bar and fixed empty-fill display
+
+## 0.2.116 - 2026-01-25
+- Fixed Experience tab rows (Rested XP / Max XP / Rested In) to show Max Level correctly on Retail pre-patch
+
+## 0.2.115 - 2026-01-25
+- Improved max-level detection on Retail pre-patch (future cap API workaround)
+
+## 0.2.114 (2026-01-25)
+- Experience: Fixed max-level detection on Retail pre-patch (uses effective max level instead of GetMaxPlayerLevel()).
+
+## 0.2.113 (2026-01-25)
+- Experience: Fixed Fully Rested summary card count (now matches the list).
+
+## 0.2.112 (2026-01-25)
+- Statistics: Fixed Lua syntax error in storage bar tooltip handler.
+
+## 0.2.111 (2026-01-25)
+- Statistics: Added tooltip to storage usage bar showing total slots used and percentage.
+
+## 0.2.110 (2026-01-25)
+- Statistics: Fixed storage usage bar appearing empty (Midnight layout timing issue).
+
 ## 0.2.108 (2026-01-24)
 - Options: "Show Item Locations" (Tooltip Enhancements) is now enabled by default.
 ## 0.2.107 (2026-01-24)
@@ -127,3 +193,10 @@
 
 ⚠️ Notes
 This version is the first internal “stable” baseline and is not a public release yet.
+
+
+## 0.2.120 - 2026-01-25
+- Characters: item level now displays as `iLvl X.X` and the column is widened to keep it on one line.
+
+## 0.2.128 (2026-01-25)
+- Hotfix: Fixed Lua syntax error in StatisticsUI preventing addon load.

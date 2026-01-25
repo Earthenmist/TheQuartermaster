@@ -419,6 +419,15 @@ function TheQuartermaster:SaveCurrentCharacterData()
 
 
 -- Store character data
+    local firstSeen = nil
+    if existing and existing.firstSeen then
+        firstSeen = existing.firstSeen
+    elseif existing and existing.lastSeen then
+        firstSeen = existing.lastSeen
+    else
+        firstSeen = time()
+    end
+
     local newRecord = {
         name = name,
         realm = realm,
@@ -444,6 +453,7 @@ function TheQuartermaster:SaveCurrentCharacterData()
         restXP = restedXP,
         fullyRestedIn = fullyRestedIn,
         playedTime = priorPlayedTime,
+        firstSeen = firstSeen,
         lastSeen = time(),
         professions = professionData, -- Store Profession data
         pve = pveData,  -- Store PvE data
@@ -606,6 +616,19 @@ end
     @return boolean - Success status
 ]]
 function TheQuartermaster:UpdateCurrentCharacterExperience()
+    local function IsAtEffectiveMaxLevel()
+        -- Retail pre-patch can report a future level cap via GetMaxPlayerLevel().
+        -- Prefer "effective max level" checks so level 80 characters at the real cap are treated as max level.
+        if type(IsPlayerAtEffectiveMaxLevel) == "function" then
+            local ok, v = pcall(IsPlayerAtEffectiveMaxLevel)
+            if ok and v == true then
+                return true
+            end
+        end
+        local xpMax = UnitXPMax("player")
+        return (type(xpMax) == "number" and xpMax == 0) or false
+    end
+
     local name = UnitName("player")
     local realm = GetRealmName()
     if not name or name == "" or name == "Unknown" then return false end
@@ -618,9 +641,9 @@ function TheQuartermaster:UpdateCurrentCharacterExperience()
 
     local char = self.db.global.characters[key]
     local level = UnitLevel("player")
-    local maxPlayerLevel = (GetMaxPlayerLevel and GetMaxPlayerLevel()) or 80
+    local isMaxLevel = IsAtEffectiveMaxLevel()
 
-    if level and level < maxPlayerLevel then
+    if level and not isMaxLevel then
         local maxXP = UnitXPMax("player")
         local restedXP = (GetXPExhaustion and GetXPExhaustion()) or 0
         if restedXP == nil then restedXP = 0 end
@@ -634,6 +657,7 @@ function TheQuartermaster:UpdateCurrentCharacterExperience()
         end
 
         char.level = level
+        char.isMaxLevel = false
         char.currentXP = UnitXP("player")
         char.maxXP = maxXP
         char.restXP = restedXP
@@ -642,6 +666,7 @@ function TheQuartermaster:UpdateCurrentCharacterExperience()
     else
         -- Max level: no XP progress / rest to show
         char.level = level
+        char.isMaxLevel = true
         char.currentXP = nil
         char.maxXP = nil
         char.restXP = nil
