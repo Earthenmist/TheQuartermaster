@@ -1,4 +1,19 @@
+## 0.2.135 - 2026-01-25
+- Reputations: Fixed Paragon detection for sub-factions (Classic reps only show Paragon once Exalted and the base bar is capped)
+- Reputations: Renown factions only show Paragon once max Renown is reached
+- /tq resetrep: uses a user-confirmed reload prompt (prevents ADDON_ACTION_BLOCKED)
+- Fix: Resolved a Lua syntax error introduced in 0.2.134
+
+## 0.2.133 - 2026-01-25
+- /tq resetrep: replaced automatic Reload() call with user-confirmed reload popup (prevents ADDON_ACTION_BLOCKED).
+- /tq resetrep: reload prompt now defers until combat ends when necessary.
+
+## 0.2.132 - 2026-01-25
+- Reputations: /tq resetrep now triggers a real UI reload (deferred until out of combat when needed).
+
 ## v0.2.130 - 2026-01-25
+## 0.2.131 - 2026-01-25
+- Fixed reputation Paragon display: Renown factions now only show Paragon after reaching max Renown.
 - Statistics: Highest Item Level card now uses `Interface\Icons\ui_mission_itemupgrade` icon.
 
 ## v0.2.127 - 2026-01-25
@@ -200,3 +215,7 @@ This version is the first internal “stable” baseline and is not a public rel
 
 ## 0.2.128 (2026-01-25)
 - Hotfix: Fixed Lua syntax error in StatisticsUI preventing addon load.
+
+## 0.2.134 (2026-01-25)
+- Reputations: Fixed premature Paragon detection for sub-factions; Paragon now only displays when actually active (maxed Renown or Exalted & capped).
+- Slash: `/tq resetrep` now prompts for a safe reload instead of calling protected reload functions.

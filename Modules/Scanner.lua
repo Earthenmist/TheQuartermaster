@@ -1194,8 +1194,37 @@ function TheQuartermaster:ScanReputations()
             -- Only store if faction is valid (Renown unlocked OR classic non-inactive)
             if isRenownFaction or (not isRenownFaction and currentValue) then
                 -- Check Paragon
+                -- IMPORTANT: Paragon is only valid once the base reputation track is maxed.
+                -- For Renown / Major Factions, Blizzard only enables Paragon after max Renown.
                 local paragonValue, paragonThreshold, paragonRewardPending = nil, nil, nil
-                if C_Reputation.IsFactionParagon and C_Reputation.IsFactionParagon(factionData.factionID) then
+                local allowParagon = false
+
+                if isRenownFaction then
+                    -- Renown / Major Factions: Paragon only becomes valid once max Renown is reached.
+                    -- (Some APIs may report paragon support earlier; we gate it strictly.)
+                    -- Prefer explicit Renown level comparison when available
+                    if type(renownLevel) == "number" and type(renownMaxLevel) == "number" and renownMaxLevel > 0 then
+                        allowParagon = (renownLevel >= renownMaxLevel)
+                    end
+
+                    -- Fallback: if we don't have a reliable Renown max level,
+                    -- only allow Paragon when the current track is fully completed.
+                    if not allowParagon and type(currentValue) == "number" and type(maxValue) == "number" and maxValue > 0 then
+                        allowParagon = (currentValue >= maxValue)
+                    end
+                else
+                    -- Classic reputations: Paragon only activates after Exalted *and* the base bar is maxed.
+                    -- (Midnight can report paragon support early for some sub-factions; don't show it unless it's actually active.)
+                    if type(currentValue) == "number" and type(maxValue) == "number" and maxValue > 0 and currentValue >= maxValue then
+                        if type(factionData.reaction) == "number" then
+                            allowParagon = (factionData.reaction >= 8) -- Exalted
+                        else
+                            allowParagon = true
+                        end
+                    end
+                end
+
+                if allowParagon and C_Reputation.IsFactionParagon and C_Reputation.IsFactionParagon(factionData.factionID) then
                     local pValue, pThreshold, rewardQuestID, hasRewardPending = C_Reputation.GetFactionParagonInfo(factionData.factionID)
                     if pValue and pThreshold then
                         paragonValue = pValue % pThreshold

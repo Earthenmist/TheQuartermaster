@@ -7,14 +7,17 @@ local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
 -- Current addon version
-local CURRENT_VERSION = "0.2.130"
+local CURRENT_VERSION = "0.2.135"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.130",
+    version = "0.2.135",
     date = "2026-01-25",
     changes = {
-        "Statistics: Slightly increased Oldest/Most Played character name font size for readability (name class-coloured, realm grey)",
+        "Reputations: Fixed Paragon detection for sub-factions (Classic reps only show Paragon once Exalted and the base bar is capped)",
+        "Reputations: Renown factions only show Paragon once max Renown is reached",
+        "Reputations: /tq resetrep now prompts for a user-confirmed reload (prevents ADDON_ACTION_BLOCKED)",
+        "Fix: Resolved a Lua syntax error introduced in 0.2.134",
     }
 }
 --[[============================================================================

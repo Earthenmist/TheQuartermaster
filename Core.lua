@@ -230,6 +230,9 @@ function TheQuartermaster:OnEnable()
     -- Apply theme for this session (class mode updates per character login)
     self:ApplyThemeFromMode()
 
+    -- Combat-end hook for deferred reload prompts (e.g., /tq resetrep)
+    self:RegisterEvent("PLAYER_REGEN_ENABLED")
+
 	-- 12.0+ safety: Blizzard tooltips may pass "secret" money values into SetTooltipMoney.
 	-- Coerce to a plain number to avoid MoneyFrame_Update arithmetic errors.
 	if not self._tooltipMoneyFixApplied and type(SetTooltipMoney) == "function" then
@@ -539,13 +542,25 @@ function TheQuartermaster:SlashCommand(input)
             C_Timer.After(0.5, function()
                 self.currentTrigger = "CMD_RESET"
                 self:ScanReputations()
-                self:Print("|cff00ff00Reputation data reset complete! Reloading UI...|r")
-                
-                -- Refresh UI
+                self:Print("|cff00ff00Reputation data reset complete! A UI reload is required to fully apply the reset.|r")
+
+                -- Refresh UI (best-effort without reload)
                 if self.RefreshUI then
                     self:RefreshUI()
                 end
-            end)
+
+                -- Offer a user-confirmed reload (avoids protected Reload() calls / taint)
+                if InCombatLockdown and InCombatLockdown() then
+                    self._pendingReloadPopup = true
+                    self:Print("|cffff6600In combat - reload prompt will appear when combat ends.|r")
+                else
+                    if self.ShowReloadPopup then
+                        self:ShowReloadPopup()
+                    else
+                        self:Print("|cffffaa00Please type |r|cff00ff00/reload|r|cffffaa00 to complete the reset.|r")
+                    end
+                end
+end)
         end
         
         return
@@ -1390,11 +1405,8 @@ function TheQuartermaster:ShowReloadPopup()
         button1 = "Reload",
         button2 = "Later",
         OnAccept = function()
-            -- Use C_UI.Reload() (not protected, safe for addons in TWW 11.0+)
-            if C_UI and C_UI.Reload then
-                C_UI.Reload()
-            else
-                -- Fallback for older clients (may cause taint warning)
+            -- Reload must be user-confirmed; call the standard reload API from the popup click.
+            if type(ReloadUI) == "function" then
                 ReloadUI()
             end
         end,
@@ -1406,6 +1418,20 @@ function TheQuartermaster:ShowReloadPopup()
     
     StaticPopup_Show("TheQuartermaster_RELOAD_UI")
 end
+
+
+-- Show deferred reload prompts once combat ends
+function TheQuartermaster:PLAYER_REGEN_ENABLED()
+    if self._pendingReloadPopup then
+        self._pendingReloadPopup = nil
+        if self.ShowReloadPopup then
+            self:ShowReloadPopup()
+        else
+            self:Print("|cffffaa00Please type |r|cff00ff00/reload|r|cffffaa00 to complete the pending change.|r")
+        end
+    end
+end
+
 
 function TheQuartermaster:ShowBankAddonConflictWarning(addonName)
     -- Create or update popup dialog
@@ -2168,6 +2194,20 @@ function TheQuartermaster:OnCombatEnd()
         end
         self._hiddenByCombat = false
     end
+
+    -- If a reload was requested during combat (e.g. /tq resetrep), do it now
+    if self._pendingReload then
+        self._pendingReload = false
+        C_Timer.After(0.1, function()
+            if C_UI and C_UI.Reload then
+                C_UI.Reload()
+            else
+                ReloadUI()
+            end
+        end)
+        return
+    end
+
 end
 
 --[[
@@ -2940,8 +2980,6 @@ function TheQuartermaster:GetFavoriteCharacters()
 end
 
 -- PerformItemSearch() moved to Modules/DataService.lua
-
-
 
 
 
