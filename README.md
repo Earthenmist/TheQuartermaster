@@ -2,7 +2,7 @@
 
 **TheQuartermaster** is a comprehensive Warband-aware inventory, currency, profession, and character overview addon for World of Warcraft, designed for the *Midnight* / *The War Within* era.
 
-It provides a unified dashboard to track your entire account’s progression, storage, and collectibles across all characters — while staying visually aligned with Blizzard’s modern UI style.
+It provides a unified dashboard to track your entire account’s progression, storage, and collectables across all characters — while staying visually aligned with Blizzard’s modern UI style.
 
 ---
 
@@ -29,7 +29,7 @@ It provides a unified dashboard to track your entire account’s progression, st
 
 ### 🧪 Professions
 - Profession overview for all characters.
-- Profession icons and specialization visibility.
+- Profession icons and specialisation visibility.
 - Direct profession access for the active character.
 
 ### 🐾 Companions
@@ -40,7 +40,7 @@ It provides a unified dashboard to track your entire account’s progression, st
 - Storage usage breakdown.
 - Guild population summary.
 - Unguilded character counts.
-- Total companions and collectibles.
+- Total companions and collectables.
 
 ### 🎨 UI & Theming
 - Blizzard-style frame layout.
@@ -51,7 +51,7 @@ It provides a unified dashboard to track your entire account’s progression, st
 
 ### 🔔 Notifications
 - Version update notifications.
-- Collectible unlock notifications (mounts, pets).
+- Collectable unlock notifications (mounts, pets).
 - Loot-related event triggers.
 - Themed notification windows.
 
@@ -59,7 +59,7 @@ It provides a unified dashboard to track your entire account’s progression, st
 - Built using Blizzard’s modern Settings API.
 - Toggleable features and UI elements.
 - Tooltip enhancements.
-- Theme customization.
+- Theme customisation.
 - Persistent saved variables.
 
 ---
@@ -83,7 +83,7 @@ It provides a unified dashboard to track your entire account’s progression, st
   - The minimap button, or
   - Slash command:
     ```
-    /tqm
+    /tq
     ```
 
 - Navigate between panels using the footer buttons:
