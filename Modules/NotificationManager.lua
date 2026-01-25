@@ -9,17 +9,15 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "0.2.142"
+local CURRENT_VERSION = "1.0.0"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "0.2.142",
+    version = "1.0.0",
     date = "2026-01-25",
     changes = {
-        
-        "Localization maintenance: refreshed enUS locale, localized UI/options text, and removed unused strings.","Maintenance: Removed unused deprecated reputation categorization helper",
-        "Maintenance: Fixed defaults table structure for per-character inventory cache",
-        "Maintenance: Minor code tidy-up (no functional UI changes)",
+        "Initial Release",
+        "For any issues please create an Issue on github link can be found on curseforge",
     }
 }
 --[[============================================================================
