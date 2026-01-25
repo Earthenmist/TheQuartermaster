@@ -1,278 +1,127 @@
-# The Quartermaster  
-**Account-Wide Inventory, Warband & Character Overview for World of Warcraft (Midnight-Ready)**
+# TheQuartermaster
+
+**TheQuartermaster** is a comprehensive Warband-aware inventory, currency, profession, and character overview addon for World of Warcraft, designed for the *Midnight* / *The War Within* era.
+
+It provides a unified dashboard to track your entire account’s progression, storage, and collectibles across all characters — while staying visually aligned with Blizzard’s modern UI style.
 
 ---
 
-## Overview
+## ✨ Features
 
-**The Quartermaster** is a modern, Blizzard-styled account dashboard addon for World of Warcraft that gives you a unified view of:
+### 🧙 Character Overview
+- Full Warband-wide character list.
+- Class icons, faction flags, item level, and playtime.
+- Profession display for the current character (clickable to open professions).
+- Guild membership summary.
+- Rested XP, max XP, and fully rested time tracking.
 
-- All your characters  
-- Their inventories, banks, Warband banks, and currencies  
-- Item storage and free slot usage  
-- Guild membership and reputation  
-- Experience, rested XP, and playtime  
-- Account-level statistics and summaries  
+### 🎒 Inventory & Storage
+- Inventory, personal bank, and Warband bank views.
+- Storage usage overview with progress bars.
+- Total slot counts and usage percentages.
+- Section-based category grouping with collapsible headers.
+- Visual consistency across list and grid views.
 
-Built around Warbands and Midnight API changes, The Quartermaster replaces the need for multiple “altoholic-style” addons with a single, clean, expandable UI that stays visually consistent with Blizzard’s default interface.
+### 💰 Currencies
+- Warband-wide currency tracking.
+- Unified currency list with filters.
+- Blizzard-style buttons and theming.
 
----
+### 🧪 Professions
+- Profession overview for all characters.
+- Profession icons and specialization visibility.
+- Direct profession access for the active character.
 
-## Key Features
+### 🐾 Companions
+- Total companion count (battle pets).
+- Warband-wide companion summary.
 
-### 📦 Unified Storage View
-- View **Inventory**, **Personal Bank**, **Warband Bank**, and **Bags** per character  
-- See:
-  - Used slots  
-  - Free slots  
-  - Total capacity  
-- Toggle between **List View** and **Grid View**  
-- Category sections (collapsed by default)  
-- Search and filter items  
-- Item tooltips with full details  
-- Visual storage usage indicators  
-
----
-
-### 👤 Character Dashboard
-- Account-wide list of all characters  
-- Displays:
-  - Character name  
-  - Level  
-  - Class  
-  - Faction  
-  - Server  
-  - Last online  
-  - Gold  
-  - Guild  
-  - Guild rank  
-  - Guild reputation  
-- Class icons and faction flags  
-- Blizzard-styled rows and headers  
-
----
-
-### 🏦 Warband-Aware
-- Fully integrated with Warband systems  
-- Supports:
-  - Warband Bank storage  
-  - Warband currencies  
-  - Cross-character tracking  
-- Designed for Midnight and post-TWW architecture  
-
----
-
-### 💰 Currency Tracking
-- View all tracked currencies per character  
-- Account-wide totals  
-- Blizzard iconography  
-- Clean, scrollable layout  
-- Filterable currency list  
-
----
-
-### 📊 Account Statistics
-- High-level summaries including:
-  - Total gold across all characters  
-  - Total items stored  
-  - Storage usage  
-  - Total companions (battle pets)  
-  - Mounts (where available)  
-- Storage breakdown:
-  - Inventory slots  
-  - Bank slots  
-  - Warband slots  
-  - Total free space  
-
----
-
-### 🎮 Experience UI
-- Per-character experience tracking  
-- Displays:
-  - Total played time  
-  - Rested XP (percentage or max level)  
-  - Maximum rested XP  
-  - Time until fully rested  
-- Blizzard-style information boxes  
-- Theme-aware colors  
-- Tooltips on:
-  - Rested XP  
-  - Max XP  
-  - Fully Rested In  
-
----
-
-### 🛡 Guild Overview
-- Account-wide guild visibility  
-- Shows:
-  - Character name  
-  - Level  
-  - Guild  
-  - Guild rank  
-  - Guild reputation  
-  - Server  
-- Faction icon next to character name  
-- Server column for cross-realm clarity  
-
----
+### 📊 Statistics
+- Storage usage breakdown.
+- Guild population summary.
+- Unguilded character counts.
+- Total companions and collectibles.
 
 ### 🎨 UI & Theming
-- Blizzard-styled frame  
-- Gold borders and textured backgrounds  
-- Theme color support  
-- Clean tab-based navigation  
-- Footer-based controls  
-- Consistent spacing and typography  
-- Responsive resizing  
+- Blizzard-style frame layout.
+- Class-colored or static theme support.
+- Modular UI panels (Characters, Inventory, Bank, Currencies, Professions, Statistics, Experience).
+- Consistent button styles and icons.
+- Minimap button (LibDataBroker).
+
+### 🔔 Notifications
+- Version update notifications.
+- Collectible unlock notifications (mounts, pets).
+- Loot-related event triggers.
+- Themed notification windows.
+
+### ⚙️ Configuration
+- Built using Blizzard’s modern Settings API.
+- Toggleable features and UI elements.
+- Tooltip enhancements.
+- Theme customization.
+- Persistent saved variables.
 
 ---
 
-### ⚙️ Settings & Configuration
-- Built-in options panel  
-- Controls for:
-  - Theme color  
-  - UI scaling  
-  - Display toggles  
-  - Minimap button  
-  - Auto refresh behavior  
-- Persistent saved variables  
-- No external config dependency  
+## 📦 Installation
+
+1. Download the latest release.
+2. Extract the `TheQuartermaster` folder into:
+
+   ```
+   World of Warcraft/_retail_/Interface/AddOns/
+   ```
+
+3. Restart World of Warcraft or reload the UI (`/reload`).
 
 ---
 
-### 🔔 Notifications & Refresh Logic
-- Controlled refresh behavior  
-- Avoids spam on:
-  - Zone change  
-  - Hearthstone  
-  - Channel swaps  
-- Manual refresh support  
-- Midnight-safe timing logic  
+## 🧭 Usage
+
+- Open the main window via:
+  - The minimap button, or
+  - Slash command:
+    ```
+    /tqm
+    ```
+
+- Navigate between panels using the footer buttons:
+  - Characters
+  - Inventory
+  - Bank
+  - Currencies
+  - Professions
+  - Statistics
+  - Experience
 
 ---
 
-### 🧭 Minimap Integration
-- LibDataBroker support  
-- Toggle main window  
-- Tooltip with summary info  
-- Drag-to-move minimap icon  
+## 🧰 Dependencies
+
+- **LibDataBroker-1.1**
+- **LibDBIcon-1.0**
+- **Ace3** (embedded)
 
 ---
 
-## Midnight Compatibility
+## 🛠️ Compatibility
 
-The Quartermaster is fully hardened for **Midnight**:
-
-- Handles “secret” API values safely  
-- Avoids restricted calls during combat  
-- Suppresses UI actions when prohibited  
-- Uses validated cooldown and timing logic  
-- Compatible with:
-  - Retail 11.2.x  
-  - Midnight 12.x  
-
-No configuration reset required.
+- Retail 11.2.x (*The War Within*)
+- Midnight 12.x (Beta)
+- Fully Warband-aware.
 
 ---
 
-## Why The Quartermaster Exists
+## ❤️ Credits
 
-The Quartermaster is not a clone of Altoholic.
+Created and maintained by **Lanni**.
 
-It is designed to be:
-
-- Lightweight  
-- Blizzard-styled  
-- Warband-first  
-- Expandable  
-- Midnight-safe  
-- Account-centric  
-
-It replaces the need for:
-
-- Multiple inventory trackers  
-- Separate currency addons  
-- Basic altoholic dashboards  
-- Manual storage spreadsheets  
+Special thanks to all beta testers and contributors who helped refine TheQuartermaster during its pre-release phases.
 
 ---
 
-## Installation
+## 📝 License
 
-1. Download the latest release `.zip`  
-2. Extract into:
-
-```
-World of Warcraft/_retail_/Interface/AddOns/TheQuartermaster
-```
-
-3. Restart the game or reload the UI  
-
----
-
-## Usage
-
-- Open the main window using:
-  - The minimap button  
-  - The UI button in the footer  
-- Navigate using the top tabs:
-  - Characters  
-  - Inventory  
-  - Bank  
-  - Warband  
-  - Currencies  
-  - Experience  
-  - Statistics  
-  - Guild  
-- Use:
-  - Search boxes  
-  - View toggles  
-  - Expand/collapse sections  
-
----
-
-## Development Status
-
-**Current Version:** 0.2.81  
-**Status:** Stable Baseline  
-**Expansion:** The War Within / Midnight  
-
-This version represents the stable foundation for:
-
-- UI polish  
-- Feature expansion  
-- Performance tuning  
-- Additional modules  
-
----
-
-## Planned Enhancements
-
-- Upgrade highlighting  
-- Item source tracking  
-- BiS tagging  
-- Raid & dungeon loot integration  
-- Exportable summaries  
-- Guild-wide inventory snapshots  
-
----
-
-## Credits
-
-- Developed by **Lanni Alonsus**  
-- Powered by **Ace3**  
-- Blizzard-styled UI framework  
-- Warband & Midnight API support  
-
----
-
-## Support & Feedback
-
-If you encounter issues or have feature suggestions:
-
-- Please include:
-  - Version number  
-  - Error logs  
-  - Screenshots (if UI related)  
-
-Feature requests and feedback are welcome.
+This addon is provided as-is for personal use.
+Redistribution or modification without permission is not permitted.
