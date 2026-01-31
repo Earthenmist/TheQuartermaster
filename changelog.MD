@@ -6,6 +6,11 @@ This project follows **Semantic Versioning** (MAJOR.MINOR.PATCH).
 
 ---
 
+## 1.0.2 — Tooltip Money Error Hotfix (2026-01-31)
+
+### Fixed
+- PCorrected typo in v1.0.1
+
 ## 1.0.1 — Tooltip Money Error Hotfix (2026-01-31)
 
 ### Fixed
