@@ -234,15 +234,39 @@ function TheQuartermaster:OnEnable()
     self:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 	-- 12.0+ safety: Blizzard tooltips may pass "secret" money values into SetTooltipMoney.
-	-- Coerce to a plain number to avoid MoneyFrame_Update arithmetic errors.
+	-- Replace SetTooltipMoney with a safe implementation that:
+	--   1) coerces money to a plain number (avoids MoneyFrame_Update arithmetic errors)
+	--   2) prints the coin string in TheQuartermaster's active theme accent colour
+	--
+	-- NOTE: This is intentionally a light-touch override (mirrors the common community fix),
+	-- but with theming so it visually matches the rest of the addon.
 	if not self._tooltipMoneyFixApplied and type(SetTooltipMoney) == "function" then
 		local origSetTooltipMoney = SetTooltipMoney
-		SetTooltipMoney = function(frame, money, ...)
-			if type(money) ~= "number" then
-				money = tonumber(money) or 0
+		SetTooltipMoney = function(frame, money, moneyType, prefixText, suffixText)
+			money = tonumber(money) or 0
+
+			-- Prefer themed output when we can (tooltips)
+			if frame and frame.AddLine and type(GetCoinTextureString) == "function" then
+				local r, g, b = 0, 1, 1
+				local p = TheQuartermaster and TheQuartermaster.db and TheQuartermaster.db.profile
+				local accent = p and p.themeColors and p.themeColors.accent
+				if accent then
+					r = tonumber(accent[1]) or r
+					g = tonumber(accent[2]) or g
+					b = tonumber(accent[3]) or b
+				end
+
+				frame:AddLine((prefixText or "") .. "  " .. GetCoinTextureString(money) .. " " .. (suffixText or ""), r, g, b)
+				if frame.Show then frame:Show() end
+				return
 			end
-			return origSetTooltipMoney(frame, money, ...)
+
+			-- Fallback to Blizzard behaviour for non-tooltip money frames
+			if type(origSetTooltipMoney) == "function" then
+				return origSetTooltipMoney(frame, money, moneyType, prefixText, suffixText)
+			end
 		end
+
 		self._tooltipMoneyFixApplied = true
 	end
     
