@@ -936,27 +936,12 @@ function TheQuartermaster:DrawReputationTab(parent)
         self:RefreshUI()
     end
     
-    -- ===== TITLE CARD =====
-    local titleCard = CreateCard(parent, 70)
+    -- Header card removed (per UI refresh request)
+    -- Keep a tiny, invisible holder to anchor action buttons consistently.
+    local titleCard = CreateFrame("Frame", nil, parent)
+    titleCard:SetSize(1, 1)
     titleCard:SetPoint("TOPLEFT", 10, -yOffset)
     titleCard:SetPoint("TOPRIGHT", -10, -yOffset)
-    
-    local titleIcon = titleCard:CreateTexture(nil, "ARTWORK")
-    titleIcon:SetSize(40, 40)
-    titleIcon:SetPoint("LEFT", 15, 0)
-    titleIcon:SetTexture("Interface\\Icons\\Achievement_Reputation_01")
-    
-    local titleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    titleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, 5)
-    local COLORS = GetCOLORS()
-    local r, g, b = COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]
-    local hexColor = string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
-    titleText:SetText("|cff" .. hexColor .. "Reputation Tracker|r")
-    
-    local subtitleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)
-    subtitleText:SetTextColor(0.6, 0.6, 0.6)
-    subtitleText:SetText(L["TRACK_ALL_ACTIVE_REPUTATIONS_AND_RENOWN_IN_BLIZZARDS_ORDER"])
     
     -- Toggle button for Filtered/Non-Filtered view
     local viewMode = self.db.profile.reputationViewMode or "all"
@@ -1041,7 +1026,7 @@ function TheQuartermaster:DrawReputationTab(parent)
         GameTooltip:Hide()
     end)
     
-    yOffset = yOffset + 78
+    yOffset = yOffset + 32
     
     -- ===== RENDER CHARACTERS =====
     local hasAnyData = false

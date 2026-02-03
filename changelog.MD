@@ -1,28 +1,22 @@
 # TheQuartermaster — Changelog
 
-All notable changes to **TheQuartermaster** will be documented in this file.
+📜 Changelog – Version 1.0.6  
+  
+🛠️ UI & Layout Changes  
+  
+Moved Information and Settings actions into the left sidebar navigation, styled consistently with existing section buttons.
 
-This project follows **Semantic Versioning** (MAJOR.MINOR.PATCH).
+Removed the floating bottom-right action buttons for a cleaner, unified navigation layout.
 
----
+Removed large header panels across major sections to simplify the UI and reduce visual duplication.
 
-## 1.0.2 — Tooltip Money Error Hotfix (2026-01-31)
+Sidebar navigation now represents the primary interaction model for all sections and actions.
 
-### Fixed
-- PCorrected typo in v1.0.1
+🎨 Visual Identity
 
-## 1.0.1 — Tooltip Money Error Hotfix (2026-01-31)
+Updated layout structure to further differentiate The Quartermaster’s UI from other Warband-related addons.
 
-### Fixed
-- Prevented Blizzard tooltip money errors caused by "secret" money values by replacing `SetTooltipMoney` with a safe implementation.
-
-### Improved
-- Tooltip money lines now use TheQuartermaster's active theme accent colour (e.g. class colour), so they visually match the UI.
-
-## 1.0.0 — Initial Release (2026-01-25)
-
-### Added
-- Initial public release of TheQuartermaster.
+Improved spacing and content focus by eliminating redundant header elements.
 
 ### Notes
 - Thank you to everyone who helped test the pre‑release builds ❤️

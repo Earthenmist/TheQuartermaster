@@ -290,20 +290,28 @@ function TheQuartermaster:CreateMainWindow()
     
     tinsert(UISpecialFrames, "TheQuartermasterFrame")
     
-    -- ===== NAV BAR =====
-    local nav = CreateFrame("Frame", nil, f)
-    nav:SetHeight(36)
-    nav:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -4) -- 4px gap below header
-    nav:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT", 0, -4)
+    -- ===== NAV SIDEBAR =====
+    -- Sidebar navigation (distinct from Warband Nexus' top-tab layout)
+    local nav = CreateFrame("Frame", nil, f, "BackdropTemplate")
+    nav:SetWidth(160)
+    nav:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 8, -8)
+    nav:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 8, 45)
+    nav:SetBackdrop({
+        bgFile = "Interface\BUTTONS\WHITE8X8",
+        edgeFile = "Interface\BUTTONS\WHITE8X8",
+        edgeSize = 1,
+    })
+    nav:SetBackdropColor(0.06, 0.06, 0.07, 1)
+    nav:SetBackdropBorderColor(unpack(COLORS.border))
     f.nav = nav
     f.currentTab = "chars" -- Start with Characters tab
     f.tabButtons = {}
     
     -- Tab styling function
-    local function CreateTabButton(parent, text, key, xOffset)
+    local function CreateTabButton(parent, text, key, yOffset)
         local btn = CreateFrame("Button", nil, parent, "BackdropTemplate")
-        btn:SetSize(105, 34)  -- Slightly taller for modern look
-        btn:SetPoint("LEFT", xOffset, 0)
+        btn:SetSize(144, 32)
+        btn:SetPoint("TOPLEFT", 8, -yOffset)
         btn.key = key
 
         -- Rounded background using backdrop with rounded edge texture
@@ -367,17 +375,52 @@ function TheQuartermaster:CreateMainWindow()
         return btn
     end
     
-    -- Create tabs with equal spacing (105px width + 5px gap = 110px spacing)
-    local tabSpacing = 110
-    f.tabButtons["chars"] = CreateTabButton(nav, "Characters", "chars", 10)
-    f.tabButtons["exp"] = CreateTabButton(nav, "Experience", "exp", 10 + tabSpacing)
-    f.tabButtons["guild"] = CreateTabButton(nav, "Guilds", "guild", 10 + tabSpacing * 2)
-    f.tabButtons["items"] = CreateTabButton(nav, "Items", "items", 10 + tabSpacing * 3)
-    f.tabButtons["storage"] = CreateTabButton(nav, "Storage", "storage", 10 + tabSpacing * 4)
-    f.tabButtons["pve"] = CreateTabButton(nav, "PvE", "pve", 10 + tabSpacing * 5)
-    f.tabButtons["reputations"] = CreateTabButton(nav, "Reputations", "reputations", 10 + tabSpacing * 6)
-    f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tabSpacing * 7)
-    f.tabButtons["stats"] = CreateTabButton(nav, "Statistics", "stats", 10 + tabSpacing * 8)
+    -- Create tabs (stacked)
+    local tabSpacing = 36
+    local tabY = 10
+    local function AddTab(label, key)
+        f.tabButtons[key] = CreateTabButton(nav, label, key, tabY)
+        tabY = tabY + tabSpacing
+    end
+
+    AddTab("Characters", "chars")
+    AddTab("Experience", "exp")
+    AddTab("Guilds", "guild")
+    AddTab("Items", "items")
+    AddTab("Storage", "storage")
+    AddTab("PvE", "pve")
+    AddTab("Reputations", "reputations")
+    AddTab("Currency", "currency")
+    AddTab("Statistics", "stats")
+
+    -- Sidebar actions (Information + Settings)
+    -- These intentionally look like normal navigation buttons but do not switch tabs.
+    local function CreateActionButton(parent, text, onClick, yOffset)
+        local btn = CreateTabButton(parent, text, "__action__" .. text, yOffset)
+        -- Override behavior: do not set current tab / active state
+        btn:SetScript("OnClick", function() if type(onClick) == "function" then onClick() end end)
+        btn:SetScript("OnEnter", function(self)
+            if self.active then return end
+            local hoverColor = COLORS.tabHover
+            local borderColor = COLORS.accent
+            self:SetBackdropColor(hoverColor[1], hoverColor[2], hoverColor[3], 1)
+            self:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
+            if self.glow then self.glow:SetAlpha(0.3) end
+        end)
+        btn:SetScript("OnLeave", function(self)
+            if self.active then return end
+            self:SetBackdropColor(0.12, 0.12, 0.15, 1)
+            self:SetBackdropBorderColor(0.15, 0.15, 0.18, 0.5)
+            if self.glow then self.glow:SetAlpha(0) end
+        end)
+        return btn
+    end
+
+    -- Small spacer to separate actions from tabs
+    tabY = tabY + 10
+    f.sidebarInfoBtn = CreateActionButton(nav, "Information", function() TheQuartermaster:ShowInfoDialog() end, tabY)
+    tabY = tabY + tabSpacing
+    f.sidebarSettingsBtn = CreateActionButton(nav, "Settings", function() TheQuartermaster:OpenOptions() end, tabY)
     
     -- Function to update tab colors dynamically
     f.UpdateTabColors = function()
@@ -405,7 +448,7 @@ function TheQuartermaster:CreateMainWindow()
     
     -- ===== CONTENT AREA =====
     local content = CreateFrame("Frame", nil, f, "BackdropTemplate")
-    content:SetPoint("TOPLEFT", nav, "BOTTOMLEFT", 8, -8)
+    content:SetPoint("TOPLEFT", nav, "TOPRIGHT", 12, 0)
     content:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -8, 45)
     content:SetBackdrop({
         bgFile = "Interface\\BUTTONS\\WHITE8X8",
@@ -482,53 +525,7 @@ function TheQuartermaster:CreateMainWindow()
         end
     end
 
-    -- Footer icons (Information + Settings)
-    -- These were previously in the top navigation bar, but are now placed in the footer (bottom-right)
-    -- to match the requested layout.
-    local settingsBtn = CreateFrame("Button", nil, footer)
-    settingsBtn:SetSize(28, 28)
-    settingsBtn:SetNormalTexture("Interface\\BUTTONS\\UI-OptionsButton")
-    settingsBtn:SetHighlightTexture("Interface\\BUTTONS\\UI-Common-MouseHilight")
-    settingsBtn:SetScript("OnClick", function() TheQuartermaster:OpenOptions() end)
-    settingsBtn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText(L["SETTINGS"])
-        GameTooltip:Show()
-    end)
-    settingsBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    f.settingsBtn = settingsBtn
-
-    local infoBtn = CreateFrame("Button", nil, footer)
-    infoBtn:SetSize(28, 28)
-    infoBtn:SetNormalTexture("Interface\\BUTTONS\\UI-GuildButton-PublicNote-Up")
-    infoBtn:SetHighlightTexture("Interface\\BUTTONS\\UI-Common-MouseHilight")
-    infoBtn:SetScript("OnClick", function() TheQuartermaster:ShowInfoDialog() end)
-    infoBtn:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_TOP")
-        GameTooltip:SetText(L["INFORMATION"])
-        GameTooltip:Show()
-    end)
-    infoBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-    f.infoBtn = infoBtn
-
-    -- Positioning helper: anchor the icons to the far right when Classic Bank is hidden,
-    -- otherwise keep them immediately to the left of the Classic Bank button.
-    f.UpdateFooterIconLayout = function()
-        if not f.settingsBtn or not f.infoBtn or not f.classicBtn or not footer then return end
-
-        f.settingsBtn:ClearAllPoints()
-        f.infoBtn:ClearAllPoints()
-
-        if f.classicBtn:IsShown() then
-            f.settingsBtn:SetPoint("RIGHT", f.classicBtn, "LEFT", -8, 0)
-        else
-            f.settingsBtn:SetPoint("RIGHT", footer, "RIGHT", -10, 0)
-        end
-        f.infoBtn:SetPoint("RIGHT", f.settingsBtn, "LEFT", -6, 0)
-    end
-
-    -- Run once now; will also be re-run when button visibility changes.
-    f.UpdateFooterIconLayout()
+    -- Information/Settings buttons are now part of the left navigation rail.
 
     classicBtn:SetScript("OnClick", function()
         if TheQuartermaster.bankIsOpen then
@@ -908,12 +905,12 @@ local expandedGroups = {} -- Used by ItemsUI for group expansion state
 --============================================================================
 -- TAB DRAWING FUNCTIONS (All moved to separate modules)
 --============================================================================
--- DrawCharacterList moved to Modules/UI/CharactersUI.lua
--- DrawItemList moved to Modules/UI/ItemsUI.lua
--- DrawEmptyState moved to Modules/UI/ItemsUI.lua
--- DrawStorageTab moved to Modules/UI/StorageUI.lua
--- DrawPvEProgress moved to Modules/UI/PvEUI.lua
--- DrawStatistics moved to Modules/UI/StatisticsUI.lua
+-- DrawCharacterList moved to Modules/UI/QM_CharactersQM_UI.lua
+-- DrawItemList moved to Modules/UI/QM_ItemsQM_UI.lua
+-- DrawEmptyState moved to Modules/UI/QM_ItemsQM_UI.lua
+-- DrawStorageTab moved to Modules/UI/QM_StorageQM_UI.lua
+-- DrawPvEProgress moved to Modules/UI/QM_PvEQM_UI.lua
+-- DrawStatistics moved to Modules/UI/QM_StatisticsQM_UI.lua
 
 
 --============================================================================

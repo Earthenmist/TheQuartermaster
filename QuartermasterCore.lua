@@ -48,7 +48,7 @@ local time = time
 local defaults = ns.DEFAULTS
 
 -- Local theme color calculator (kept here to avoid load-order issues)
--- Mirrors Modules/UI/SharedWidgets.lua CalculateThemeColors()
+-- Mirrors Modules/UI/QM_QM_SharedWidgets.lua CalculateThemeColors()
 local function CalculateThemeColorsCore(masterR, masterG, masterB)
     local function Desaturate(r, g, b, amount)
         local gray = (r + g + b) / 3
@@ -360,10 +360,10 @@ function TheQuartermaster:OnEnable()
     self:RegisterEvent("PLAYER_REGEN_ENABLED", "OnCombatEnd")  -- Leaving combat
     
     -- PvE tracking events are now managed by EventManager (throttled versions)
-    -- See Modules/EventManager.lua InitializeEventManager()
+    -- See Modules/QM_QM_EventManager.lua InitializeEventManager()
     
     -- Collection tracking events are now managed by EventManager (debounced versions)
-    -- See Modules/EventManager.lua InitializeEventManager()
+    -- See Modules/QM_QM_EventManager.lua InitializeEventManager()
     
     -- Register bucket events for bag updates (fast refresh for responsive UI)
     self:RegisterBucketEvent("BAG_UPDATE", 0.15, "OnBagUpdate")
@@ -976,7 +976,7 @@ function TheQuartermaster:PrintCharacterList()
     self:Print("==========================")
 end
 
--- InitializeDataBroker() moved to Modules/MinimapButton.lua (now InitializeMinimapButton)
+-- InitializeDataBroker() moved to Modules/QM_QM_MinimapButton.lua (now InitializeMinimapButton)
 
 --[[
     Event Handlers
@@ -2378,15 +2378,15 @@ function TheQuartermaster:OnPetListChanged()
     end)
 end
 
--- SaveCurrentCharacterData() moved to Modules/DataService.lua
+-- SaveCurrentCharacterData() moved to Modules/QM_QM_DataService.lua
 
 
--- UpdateCharacterGold() moved to Modules/DataService.lua
+-- UpdateCharacterGold() moved to Modules/QM_QM_DataService.lua
 
--- CollectPvEData() moved to Modules/DataService.lua
+-- CollectPvEData() moved to Modules/QM_QM_DataService.lua
 
 
--- GetAllCharacters() moved to Modules/DataService.lua
+-- GetAllCharacters() moved to Modules/QM_QM_DataService.lua
 
 -- OnBagUpdate is used by both:
 --  * RegisterBucketEvent("BAG_UPDATE", ...) which passes a table of bagIDs
@@ -2711,23 +2711,23 @@ end
 ]]
 
 function TheQuartermaster:ScanWarbandBank()
-    -- Implemented in Modules/Scanner.lua
+    -- Implemented in Modules/QM_QM_Scanner.lua
 end
 
 function TheQuartermaster:ToggleMainWindow()
-    -- Implemented in Modules/UI.lua
+    -- Implemented in Modules/QM_QM_UI.lua
 end
 
 function TheQuartermaster:OpenDepositQueue()
-    -- Implemented in Modules/Banker.lua
+    -- Implemented in Modules/QM_QM_Banker.lua
 end
 
 function TheQuartermaster:SearchItems(searchTerm)
-    -- Implemented in Modules/UI.lua
+    -- Implemented in Modules/QM_QM_UI.lua
 end
 
 function TheQuartermaster:RefreshUI()
-    -- Implemented in Modules/UI.lua
+    -- Implemented in Modules/QM_QM_UI.lua
 end
 
 function TheQuartermaster:RefreshPvEUI()
@@ -3003,7 +3003,7 @@ function TheQuartermaster:GetFavoriteCharacters()
     return self.db.global.favoriteCharacters
 end
 
--- PerformItemSearch() moved to Modules/DataService.lua
+-- PerformItemSearch() moved to Modules/QM_QM_DataService.lua
 
 
 

@@ -426,7 +426,7 @@ local function DrawWarbandBankSlotView(self, parent, yOffset, width, itemsSearch
     return yOffset + gridHeight
 end
 
--- Module-level state (shared with main UI.lua via namespace)
+-- Module-level state (shared with main QM_UI.lua via namespace)
 -- These are accessed via ns.UI_GetItemsSubTab(), ns.UI_GetItemsSearchText(), etc.
 
 --============================================================================
@@ -446,7 +446,7 @@ function TheQuartermaster:DrawItemList(parent)
         self:SyncBankTab()
     end
     
-    -- Get state from namespace (managed by main UI.lua)
+    -- Get state from namespace (managed by main QM_UI.lua)
     local currentItemsSubTab = ns.UI_GetItemsSubTab()
     local itemsSearchText = ns.UI_GetItemsSearchText()
     local expandedGroups = ns.UI_GetExpandedGroups()
@@ -503,7 +503,7 @@ end
     
     yOffset = yOffset + 78 -- Header height + spacing
     
-    -- NOTE: Search box is now persistent in UI.lua (searchArea)
+    -- NOTE: Search box is now persistent in QM_UI.lua (searchArea)
     -- No need to create it here!
     
     -- ===== SUB-TAB BUTTONS =====

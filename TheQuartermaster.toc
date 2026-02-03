@@ -2,7 +2,7 @@
 ## Title: The Quartermaster
 ## Notes: Account-Wide Inventory, Warband & Character Overview for World of Warcraft (Midnight-Ready)
 ## Author: Lanni Alonsus
-## Version: 1.0.2
+## Version: 1.0.6
 ## IconTexture: Interface\AddOns\TheQuartermaster\Media\icon
 ## SavedVariables: TheQuartermasterDB
 ## OptionalDeps: Ace3
@@ -27,38 +27,38 @@ Locales\zhCN.lua
 Locales\zhTW.lua
 
 # Core
-Core\Constants.lua
-Core\Defaults.lua
-Core.lua
-Config.lua
+Core\QM_Constants.lua
+Core\QM_Defaults.lua
+QuartermasterCore.lua
+QuartermasterConfig.lua
 
 # Modules (Core Services - Load First!)
-Modules\APIWrapper.lua
-Modules\ErrorHandler.lua
-Modules\DataService.lua
-Modules\CacheManager.lua
-Modules\EventManager.lua
-Modules\DatabaseOptimizer.lua
-Modules\CollectionManager.lua
-Modules\NotificationManager.lua
+Modules\QM_APIWrapper.lua
+Modules\QM_ErrorHandler.lua
+Modules\QM_DataService.lua
+Modules\QM_CacheManager.lua
+Modules\QM_EventManager.lua
+Modules\QM_DatabaseOptimizer.lua
+Modules\QM_CollectionManager.lua
+Modules\QM_NotificationManager.lua
 
 # Modules (Features)
-Modules\MinimapButton.lua
-Modules\TooltipEnhancer.lua
-Modules\Scanner.lua
-Modules\Banker.lua
-Modules\PvE.lua
+Modules\QM_MinimapButton.lua
+Modules\QM_TooltipEnhancer.lua
+Modules\QM_Scanner.lua
+Modules\QM_Banker.lua
+Modules\QM_PvE.lua
 
 # UI Modules (SharedWidgets must load first!)
-Modules\UI\SharedWidgets.lua
-Modules\UI\CharactersUI.lua
+Modules\UI\QM_SharedWidgets.lua
+Modules\UI\QM_CharactersUI.lua
 Modules\UI\ExperienceUI.lua
 Modules\UI\GuildUI.lua
-Modules\UI\CurrencyUI.lua
-Modules\UI\ItemsUI.lua
-Modules\UI\StorageUI.lua
-Modules\UI\PvEUI.lua
-Modules\UI\ReputationUI.lua
-Modules\UI\StatisticsUI.lua
-Modules\UI\InformationDialog.lua
-Modules\UI.lua
+Modules\UI\QM_CurrencyUI.lua
+Modules\UI\QM_ItemsUI.lua
+Modules\UI\QM_StorageUI.lua
+Modules\UI\QM_PvEUI.lua
+Modules\UI\QM_ReputationUI.lua
+Modules\UI\QM_StatisticsUI.lua
+Modules\UI\QM_InformationDialog.lua
+Modules\QM_UI.lua

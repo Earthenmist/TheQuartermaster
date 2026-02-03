@@ -76,7 +76,7 @@ function TheQuartermaster:DrawStorageTab(parent)
     
     yOffset = yOffset + 78 -- Header height + spacing
     
-    -- NOTE: Search box is now persistent in UI.lua (searchArea)
+    -- NOTE: Search box is now persistent in QM_UI.lua (searchArea)
     -- No need to create it here!
     
     -- Get expanded state

@@ -33,7 +33,7 @@ end
 
 -- IMPORTANT:
 -- Do not cache ns.UI_FormatGold at file load time.
--- UI/SharedWidgets.lua assigns ns.UI_FormatGold later in the addon's load order.
+-- UI/QM_SharedWidgets.lua assigns ns.UI_FormatGold later in the addon's load order.
 -- If we cache it here, we'd lock in a nil upvalue and tooltips would error.
 local function FormatGold(amount)
     local fn = ns and ns.UI_FormatGold

@@ -9,15 +9,16 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.2"
+local CURRENT_VERSION = "1.0.6"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.2",
-    date = "2026-01-31",
+    version = "1.0.6",
+    date = "2026-02-03",
     changes = {
-	"Corrected Typo in v1.0.1 Sorry!",
-        "Prevented Blizzard tooltip money errors caused by 'secret' money values by replacing `SetTooltipMoney` with a safe implementation.",
+	"UI & Layout Changes.",
+        "Updated layout structure to further differentiate The Quartermaster’s UI from other Warband-related addons.",
+	"Improved spacing and content focus by eliminating redundant header elements.",
     }
 }
 --[[============================================================================
