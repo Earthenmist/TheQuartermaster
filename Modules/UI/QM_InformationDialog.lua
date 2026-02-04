@@ -44,35 +44,43 @@ function TheQuartermaster:ShowInfoDialog()
     dialog:SetScript("OnDragStart", dialog.StartMoving)
     dialog:SetScript("OnDragStop", dialog.StopMovingOrSizing)
     self.infoDialog = dialog
-    
-    -- Header background
-    local headerBg = dialog:CreateTexture(nil, "BACKGROUND")
-    headerBg:SetHeight(50)
-    headerBg:SetPoint("TOPLEFT", 4, -4)
-    headerBg:SetPoint("TOPRIGHT", -4, -4)
-    local hdr = COLORS.accentDark or COLORS.accent or {0.60, 0.10, 0.10}
-    headerBg:SetColorTexture(hdr[1], hdr[2], hdr[3], 1)
-    
-    -- Logo
-    local logo = dialog:CreateTexture(nil, "ARTWORK")
-    logo:SetSize(32, 32)
-    logo:SetPoint("LEFT", dialog, "TOPLEFT", 15, -25)
+    -- ===== HEADER BAR (match main frame styling in QM_UI.lua) =====
+    local header = CreateFrame("Frame", nil, dialog, "BackdropTemplate")
+    header:SetHeight(40)
+    header:SetPoint("TOPLEFT", 4, -4)
+    header:SetPoint("TOPRIGHT", -4, -4)
+    header:SetBackdrop({
+        bgFile = "Interface\\BUTTONS\\WHITE8X8",
+    })
+
+    local hdr = (COLORS and COLORS.accentDark) or (COLORS and COLORS.accent) or {0.60, 0.10, 0.10}
+    header:SetBackdropColor(hdr[1], hdr[2], hdr[3], 1)
+
+    -- Icon (same as main frame header)
+    local logo = header:CreateTexture(nil, "ARTWORK")
+    logo:SetSize(24, 24)
+    logo:SetPoint("LEFT", 15, 0)
     logo:SetTexture("Interface\\AddOns\\TheQuartermaster\\Media\\icon")
-    
-    -- Title (centered)
-    local title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
-    title:SetPoint("CENTER", dialog, "TOP", 0, -25)
-    title:SetText(L["CFFFFFFFFTHE_QUARTERMASTER_R"])
-    
-    -- X Close Button (top right)
-    local closeBtn = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")
-    closeBtn:SetSize(24, 24)
-    closeBtn:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -5, -5)
+
+    -- Title (always white)
+    local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("LEFT", logo, "RIGHT", 8, 0)
+    title:SetJustifyH("LEFT")
+    title:SetText((L and L["CFFFFFFFFTHE_QUARTERMASTER_R"]) or "The Quartermaster")
+    title:SetTextColor(1, 1, 1, 1)
+
+    -- Close button (match main frame)
+    local closeBtn = CreateFrame("Button", nil, header)
+    closeBtn:SetSize(30, 30)
+    closeBtn:SetPoint("RIGHT", -8, 0)
+    closeBtn:SetNormalTexture("Interface\\BUTTONS\\UI-Panel-MinimizeButton-Up")
+    closeBtn:SetPushedTexture("Interface\\BUTTONS\\UI-Panel-MinimizeButton-Down")
+    closeBtn:SetHighlightTexture("Interface\\BUTTONS\\UI-Panel-MinimizeButton-Highlight")
     closeBtn:SetScript("OnClick", function() dialog:Hide() end)
-    
+
     -- Scroll Frame
     local scrollFrame = CreateFrame("ScrollFrame", nil, dialog, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", headerBg, "BOTTOMLEFT", 10, -10)
+    scrollFrame:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 10, -10)
     scrollFrame:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -30, 50)
     
     local scrollChild = CreateFrame("Frame", nil, scrollFrame)
