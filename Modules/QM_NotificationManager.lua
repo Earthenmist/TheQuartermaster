@@ -9,16 +9,17 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.6"
+local CURRENT_VERSION = "1.0.7"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.6",
-    date = "2026-02-03",
+    version = "1.0.7",
+    date = "2026-02-04",
     changes = {
-	"UI & Layout Changes.",
-        "Updated layout structure to further differentiate The Quartermaster’s UI from other Warband-related addons.",
-	"Improved spacing and content focus by eliminating redundant header elements.",
+    "Created a Dashboard as the first opening screen.",
+    "Moved Information and Settings actions into the left sidebar navigation, styled consistently with existing section buttons.", 
+    "Removed the floating bottom-right action buttons for a cleaner, unified navigation layout.",  
+    "Sidebar navigation now represents the primary interaction model for all sections and actions.", 
     }
 }
 --[[============================================================================
