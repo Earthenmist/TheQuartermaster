@@ -21,7 +21,7 @@ local CreateCollapsibleHeader = ns.UI_CreateCollapsibleHeader
 --============================================================================
 
 function TheQuartermaster:DrawCharacterList(parent)
-    local yOffset = 8 -- Top padding
+    local yOffset = 8 -- Top padding for breathing room
     local width = parent:GetWidth() - 20
     
     -- Get all characters (cached for performance)
@@ -32,7 +32,36 @@ function TheQuartermaster:DrawCharacterList(parent)
     local currentPlayerRealm = GetRealmName()
     local currentPlayerKey = currentPlayerName .. "-" .. currentPlayerRealm
     
-    -- Header cards removed (per UI refresh request)
+    -- ===== TITLE CARD =====
+    local titleCard = CreateCard(parent, 70)
+    titleCard:SetPoint("TOPLEFT", 10, -yOffset)
+    titleCard:SetPoint("TOPRIGHT", -10, -yOffset)
+    
+    local titleIcon = titleCard:CreateTexture(nil, "ARTWORK")
+    titleIcon:SetSize(40, 40)
+    titleIcon:SetPoint("LEFT", 15, 0)
+    -- Use the current player's portrait (race/gender) for the Characters tab header icon.
+    -- Falls back to a static icon if portrait APIs aren't available.
+    if SetPortraitTexture then
+        pcall(SetPortraitTexture, titleIcon, "player")
+    else
+        titleIcon:SetTexture("Interface\\Icons\\Achievement_Character_Human_Female")
+    end
+    
+    local titleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    titleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, 5)
+    -- Dynamic theme color for title
+    local COLORS = GetCOLORS()
+    local r, g, b = COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]
+    local hexColor = string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
+    titleText:SetText("|cff" .. hexColor .. "Your Characters|r")
+    
+    local subtitleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)
+    subtitleText:SetTextColor(0.6, 0.6, 0.6)
+    subtitleText:SetText(#characters .. " characters tracked")
+    
+    yOffset = yOffset + 75 -- Reduced spacing
     
     -- ===== TOTAL GOLD DISPLAY =====
     local totalGold = 0

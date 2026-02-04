@@ -55,7 +55,7 @@ local ROW_HEIGHT = 26
 
 local mainFrame = nil
 local goldTransferFrame = nil
-local currentTab = "chars" -- Default to Characters tab
+local currentTab = "stats" -- Default to Characters tab
 local currentItemsSubTab = "warband" -- Default to Warband Bank
 local expandedGroups = {} -- Persisted expand/collapse state for item groups
 
@@ -101,7 +101,7 @@ function TheQuartermaster:ShowMainWindow()
     end
     
     -- Manual open defaults to Characters tab
-    mainFrame.currentTab = "chars"
+    mainFrame.currentTab = "stats"
     
     self:PopulateContent()
     mainFrame:Show()
@@ -304,7 +304,7 @@ function TheQuartermaster:CreateMainWindow()
     nav:SetBackdropColor(0.06, 0.06, 0.07, 1)
     nav:SetBackdropBorderColor(unpack(COLORS.border))
     f.nav = nav
-    f.currentTab = "chars" -- Start with Characters tab
+    f.currentTab = "stats" -- Start with Characters tab
     f.tabButtons = {}
     
     -- Tab styling function
@@ -375,53 +375,38 @@ function TheQuartermaster:CreateMainWindow()
         return btn
     end
     
-    -- Create tabs (stacked)
+    -- Create tabs with equal spacing (105px width + 5px gap = 110px spacing)
     local tabSpacing = 36
-    local tabY = 10
-    local function AddTab(label, key)
-        f.tabButtons[key] = CreateTabButton(nav, label, key, tabY)
-        tabY = tabY + tabSpacing
+        f.tabButtons["stats"] = CreateTabButton(nav, "Dashboard", "stats", 10)
+f.tabButtons["chars"] = CreateTabButton(nav, "Characters", "chars", 10 + tabSpacing * 1)
+    f.tabButtons["exp"] = CreateTabButton(nav, "Experience", "exp", 10 + tabSpacing * 2)
+    f.tabButtons["guild"] = CreateTabButton(nav, "Guilds", "guild", 10 + tabSpacing * 3)
+    f.tabButtons["items"] = CreateTabButton(nav, "Items", "items", 10 + tabSpacing * 4)
+    f.tabButtons["storage"] = CreateTabButton(nav, "Storage", "storage", 10 + tabSpacing * 5)
+    f.tabButtons["pve"] = CreateTabButton(nav, "PvE", "pve", 10 + tabSpacing * 6)
+    f.tabButtons["reputations"] = CreateTabButton(nav, "Reputations", "reputations", 10 + tabSpacing * 7)
+    f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tabSpacing * 8)
+-- Sidebar actions (Information + Settings) - match nav button style, anchored to bottom
+local infoNav = CreateTabButton(nav, L["INFORMATION"] or "Information", "info_action", 10) -- yOffset ignored after re-anchor
+local settingsNav = CreateTabButton(nav, L["SETTINGS"] or "Settings", "settings_action", 10) -- yOffset ignored after re-anchor
+-- Re-anchor to bottom-left of sidebar (footer area)
+infoNav:ClearAllPoints()
+settingsNav:ClearAllPoints()
+settingsNav:SetPoint("BOTTOMLEFT", nav, "BOTTOMLEFT", 10, 10)
+settingsNav:SetPoint("BOTTOMRIGHT", nav, "BOTTOMRIGHT", -10, 10)
+infoNav:SetPoint("BOTTOMLEFT", settingsNav, "TOPLEFT", 0, 8)
+infoNav:SetPoint("BOTTOMRIGHT", settingsNav, "TOPRIGHT", 0, 8)
+infoNav:SetScript("OnClick", function()
+    if TheQuartermaster and TheQuartermaster.ShowInfoDialog then
+        TheQuartermaster:ShowInfoDialog()
     end
-
-    AddTab("Characters", "chars")
-    AddTab("Experience", "exp")
-    AddTab("Guilds", "guild")
-    AddTab("Items", "items")
-    AddTab("Storage", "storage")
-    AddTab("PvE", "pve")
-    AddTab("Reputations", "reputations")
-    AddTab("Currency", "currency")
-    AddTab("Statistics", "stats")
-
-    -- Sidebar actions (Information + Settings)
-    -- These intentionally look like normal navigation buttons but do not switch tabs.
-    local function CreateActionButton(parent, text, onClick, yOffset)
-        local btn = CreateTabButton(parent, text, "__action__" .. text, yOffset)
-        -- Override behavior: do not set current tab / active state
-        btn:SetScript("OnClick", function() if type(onClick) == "function" then onClick() end end)
-        btn:SetScript("OnEnter", function(self)
-            if self.active then return end
-            local hoverColor = COLORS.tabHover
-            local borderColor = COLORS.accent
-            self:SetBackdropColor(hoverColor[1], hoverColor[2], hoverColor[3], 1)
-            self:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
-            if self.glow then self.glow:SetAlpha(0.3) end
-        end)
-        btn:SetScript("OnLeave", function(self)
-            if self.active then return end
-            self:SetBackdropColor(0.12, 0.12, 0.15, 1)
-            self:SetBackdropBorderColor(0.15, 0.15, 0.18, 0.5)
-            if self.glow then self.glow:SetAlpha(0) end
-        end)
-        return btn
+end)
+settingsNav:SetScript("OnClick", function()
+    if TheQuartermaster and TheQuartermaster.OpenOptions then
+        TheQuartermaster:OpenOptions()
     end
+end)
 
-    -- Small spacer to separate actions from tabs
-    tabY = tabY + 10
-    f.sidebarInfoBtn = CreateActionButton(nav, "Information", function() TheQuartermaster:ShowInfoDialog() end, tabY)
-    tabY = tabY + tabSpacing
-    f.sidebarSettingsBtn = CreateActionButton(nav, "Settings", function() TheQuartermaster:OpenOptions() end, tabY)
-    
     -- Function to update tab colors dynamically
     f.UpdateTabColors = function()
         local freshColors = ns.UI_COLORS
@@ -443,8 +428,7 @@ function TheQuartermaster:CreateMainWindow()
         end
     end
     
-    -- NOTE: Information + Settings buttons were moved to the footer (bottom-right)
-    -- to match the new layout.
+    -- NOTE: Information + Settings buttons are part of the left navigation rail.
     
     -- ===== CONTENT AREA =====
     local content = CreateFrame("Frame", nil, f, "BackdropTemplate")
@@ -525,9 +509,9 @@ function TheQuartermaster:CreateMainWindow()
         end
     end
 
-    -- Information/Settings buttons are now part of the left navigation rail.
+        -- (Information + Settings moved to the sidebar navigation)
 
-    classicBtn:SetScript("OnClick", function()
+classicBtn:SetScript("OnClick", function()
         if TheQuartermaster.bankIsOpen then
             -- Enter Classic Bank mode for this session
             TheQuartermaster.classicModeThisSession = true
@@ -1068,3 +1052,21 @@ function TheQuartermaster:RefreshMainWindow() self:RefreshUI() end
 function TheQuartermaster:RefreshMainWindowContent() self:RefreshUI() end
 function TheQuartermaster:ShowDepositQueueUI() self:Print("Coming soon!") end
 function TheQuartermaster:RefreshDepositQueueUI() end
+
+
+-- Re-bind sidebar action handlers (ensure clicks work after re-anchoring)
+if infoNav then
+    infoNav:SetScript("OnClick", function()
+    if TheQuartermaster and TheQuartermaster.ShowInfoDialog then
+        TheQuartermaster:ShowInfoDialog()
+    end
+end)
+end
+
+if settingsNav then
+    settingsNav:SetScript("OnClick", function()
+    if TheQuartermaster and TheQuartermaster.OpenOptions then
+        TheQuartermaster:OpenOptions()
+    end
+end)
+end
