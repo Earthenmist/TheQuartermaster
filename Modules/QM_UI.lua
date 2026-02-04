@@ -56,7 +56,7 @@ local ROW_HEIGHT = 26
 local mainFrame = nil
 local goldTransferFrame = nil
 local currentTab = "stats" -- Default to Characters tab
-local currentItemsSubTab = "warband" -- Default to Warband Bank
+local currentItemsSubTab = "inventory" -- Default to Inventory
 local expandedGroups = {} -- Persisted expand/collapse state for item groups
 
 -- Search text state (exposed to namespace for sub-modules to access directly)

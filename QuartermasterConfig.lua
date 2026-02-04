@@ -84,7 +84,7 @@ local options = {
                 local localeName = localeNames[locale] or locale
                 return "|cff00ccffCurrent Language:|r " .. localeName .. "\n\n" ..
                        "|cffaaaaaa" ..
-                       "Addon uses your WoW game client's language automatically. " ..
+                       "The Quartermaster uses your WoW game client's language automatically. " ..
                        "Common text (Search, Close, Settings, Quality names, etc.) " ..
                        "uses Blizzard's built-in localized strings.\n\n" ..
                        "To change language, change your game client's language in Battle.net settings.|r\n"

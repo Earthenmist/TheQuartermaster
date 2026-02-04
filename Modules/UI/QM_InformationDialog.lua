@@ -14,6 +14,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 ]]
 function TheQuartermaster:ShowInfoDialog()
     -- Get theme colors
+    if ns.UI_RefreshColors then pcall(ns.UI_RefreshColors) end
     local COLORS = ns.UI_COLORS
     
     -- Create dialog frame (or reuse if exists)
@@ -49,7 +50,8 @@ function TheQuartermaster:ShowInfoDialog()
     headerBg:SetHeight(50)
     headerBg:SetPoint("TOPLEFT", 4, -4)
     headerBg:SetPoint("TOPRIGHT", -4, -4)
-    headerBg:SetColorTexture(COLORS.accentDark[1], COLORS.accentDark[2], COLORS.accentDark[3], 1)
+    local hdr = COLORS.accentDark or COLORS.accent or {0.60, 0.10, 0.10}
+    headerBg:SetColorTexture(hdr[1], hdr[2], hdr[3], 1)
     
     -- Logo
     local logo = dialog:CreateTexture(nil, "ARTWORK")
@@ -168,14 +170,35 @@ function TheQuartermaster:ShowInfoDialog()
     -- Update scroll child height
     scrollChild:SetHeight(yOffset)
     
-    -- OK Button (bottom center)
-    local okBtn = CreateFrame("Button", nil, dialog, "GameMenuButtonTemplate")
-    okBtn:SetSize(100, 30)
-    okBtn:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 15)
-    okBtn:SetText("OK")
-    okBtn:SetNormalFontObject("GameFontNormal")
-    okBtn:SetHighlightFontObject("GameFontHighlight")
-    okBtn:SetScript("OnClick", function() dialog:Hide() end)
-    
+    -- OK Button (bottom center) - match Items "Slot View" themed action button
+local okBtn = CreateFrame("Button", nil, dialog, "BackdropTemplate")
+okBtn:SetSize(96, 24)
+okBtn:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 15)
+
+okBtn.text = okBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+okBtn.text:SetPoint("CENTER")
+okBtn.text:SetTextColor(1, 1, 1, 0.95)
+okBtn.text:SetText("OK")
+
+okBtn:SetBackdrop({
+    bgFile = "Interface\\BUTTONS\\WHITE8X8",
+    edgeFile = "Interface\\BUTTONS\\WHITE8X8",
+    edgeSize = 1,
+})
+okBtn:SetBackdropColor(COLORS.tabInactive[1], COLORS.tabInactive[2], COLORS.tabInactive[3], 1)
+okBtn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.65)
+
+okBtn:SetScript("OnEnter", function(btn)
+    btn:SetBackdropColor(COLORS.tabHover[1], COLORS.tabHover[2], COLORS.tabHover[3], 1)
+    btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.9)
+end)
+
+okBtn:SetScript("OnLeave", function(btn)
+    btn:SetBackdropColor(COLORS.tabInactive[1], COLORS.tabInactive[2], COLORS.tabInactive[3], 1)
+    btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.65)
+end)
+
+okBtn:SetScript("OnClick", function() dialog:Hide() end)
+
     dialog:Show()
 end

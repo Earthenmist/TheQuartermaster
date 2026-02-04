@@ -1,9 +1,10 @@
 # TheQuartermaster — Changelog
 
-📜 Changelog – Version 1.0.7  
+📜 Changelog – Version 1.0.8  
   
 🛠️ UI & Layout Changes  
   
+Code rewrite in some areas, tiding up code, but is still Work in progress
 Created a Dashboard as the first opening screen.  
 Moved Information and Settings actions into the left sidebar navigation, styled consistently with existing section buttons.  
 Removed the floating bottom-right action buttons for a cleaner, unified navigation layout.  

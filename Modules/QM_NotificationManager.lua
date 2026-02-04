@@ -9,13 +9,14 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.7"
+local CURRENT_VERSION = "1.0.8"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.7",
-    date = "2026-02-04",
+    version = "1.0.8",
+    date = "2026-02-05",
     changes = {
+    "Code has been tidied up and refactored for better maintainability.",    
     "Created a Dashboard as the first opening screen.",
     "Moved Information and Settings actions into the left sidebar navigation, styled consistently with existing section buttons.", 
     "Removed the floating bottom-right action buttons for a cleaner, unified navigation layout.",  

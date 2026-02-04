@@ -69,15 +69,15 @@ ns.DEFAULTS = {
         -- Items tab (Personal Bank)
         -- 'list'  = grouped list view
         -- 'slots' = slot + tab view similar to the default bank
-        personalBankViewMode = "list",
+        personalBankViewMode = "slots",
         personalBankSlotTab = 1,
-        inventoryViewMode = "list",
+        inventoryViewMode = "slots",
         inventorySlotTab = 1,
 
         -- Items tab (Warband Bank)
         -- 'list'  = grouped list view
         -- 'slots' = slot + tab view similar to the default bank
-        warbandBankViewMode = "list",
+        warbandBankViewMode = "slots",
         warbandBankSlotTab = 1,
 
         -- Tab filtering (true = ignored)
@@ -91,7 +91,7 @@ ns.DEFAULTS = {
 
         -- Storage tab expanded state
         storageExpanded = {
-            warband = true, -- Warband Bank expanded by default
+            warband = false, -- Warband Bank expanded by default
             personal = false, -- Personal collapsed by default
             categories = {}, -- { ["warband_TradeGoods"] = true, ["personal_CharName_TradeGoods"] = false }
         },
