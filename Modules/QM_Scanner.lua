@@ -80,11 +80,55 @@ function TheQuartermaster:ScanWarbandBank()
                 -- Get extended item info using API wrapper (TWW compatible)
                 local itemName, _, itemQuality, itemLevel, _, itemType, itemSubType, 
                       _, _, itemTexture, _, classID, subclassID = self:API_GetItemInfo(itemInfo.itemID)
+
+                -- Item info can be nil when item data hasn't been cached client-side yet.
+                -- Fall back to hyperlink name, and request load so it resolves later.
+                if (not itemName or itemName == "") and itemInfo.hyperlink then
+                    itemName = itemInfo.hyperlink:match("%[(.-)%]")
+                end
+                if (not itemType or itemType == "") then
+                    itemType = "Miscellaneous"
+                end
+                if C_Item and C_Item.RequestLoadItemDataByID and itemInfo.itemID then
+                    C_Item.RequestLoadItemDataByID(itemInfo.itemID)
+                end
                 
+                -- Ensure we have an item hyperlink where possible.
+                -- NOTE: For Personal Bank bags, C_Container.GetContainerItemInfo can occasionally return
+                -- a nil hyperlink even though the game can still show the tooltip correctly.
+                -- We fall back to container link APIs and (last resort) tooltip info.
+                local link = itemInfo.hyperlink
+                if not link and C_Container and C_Container.GetContainerItemLink then
+                    link = C_Container.GetContainerItemLink(bagID, slotID)
+                end
+                if not link and type(GetContainerItemLink) == "function" then
+                    link = GetContainerItemLink(bagID, slotID)
+                end
+                if link then
+                    itemInfo.hyperlink = link
+                end
+
                 -- Special handling for Battle Pets (classID 17)
                 -- Extract pet name from hyperlink: |Hbattlepet:speciesID:...|h[Pet Name]|h|r
                 local displayName = itemName
                 local displayIcon = itemInfo.iconFileID or itemTexture
+
+                -- If itemName isn't available yet, try to extract it from the hyperlink.
+                if (not displayName or displayName == "") and itemInfo.hyperlink then
+                    local n = itemInfo.hyperlink:match("%[(.-)%]")
+                    if n and n ~= "" then
+                        displayName = n
+                    end
+                end
+
+                -- Final fallback: get name from the tooltip if available (handles edge-cases where
+                -- the link/name isn't cached but the tooltip can still display it).
+                if (not displayName or displayName == "") and C_TooltipInfo and C_TooltipInfo.GetBagItem then
+                    local ttd = C_TooltipInfo.GetBagItem(bagID, slotID)
+                    if ttd and ttd.lines and ttd.lines[1] and ttd.lines[1].leftText then
+                        displayName = ttd.lines[1].leftText
+                    end
+                end
                 
                 if classID == 17 and itemInfo.hyperlink then
                     -- Try to extract pet name from hyperlink
@@ -99,11 +143,6 @@ function TheQuartermaster:ScanWarbandBank()
                             if petIcon then
                                 displayIcon = petIcon
                             end
-
-    -- Store quick stats for UI
-    self.db.char.inventory.totalSlots = totalSlots
-    self.db.char.inventory.usedSlots = usedSlots
-    self.db.char.inventory.lastScan = time()
                         end
                     end
                 end
@@ -115,9 +154,9 @@ function TheQuartermaster:ScanWarbandBank()
                     quality = itemInfo.quality or itemQuality or 0,
                     iconFileID = displayIcon,
                     -- Extended info
-                    name = displayName,
+                    name = displayName or (itemInfo.itemID and ("Item " .. tostring(itemInfo.itemID)) or "Item"),
                     itemLevel = itemLevel,
-                    itemType = itemType,
+                    itemType = itemType or "Miscellaneous",
                     itemSubType = itemSubType,
                     classID = classID,
                     subclassID = subclassID,
@@ -219,7 +258,67 @@ function TheQuartermaster:ScanPersonalBank()
                 -- Use API wrapper (TWW compatible)
                 local itemName, _, itemQuality, itemLevel, _, itemType, itemSubType,
                       _, _, itemTexture, _, classID, subclassID = self:API_GetItemInfo(itemInfo.itemID)
-                
+
+                -- If GetItemInfo hasn't cached yet, fall back to instant info for icon/class IDs
+                if (not classID or not subclassID or not itemTexture) and type(GetItemInfoInstant) == "function" then
+                    local _, _, _, _, iconFileID, cID, scID = GetItemInfoInstant(itemInfo.itemID)
+                    itemTexture = itemTexture or iconFileID
+                    classID = classID or cID
+                    subclassID = subclassID or scID
+                end
+                -- Derive type/subtype from class IDs when missing (doesn't require cache)
+                if (not itemType or itemType == "") and classID and type(GetItemClassInfo) == "function" then
+                    itemType = GetItemClassInfo(classID) or itemType
+                end
+                if (not itemSubType or itemSubType == "") and classID and subclassID and type(GetItemSubClassInfo) == "function" then
+                    itemSubType = GetItemSubClassInfo(classID, subclassID) or itemSubType
+                end
+                -- Derive quality from link color if needed
+                if (not itemQuality) and itemInfo.hyperlink then
+                    local color = itemInfo.hyperlink:match("|c%x%x(%x%x%x%x%x%x)%x%x%x%x") or itemInfo.hyperlink:match("|c%x%x%x%x(%x%x%x%x%x%x)")
+                    if color then
+                        color = color:lower()
+                        local qmap = { ["9d9d9d"]=0, ["ffffff"]=1, ["1eff00"]=2, ["0070dd"]=3, ["a335ee"]=4, ["ff8000"]=5, ["e6cc80"]=6, ["00ccff"]=7 }
+                        itemQuality = qmap[color]
+                    end
+                end
+
+                -- Item info can be nil when item data hasn't been cached client-side yet.
+                -- Fall back to hyperlink name, and request load so it resolves later.
+                if (not itemName or itemName == "") and itemInfo.hyperlink then
+                    itemName = itemInfo.hyperlink:match("%[(.-)%]")
+                end
+                if (not itemType or itemType == "") then
+                    itemType = "Miscellaneous"
+                end
+                if C_Item and C_Item.RequestLoadItemDataByID and itemInfo.itemID then
+                    C_Item.RequestLoadItemDataByID(itemInfo.itemID)
+                end
+
+                -- Hyperlink fallback (especially important for Personal Bank bags)
+                local link = itemInfo.hyperlink
+                if (not link or link == "") and C_Container and C_Container.GetContainerItemLink then
+                    link = C_Container.GetContainerItemLink(bagID, slotID)
+                end
+                if (not link or link == "") and type(GetContainerItemLink) == "function" then
+                    link = GetContainerItemLink(bagID, slotID)
+                end
+
+                -- If we still don't have a link, fall back to tooltip data for name
+                if (not link or link == "") and C_TooltipInfo and C_TooltipInfo.GetBagItem then
+                    local tt = C_TooltipInfo.GetBagItem(bagID, slotID)
+                    if tt and tt.lines and tt.lines[1] and tt.lines[1].leftText then
+                        itemName = itemName or tt.lines[1].leftText
+                    end
+                end
+
+                -- Populate itemName from link if missing
+                if (not itemName or itemName == "") and link then
+                    itemName = link:match("%[(.-)%]")
+                end
+
+                itemInfo.hyperlink = link
+
                 -- Special handling for Battle Pets (classID 17)
                 -- Extract pet name from hyperlink: |Hbattlepet:speciesID:...|h[Pet Name]|h|r
                 local displayName = itemName
@@ -242,15 +341,24 @@ function TheQuartermaster:ScanPersonalBank()
                     end
                 end
                 
+                -- Ensure we have a reasonable quality value for coloring/grouping.
+                local displayQuality = itemInfo.quality or itemQuality
+                if displayQuality == nil and C_Item and C_Item.GetItemQualityByID and itemInfo.itemID then
+                    displayQuality = C_Item.GetItemQualityByID(itemInfo.itemID)
+                end
+                if displayQuality == nil then
+                    displayQuality = 1 -- default to common instead of poor-grey
+                end
+
                 self.db.char.personalBank.items[bagIndex][slotID] = {
                     itemID = itemInfo.itemID,
                     itemLink = itemInfo.hyperlink,
                     stackCount = itemInfo.stackCount or 1,
-                    quality = itemInfo.quality or itemQuality or 0,
+                    quality = displayQuality,
                     iconFileID = displayIcon,
-                    name = displayName,
+                    name = displayName or (itemInfo.itemID and ("Item " .. tostring(itemInfo.itemID)) or "Item"),
                     itemLevel = itemLevel,
-                    itemType = itemType,
+                    itemType = itemType or "Miscellaneous",
                     itemSubType = itemSubType,
                     classID = classID,
                     subclassID = subclassID,
@@ -408,6 +516,11 @@ function TheQuartermaster:ScanGuildBank()
     end
     
     local guildData = self.db.global.guildBank[guildName]
+
+    -- Cache guild bank money (copper). This is display-only and is NOT included in totals.
+    if type(GetGuildBankMoney) == "function" then
+        guildData.money = GetGuildBankMoney() or 0
+    end
     
     -- Get number of tabs (player might not have access to all)
     local numTabs = GetNumGuildBankTabs()
@@ -461,18 +574,52 @@ function TheQuartermaster:ScanGuildBank()
                         -- Get item info using API wrapper
                         local itemName, _, itemQuality, itemLevel, _, itemType, itemSubType,
                               _, _, itemTexture, _, classID, subclassID = self:API_GetItemInfo(itemID)
+
+                        if (not classID or not subclassID or not itemTexture) and type(GetItemInfoInstant) == "function" then
+                            local _, _, _, _, iconFileID, cID, scID = GetItemInfoInstant(itemID)
+                            itemTexture = itemTexture or iconFileID
+                            classID = classID or cID
+                            subclassID = subclassID or scID
+                        end
+                        if (not itemType or itemType == "") and classID and type(GetItemClassInfo) == "function" then
+                            itemType = GetItemClassInfo(classID) or itemType
+                        end
+                        if (not itemSubType or itemSubType == "") and classID and subclassID and type(GetItemSubClassInfo) == "function" then
+                            itemSubType = GetItemSubClassInfo(classID, subclassID) or itemSubType
+                        end
+                        if (not itemQuality) and hyperlink then
+                            local color = hyperlink:match("|c%x%x(%x%x%x%x%x%x)%x%x%x%x") or hyperlink:match("|c%x%x%x%x(%x%x%x%x%x%x)")
+                            if color then
+                                color = color:lower()
+                                local qmap = { ["9d9d9d"]=0, ["ffffff"]=1, ["1eff00"]=2, ["0070dd"]=3, ["a335ee"]=4, ["ff8000"]=5, ["e6cc80"]=6, ["00ccff"]=7 }
+                                itemQuality = qmap[color]
+                            end
+                        end
+
+                        -- Item info can be nil when item data hasn't been cached client-side yet.
+                        -- We already have an itemLink for guild bank items; use that for a stable name.
+                        if (not itemName or itemName == "") and itemLink then
+                            itemName = itemLink:match("%[(.-)%]")
+                        end
+                        if (not itemType or itemType == "") then
+                            itemType = "Miscellaneous"
+                        end
+                        if C_Item and C_Item.RequestLoadItemDataByID and itemID then
+                            C_Item.RequestLoadItemDataByID(itemID)
+                        end
                         
                         -- Store item data
                         tabData.items[slotID] = {
                             itemID = itemID,
                             itemLink = itemLink,
-                            itemName = itemName or "Unknown",
+                            -- Use consistent field names with other sources (Items UI expects .name and .iconFileID)
+                            name = itemName or (itemID and ("Item " .. tostring(itemID)) or "Item"),
                             stackCount = itemCount or 1,
                             quality = itemQuality or 0,
                             itemLevel = itemLevel or 0,
-                            itemType = itemType or "",
+                            itemType = itemType or "Miscellaneous",
                             itemSubType = itemSubType or "",
-                            icon = texture or itemTexture,
+                            iconFileID = texture or itemTexture,
                             classID = classID or 0,
                             subclassID = subclassID or 0
                         }
@@ -627,6 +774,14 @@ function TheQuartermaster:GetGuildBankItems(groupByCategory)
             local item = {}
             for k, v in pairs(itemData) do
                 item[k] = v
+            end
+
+            -- Backwards compatibility: older cache keys
+            if item.name == nil and item.itemName ~= nil then
+                item.name = item.itemName
+            end
+            if item.iconFileID == nil and item.icon ~= nil then
+                item.iconFileID = item.icon
             end
             item.tabIndex = tabIndex
             item.slotID = slotID

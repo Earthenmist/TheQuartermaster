@@ -577,7 +577,7 @@ yOffset = yOffset + 78
             RenderCurrenciesUnderHeader(
                 midnight.name,
                 charKeyForState .. "-hdr-midnight",
-                "Interface\\Icons\\INV_Misc_QuestionMark",
+                "Interface\\Icons\\inv12_apextalent_demonhunter_midnight",
                 midnight.items,
                 baseIndent,
                 true

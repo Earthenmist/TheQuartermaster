@@ -50,6 +50,31 @@ local defaults = ns.DEFAULTS
 -- Local theme color calculator (kept here to avoid load-order issues)
 -- Mirrors Modules/UI/QM_QM_SharedWidgets.lua CalculateThemeColors()
 local function CalculateThemeColorsCore(masterR, masterG, masterB)
+    -- Clamp extremely bright / low-saturation colors (e.g. PRIEST white) so the theme remains readable
+    local function NormalizeAccentColor(r, g, b)
+        local maxc = math.max(r, g, b)
+        local minc = math.min(r, g, b)
+        local lum  = (r + g + b) / 3
+        local sat  = maxc - minc
+
+        -- If the color is both very bright and nearly gray/white, cap it harder to avoid washing out the UI
+        local cap = 0.90
+        if lum > 0.85 and sat < 0.12 then
+            cap = 0.78
+        elseif lum > 0.90 then
+            cap = 0.85
+        end
+
+        if maxc > cap and maxc > 0 then
+            local s = cap / maxc
+            r, g, b = r * s, g * s, b * s
+        end
+
+        return r, g, b
+    end
+
+    masterR, masterG, masterB = NormalizeAccentColor(masterR, masterG, masterB)
+
     local function Desaturate(r, g, b, amount)
         local gray = (r + g + b) / 3
         return r + (gray - r) * amount,
@@ -285,7 +310,19 @@ function TheQuartermaster:OnEnable()
         self:RegisterEvent("GUILDBANKFRAME_CLOSED", "OnGuildBankClosed")
         self:RegisterEvent("GUILDBANKBAGSLOTS_CHANGED", "OnBagUpdate") -- Guild bank slot changes
     end
-    
+
+
+
+
+    -- Guild Bank UI is load-on-demand (Blizzard_GuildBankUI). As a safety net, we hook the frame
+    -- OnShow/OnHide so caching works even if open/close events are missed.
+    self:RegisterEvent("ADDON_LOADED", "OnAddonLoaded")
+    C_Timer.After(1, function()
+        if TheQuartermaster and TheQuartermaster.HookGuildBankFrame then
+            TheQuartermaster:HookGuildBankFrame()
+        end
+    end)
+
     self:RegisterEvent("PLAYER_MONEY", "OnMoneyChanged")
     self:RegisterEvent("ACCOUNT_MONEY", "OnMoneyChanged") -- Warband Bank gold changes
     self:RegisterEvent("CURRENCY_DISPLAY_UPDATE", "OnCurrencyChanged") -- Currency changes
@@ -1220,24 +1257,25 @@ end
 function TheQuartermaster:OnGuildBankOpened()
     self.guildBankIsOpen = true
     self.currentBankType = "guild"
-    
-    -- Suppress Blizzard's Guild Bank frame if not using another addon
-    if not self:IsUsingOtherBankAddon() then
-        self:SuppressGuildBankFrame()
-        
-        -- Open main window to Guild Bank tab
-        if self.ShowMainWindow then
-            self:ShowMainWindow()
-            -- Switch to Guild Bank tab (will be implemented in UI module)
-            if self.SwitchBankTab then
-                self:SwitchBankTab("guild")
-            end
-        end
-    end
+
+    -- NOTE: The Quartermaster is view-only for Guild Bank.
+    -- We do NOT suppress Blizzard's GuildBankFrame here because the client
+    -- populates tab data lazily when the frame is visible/open. Suppressing
+    -- too early can result in GetNumGuildBankTabs() returning 0 and an empty cache.
     
     -- Scan guild bank
-    if self.db.profile.autoScan and self.ScanGuildBank then
-        C_Timer.After(0.3, function()
+    if self.ScanGuildBank then
+        -- Request tab contents first, then scan after the client has had time to populate.
+        C_Timer.After(0.5, function()
+            local n = GetNumGuildBankTabs()
+            if n and n > 0 and QueryGuildBankTab then
+                for i = 1, n do
+                    QueryGuildBankTab(i)
+                end
+            end
+        end)
+
+        C_Timer.After(1.0, function()
             if TheQuartermaster and TheQuartermaster.ScanGuildBank then
                 TheQuartermaster:ScanGuildBank()
             end
@@ -1266,6 +1304,45 @@ function TheQuartermaster:OnGuildBankClosed()
     -- Refresh UI if open
     if self.RefreshUI then
         self:RefreshUI()
+    end
+end
+
+
+-- ADDON_LOADED handler (used for load-on-demand UI like Blizzard_GuildBankUI)
+-- NOTE: AceEvent passes (event, addonName) for ADDON_LOADED.
+-- Our handler must accept the event argument or addonName will be wrong.
+function TheQuartermaster:OnAddonLoaded(event, addonName)
+    if addonName == "Blizzard_GuildBankUI" then
+        if self.HookGuildBankFrame then
+            self:HookGuildBankFrame()
+        end
+    end
+end
+
+-- Fallback hook for Guild Bank open/close detection
+function TheQuartermaster:HookGuildBankFrame()
+    if self._guildBankHooked then return end
+    if not GuildBankFrame then return end
+    if not ENABLE_GUILD_BANK then return end
+
+    GuildBankFrame:HookScript("OnShow", function()
+        if TheQuartermaster and not TheQuartermaster.guildBankIsOpen then
+            TheQuartermaster:OnGuildBankOpened()
+        end
+    end)
+
+    GuildBankFrame:HookScript("OnHide", function()
+        if TheQuartermaster and TheQuartermaster.guildBankIsOpen then
+            TheQuartermaster:OnGuildBankClosed()
+        end
+    end)
+
+    self._guildBankHooked = true
+
+    -- If the frame is already open (e.g. UI loaded before hooks or after /reload),
+    -- OnShow will not fire again. Detect and handle it immediately.
+    if GuildBankFrame:IsShown() and not self.guildBankIsOpen then
+        self:OnGuildBankOpened()
     end
 end
 
@@ -1809,6 +1886,7 @@ function TheQuartermaster:OnBagUpdate(eventOrBagIDs, ...)
     local warbandUpdated = false
     local personalUpdated = false
     local inventoryUpdated = false
+    local guildUpdated = false
     local needsRescan = false
 
     if type(eventOrBagIDs) == "table" then
@@ -1841,6 +1919,7 @@ function TheQuartermaster:OnBagUpdate(eventOrBagIDs, ...)
             needsRescan = true
         elseif event == "GUILDBANKBAGSLOTS_CHANGED" then
             -- We treat guild bank similarly: refresh the cache if the UI is open.
+            guildUpdated = true
             needsRescan = true
         else
             return
@@ -1871,6 +1950,9 @@ function TheQuartermaster:OnBagUpdate(eventOrBagIDs, ...)
             end
             if self.bankIsOpen and self.ScanPersonalBank then
                 self:ScanPersonalBank()
+            end
+            if self.guildBankIsOpen and self.ScanGuildBank then
+                self:ScanGuildBank()
             end
             
             -- Invalidate item caches (data changed)

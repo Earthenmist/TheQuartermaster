@@ -9,17 +9,16 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.9"
+local CURRENT_VERSION = "1.0.12"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.9",
+    version = "1.0.12",
     date = "2026-02-05",
     changes = {
+    "Enabled **Guild Bank** on the **Items** screen (appears after Warband Bank when in a guild).",    
     "Code has been tidied up and refactored for better maintainability.",    
     "Created a Dashboard as the first opening screen.",
-    "Moved Information and Settings actions into the left sidebar navigation, styled consistently with existing section buttons.", 
-    "Removed the floating bottom-right action buttons for a cleaner, unified navigation layout.",  
     "Sidebar navigation now represents the primary interaction model for all sections and actions.", 
     }
 }

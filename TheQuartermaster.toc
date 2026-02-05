@@ -2,12 +2,12 @@
 ## Title: The Quartermaster
 ## Notes: Account-Wide Inventory, Warband & Character Overview for World of Warcraft (Midnight-Ready)
 ## Author: Lanni Alonsus
-## Version: 1.0.9
+## Version: 1.0.12
 ## IconTexture: Interface\AddOns\TheQuartermaster\Media\icon
 ## SavedVariables: TheQuartermasterDB
 ## OptionalDeps: Ace3
-## X-Category: Bags & Inventory
-## X-Curse-Project-ID: 
+## Category: Bags & Inventory
+## X-Curse-Project-ID: 1444475
 ## X-Wago-ID: 
 
 # Libraries

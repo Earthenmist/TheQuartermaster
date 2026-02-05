@@ -76,6 +76,17 @@ ns.UI_SetItemsSubTab = function(val)
             TheQuartermaster:SyncBankTab()
         end
     end
+
+    -- If the guild bank view is selected while the GuildBankFrame is open,
+    -- trigger a scan so the cache populates even when auto-scan is disabled.
+    if val == "guild" and TheQuartermaster and TheQuartermaster.guildBankIsOpen and TheQuartermaster.ScanGuildBank then
+        -- Delay slightly so tab data has time to populate.
+        C_Timer.After(0.2, function()
+            if TheQuartermaster and TheQuartermaster.guildBankIsOpen and TheQuartermaster.ScanGuildBank then
+                TheQuartermaster:ScanGuildBank()
+            end
+        end)
+    end
 end
 ns.UI_GetItemsSearchText = function() return ns.itemsSearchText end
 ns.UI_GetStorageSearchText = function() return ns.storageSearchText end

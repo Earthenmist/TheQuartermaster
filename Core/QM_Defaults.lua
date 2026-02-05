@@ -80,6 +80,10 @@ ns.DEFAULTS = {
         warbandBankViewMode = "slots",
         warbandBankSlotTab = 1,
 
+        -- Items tab (Guild Bank)
+        guildBankViewMode = "slots",
+        guildBankSlotTab = 1,
+
         -- Tab filtering (true = ignored)
         ignoredTabs = {
             [1] = false,

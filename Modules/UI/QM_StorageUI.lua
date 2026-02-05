@@ -36,6 +36,108 @@ local SECTION_SPACING = UI_LAYOUT.SECTION_SPACING
 -- Performance: Local function references
 local format = string.format
 
+-- ==============================
+-- Item info resolution helpers
+-- ==============================
+local _tq_storagePendingInfoRefresh = false
+local function _TQ_StorageQueueInfoRefresh()
+    if _tq_storagePendingInfoRefresh then return end
+    _tq_storagePendingInfoRefresh = true
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.25, function()
+            _tq_storagePendingInfoRefresh = false
+            if TheQuartermaster and TheQuartermaster.RefreshUI then
+                TheQuartermaster:RefreshUI()
+            end
+        end)
+    else
+        _tq_storagePendingInfoRefresh = false
+    end
+end
+
+local function _TQ_StorageResolveItemInfo(item)
+    if not item or not item.itemID then return end
+    local itemID = tonumber(item.itemID)
+    if not itemID then return end
+
+    local name, link, quality, _, _, itemType, itemSubType, _, _, icon, _, classID, subclassID = GetItemInfo(itemID)
+    if name and name ~= "" then
+        item.name = name
+        item.itemLink = item.itemLink or link
+        if item.quality == nil then item.quality = quality end
+        item.itemType = item.itemType or itemType
+        item.itemSubType = item.itemSubType or itemSubType
+        item.iconFileID = item.iconFileID or icon
+        item.classID = item.classID or classID
+        item.subclassID = item.subclassID or subclassID
+        return true
+    end
+
+    if C_Item and C_Item.RequestLoadItemDataByID then
+        C_Item.RequestLoadItemDataByID(itemID)
+        _TQ_StorageQueueInfoRefresh()
+    end
+
+    if (not item.iconFileID) and type(GetItemInfoInstant) == "function" then
+        local _, _, _, _, iconFileID, cID, scID = GetItemInfoInstant(itemID)
+        item.iconFileID = iconFileID or item.iconFileID
+        item.classID = item.classID or cID
+        item.subclassID = item.subclassID or scID
+    end
+end
+
+
+-- ==============================
+-- Item info resolution helpers
+-- ==============================
+local _tq_storagePendingInfoRefresh = false
+local function _TQ_StorageQueueInfoRefresh()
+    if _tq_storagePendingInfoRefresh then return end
+    _tq_storagePendingInfoRefresh = true
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.25, function()
+            _tq_storagePendingInfoRefresh = false
+            if TheQuartermaster and TheQuartermaster.RefreshUI then
+                TheQuartermaster:RefreshUI()
+            end
+        end)
+    else
+        _tq_storagePendingInfoRefresh = false
+    end
+end
+
+local function _TQ_StorageResolveItemInfo(item)
+    if not item or not item.itemID then return end
+
+    local itemID = tonumber(item.itemID)
+    if not itemID then return end
+
+    local name, link, quality, _, _, itemType, itemSubType, _, _, icon, _, classID, subclassID = GetItemInfo(itemID)
+    if name and name ~= "" then
+        item.name = name
+        item.itemLink = item.itemLink or link
+        if item.quality == nil then item.quality = quality end
+        item.itemType = item.itemType or itemType
+        item.itemSubType = item.itemSubType or itemSubType
+        item.iconFileID = item.iconFileID or icon
+        item.classID = item.classID or classID
+        item.subclassID = item.subclassID or subclassID
+        return true
+    end
+
+    if C_Item and C_Item.RequestLoadItemDataByID then
+        C_Item.RequestLoadItemDataByID(itemID)
+        _TQ_StorageQueueInfoRefresh()
+    end
+
+    if (not item.iconFileID) and type(GetItemInfoInstant) == "function" then
+        local _, _, _, _, iconFileID, cID, scID = GetItemInfoInstant(itemID)
+        item.iconFileID = iconFileID or item.iconFileID
+        item.classID = item.classID or cID
+        item.subclassID = item.subclassID or scID
+    end
+end
+
 --============================================================================
 -- DRAW STORAGE TAB (Hierarchical Storage Browser)
 --============================================================================
@@ -228,9 +330,9 @@ if inventoryExpanded and not (storageSearchText and storageSearchText ~= "" and 
                     isCharExpanded = true
                 end
 
-                local charIcon = "Interface\\Icons\Achievement_Character_Human_Male"
+                local charIcon = "Interface\\Icons\\Achievement_Character_Human_Male"
                 if charData.classFile then
-                    charIcon = "Interface\\Icons\ClassIcon_" .. charData.classFile
+                    charIcon = "Interface\\Icons\\ClassIcon_" .. charData.classFile
                 end
 
                 local displayName = (FormatCharacterNameRealm and FormatCharacterNameRealm(charName, charRealm, charData.classFile))
@@ -339,6 +441,9 @@ local itemRow = CreateFrame("Button", nil, parent, "BackdropTemplate")
                                         nameText:SetJustifyH("LEFT")
                                         nameText:SetWordWrap(false)
                                         nameText:SetWidth(width - indent * 2 - 200)
+
+                                        _TQ_StorageResolveItemInfo(item)
+
 
                                         local baseName = item.name or format("Item %s", tostring(item.itemID or "?"))
                                         local displayName = TheQuartermaster:GetItemDisplayName(item.itemID, baseName, item.classID)
@@ -520,6 +625,8 @@ end
                             nameText:SetJustifyH("LEFT")
                             nameText:SetWordWrap(false)
                             nameText:SetWidth(width - indent - 200)
+                            _TQ_StorageResolveItemInfo(item)
+
                             local baseName = item.name or format("Item %s", tostring(item.itemID or "?"))
                             local displayName = TheQuartermaster:GetItemDisplayName(item.itemID, baseName, item.classID)
                             nameText:SetText(format("|cff%s%s|r", GetQualityHex(item.quality), displayName))
@@ -746,6 +853,8 @@ end
                                         nameText:SetJustifyH("LEFT")
                                         nameText:SetWordWrap(false)
                                         nameText:SetWidth(width - indent * 2 - 200)
+                                        _TQ_StorageResolveItemInfo(item)
+
                                         local baseName = item.name or format("Item %s", tostring(item.itemID or "?"))
                                         local displayName = TheQuartermaster:GetItemDisplayName(item.itemID, baseName, item.classID)
                                         nameText:SetText(format("|cff%s%s|r", GetQualityHex(item.quality), displayName))

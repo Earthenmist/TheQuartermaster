@@ -31,3 +31,16 @@ function TheQuartermaster:GetWarbandBankMoney()
     return 0
 end
 
+-- Guild bank gold is cached during Guild Bank scans. This is display-only and is
+-- NOT included in any overall totals.
+function TheQuartermaster:GetCachedGuildBankMoney()
+    if not IsInGuild() then return 0 end
+
+    local guildName = GetGuildInfo("player")
+    if not guildName then return 0 end
+
+    local gb = self.db and self.db.global and self.db.global.guildBank
+    local g = gb and gb[guildName]
+    return (g and g.money) or 0
+end
+
