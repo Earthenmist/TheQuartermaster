@@ -409,6 +409,20 @@ local options = {
                 end
             end,
         },
+
+        tooltipGuildCounts = {
+            order = 63,
+            type = "toggle",
+            name = L["SHOW_GUILD_BANK_ITEM_COUNTS"],
+            desc = L["SHOW_GUILD_BANK_ITEM_COUNTS_DESC"],
+            width = 1.5,
+            get = function() return TheQuartermaster.db.profile.tooltipGuildCounts end,
+            set = function(_, value)
+                TheQuartermaster.db.profile.tooltipGuildCounts = value
+            end,
+            disabled = function() return not TheQuartermaster.db.profile.tooltipEnhancement end,
+        },
+
         spacer6 = {
             order = 69,
             type = "description",

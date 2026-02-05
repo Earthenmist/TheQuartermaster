@@ -39,6 +39,8 @@ local function ScanItemLocations(itemID)
     local data = {
         warband = 0,
         characters = {}, -- [charKey] = { name, realm, classFile, bags, bank, total }
+        guilds = {}, -- [guildName] = totalCount (cached)
+        guildTotal = 0,
     }
 
     -- Warband Bank
@@ -51,6 +53,31 @@ local function ScanItemLocations(itemID)
                 if item and item.itemID == itemID then
                     data.warband = data.warband + (item.stackCount or 1)
                 end
+            end
+        end
+    end
+
+
+    -- Guild Bank (cached by guild name)
+    if TheQuartermaster.db and TheQuartermaster.db.global
+        and TheQuartermaster.db.global.guildBank
+    then
+        for guildName, guildData in pairs(TheQuartermaster.db.global.guildBank) do
+            local count = 0
+            if guildData and guildData.tabs then
+                for _, tabData in pairs(guildData.tabs) do
+                    if tabData and tabData.items then
+                        for _, item in pairs(tabData.items) do
+                            if item and item.itemID == itemID then
+                                count = count + (item.stackCount or item.count or item.quantity or 1)
+                            end
+                        end
+                    end
+                end
+            end
+            if count > 0 then
+                data.guilds[guildName] = count
+                data.guildTotal = data.guildTotal + count
             end
         end
     end
@@ -220,8 +247,28 @@ local function AddItemLocationInfo(tooltip, itemLink)
         tooltip:AddDoubleLine("Warband Bank", tostring(locations.warband), 0.75, 0.75, 0.75, 1, 1, 1)
     end
 
-    tooltip:AddLine("|cff999999-------------------------------|r")
+    tooltip:AddLine("|cffffffff-------------------------------|r")
     tooltip:AddLine("Total owned: " .. totalOwned, 1, 1, 1)
+    -- Guild bank counts (separate section to avoid mixing with personal/warband totals)
+    if TheQuartermaster.db and TheQuartermaster.db.profile
+        and TheQuartermaster.db.profile.tooltipGuildCounts
+        and locations.guildTotal and locations.guildTotal > 0
+    then
+        tooltip:AddLine(" ", 1, 1, 1)
+        local guildNames = {}
+        for gName in pairs(locations.guilds or {}) do
+            table.insert(guildNames, gName)
+        end
+        table.sort(guildNames)
+
+        for _, gName in ipairs(guildNames) do
+            tooltip:AddDoubleLine(tostring(gName), tostring(locations.guilds[gName] or 0), 1, 1, 1, 1, 1, 1)
+        end
+
+        tooltip:AddLine("|cffffffff-------------------------------|r")
+        tooltip:AddLine("|cffffffffGuild Bank Total:|r " .. tostring(locations.guildTotal), 1, 1, 1)
+    end
+
 end
 
 local function OnTooltipSetItem(tooltip)

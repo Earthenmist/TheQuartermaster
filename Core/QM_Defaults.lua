@@ -59,6 +59,7 @@ ns.DEFAULTS = {
         showItemCount = true,
         -- Tooltip enhancements
         tooltipEnhancement = true, -- Show item locations in tooltips by default
+        tooltipGuildCounts = true, -- Show cached guild bank counts in tooltips by default
 
         -- Gold settings
         goldReserve = 0, -- Minimum gold to keep when depositing
