@@ -571,7 +571,7 @@ yOffset = yOffset + 78
     local function RenderBlizzardOrder(charKeyForState, currList, baseIndent)
         local buckets = BuildHeaderBuckets(currList)
 
-        -- Midnight (when it exists) + Season subheaders
+        -- Midnight (when it exists)
         local midnight = buckets["midnight"]
         if midnight and #midnight.items > 0 then
             RenderCurrenciesUnderHeader(
@@ -580,28 +580,11 @@ yOffset = yOffset + 78
                 "Interface\\Icons\\INV_Misc_QuestionMark",
                 midnight.items,
                 baseIndent,
-                true,
-                function()
-                    -- Season subheaders (Season 1, Season 2, ...)
-                    for i = 1, 6 do
-                        local sKey = "season " .. i
-                        local sBucket = buckets[sKey]
-                        if sBucket and #sBucket.items > 0 then
-                            RenderCurrenciesUnderHeader(
-                                sBucket.name,
-                                charKeyForState .. "-hdr-midnight-" .. sKey:gsub("%s",""),
-                                "Interface\\Icons\\INV_Misc_QuestionMark",
-                                sBucket.items,
-                                baseIndent + 20,
-                                true
-                            )
-                        end
-                    end
-                end
+                true
             )
         end
 
-        -- Dungeon & Raid
+-- Dungeon & Raid
         local dr = buckets["dungeon and raid"] or buckets["dungeons and raids"] or buckets["dungeon & raid"]
         if dr and #dr.items > 0 then
             RenderCurrenciesUnderHeader(
@@ -754,7 +737,7 @@ yOffset = yOffset + 78
                                             RenderCurrenciesUnderHeader(
                                                 sBucket.name,
                                                 charKeyForState .. "-legacy-" .. key:gsub("%s","") .. "-" .. sKey:gsub("%s",""),
-                                                "Interface\Icons\INV_Misc_QuestionMark",
+                                                "Interface\\Icons\\INV_Misc_QuestionMark",
                                                 sBucket.items,
                                                 baseIndent + 40,
                                                 true
