@@ -291,7 +291,7 @@ function TheQuartermaster:CreateMainWindow()
     tinsert(UISpecialFrames, "TheQuartermasterFrame")
     
     -- ===== NAV SIDEBAR =====
-    -- Sidebar navigation (distinct from Warband Nexus' top-tab layout)
+    -- Sidebar navigation (distinct from other addons' top-tab layout)
     local nav = CreateFrame("Frame", nil, f, "BackdropTemplate")
     nav:SetWidth(160)
     nav:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 8, -8)

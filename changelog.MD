@@ -1,6 +1,6 @@
 # TheQuartermaster — Changelog
 
-📜 Changelog – Version 1.0.8  
+📜 Changelog – Version 1.0.9  
   
 🛠️ UI & Layout Changes  
   
