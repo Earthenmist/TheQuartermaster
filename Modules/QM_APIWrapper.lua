@@ -90,7 +90,15 @@ end
 ]]
 function TheQuartermaster:API_GetContainerItemInfo(bagID, slotID)
     if apiAvailable.container and C_Container.GetContainerItemInfo then
-        return C_Container.GetContainerItemInfo(bagID, slotID)
+        local info = C_Container.GetContainerItemInfo(bagID, slotID)
+        -- Some container types (notably bank bags) can intermittently omit the hyperlink
+        -- even while the tooltip can resolve it. Fall back to GetContainerItemLink.
+        if info and not info.hyperlink and C_Container.GetContainerItemLink then
+            info.hyperlink = C_Container.GetContainerItemLink(bagID, slotID)
+        elseif info and not info.hyperlink and GetContainerItemLink then
+            info.hyperlink = GetContainerItemLink(bagID, slotID)
+        end
+        return info
     elseif GetContainerItemInfo then
         -- Legacy API returns different format, need to convert
         local icon, count, locked, quality, readable, lootable, link, 

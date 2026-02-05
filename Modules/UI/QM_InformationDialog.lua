@@ -14,6 +14,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 ]]
 function TheQuartermaster:ShowInfoDialog()
     -- Get theme colors
+    if ns.UI_RefreshColors then pcall(ns.UI_RefreshColors) end
     local COLORS = ns.UI_COLORS
     
     -- Create dialog frame (or reuse if exists)
@@ -43,34 +44,43 @@ function TheQuartermaster:ShowInfoDialog()
     dialog:SetScript("OnDragStart", dialog.StartMoving)
     dialog:SetScript("OnDragStop", dialog.StopMovingOrSizing)
     self.infoDialog = dialog
-    
-    -- Header background
-    local headerBg = dialog:CreateTexture(nil, "BACKGROUND")
-    headerBg:SetHeight(50)
-    headerBg:SetPoint("TOPLEFT", 4, -4)
-    headerBg:SetPoint("TOPRIGHT", -4, -4)
-    headerBg:SetColorTexture(COLORS.accentDark[1], COLORS.accentDark[2], COLORS.accentDark[3], 1)
-    
-    -- Logo
-    local logo = dialog:CreateTexture(nil, "ARTWORK")
-    logo:SetSize(32, 32)
-    logo:SetPoint("LEFT", dialog, "TOPLEFT", 15, -25)
+    -- ===== HEADER BAR (match main frame styling in QM_UI.lua) =====
+    local header = CreateFrame("Frame", nil, dialog, "BackdropTemplate")
+    header:SetHeight(40)
+    header:SetPoint("TOPLEFT", 4, -4)
+    header:SetPoint("TOPRIGHT", -4, -4)
+    header:SetBackdrop({
+        bgFile = "Interface\\BUTTONS\\WHITE8X8",
+    })
+
+    local hdr = (COLORS and COLORS.accentDark) or (COLORS and COLORS.accent) or {0.60, 0.10, 0.10}
+    header:SetBackdropColor(hdr[1], hdr[2], hdr[3], 1)
+
+    -- Icon (same as main frame header)
+    local logo = header:CreateTexture(nil, "ARTWORK")
+    logo:SetSize(24, 24)
+    logo:SetPoint("LEFT", 15, 0)
     logo:SetTexture("Interface\\AddOns\\TheQuartermaster\\Media\\icon")
-    
-    -- Title (centered)
-    local title = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormalHuge")
-    title:SetPoint("CENTER", dialog, "TOP", 0, -25)
-    title:SetText(L["CFFFFFFFFTHE_QUARTERMASTER_R"])
-    
-    -- X Close Button (top right)
-    local closeBtn = CreateFrame("Button", nil, dialog, "UIPanelCloseButton")
-    closeBtn:SetSize(24, 24)
-    closeBtn:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -5, -5)
+
+    -- Title (always white)
+    local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("LEFT", logo, "RIGHT", 8, 0)
+    title:SetJustifyH("LEFT")
+    title:SetText((L and L["CFFFFFFFFTHE_QUARTERMASTER_R"]) or "The Quartermaster")
+    title:SetTextColor(1, 1, 1, 1)
+
+    -- Close button (match main frame)
+    local closeBtn = CreateFrame("Button", nil, header)
+    closeBtn:SetSize(30, 30)
+    closeBtn:SetPoint("RIGHT", -8, 0)
+    closeBtn:SetNormalTexture("Interface\\BUTTONS\\UI-Panel-MinimizeButton-Up")
+    closeBtn:SetPushedTexture("Interface\\BUTTONS\\UI-Panel-MinimizeButton-Down")
+    closeBtn:SetHighlightTexture("Interface\\BUTTONS\\UI-Panel-MinimizeButton-Highlight")
     closeBtn:SetScript("OnClick", function() dialog:Hide() end)
-    
+
     -- Scroll Frame
     local scrollFrame = CreateFrame("ScrollFrame", nil, dialog, "UIPanelScrollFrameTemplate")
-    scrollFrame:SetPoint("TOPLEFT", headerBg, "BOTTOMLEFT", 10, -10)
+    scrollFrame:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 10, -10)
     scrollFrame:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -30, 50)
     
     local scrollChild = CreateFrame("Frame", nil, scrollFrame)
@@ -168,14 +178,35 @@ function TheQuartermaster:ShowInfoDialog()
     -- Update scroll child height
     scrollChild:SetHeight(yOffset)
     
-    -- OK Button (bottom center)
-    local okBtn = CreateFrame("Button", nil, dialog, "GameMenuButtonTemplate")
-    okBtn:SetSize(100, 30)
-    okBtn:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 15)
-    okBtn:SetText("OK")
-    okBtn:SetNormalFontObject("GameFontNormal")
-    okBtn:SetHighlightFontObject("GameFontHighlight")
-    okBtn:SetScript("OnClick", function() dialog:Hide() end)
-    
+    -- OK Button (bottom center) - match Items "Slot View" themed action button
+local okBtn = CreateFrame("Button", nil, dialog, "BackdropTemplate")
+okBtn:SetSize(96, 24)
+okBtn:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 15)
+
+okBtn.text = okBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+okBtn.text:SetPoint("CENTER")
+okBtn.text:SetTextColor(1, 1, 1, 0.95)
+okBtn.text:SetText("OK")
+
+okBtn:SetBackdrop({
+    bgFile = "Interface\\BUTTONS\\WHITE8X8",
+    edgeFile = "Interface\\BUTTONS\\WHITE8X8",
+    edgeSize = 1,
+})
+okBtn:SetBackdropColor(COLORS.tabInactive[1], COLORS.tabInactive[2], COLORS.tabInactive[3], 1)
+okBtn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.65)
+
+okBtn:SetScript("OnEnter", function(btn)
+    btn:SetBackdropColor(COLORS.tabHover[1], COLORS.tabHover[2], COLORS.tabHover[3], 1)
+    btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.9)
+end)
+
+okBtn:SetScript("OnLeave", function(btn)
+    btn:SetBackdropColor(COLORS.tabInactive[1], COLORS.tabInactive[2], COLORS.tabInactive[3], 1)
+    btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.65)
+end)
+
+okBtn:SetScript("OnClick", function() dialog:Hide() end)
+
     dialog:Show()
 end

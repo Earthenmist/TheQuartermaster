@@ -84,7 +84,7 @@ local options = {
                 local localeName = localeNames[locale] or locale
                 return "|cff00ccffCurrent Language:|r " .. localeName .. "\n\n" ..
                        "|cffaaaaaa" ..
-                       "Addon uses your WoW game client's language automatically. " ..
+                       "The Quartermaster uses your WoW game client's language automatically. " ..
                        "Common text (Search, Close, Settings, Quality names, etc.) " ..
                        "uses Blizzard's built-in localized strings.\n\n" ..
                        "To change language, change your game client's language in Battle.net settings.|r\n"
@@ -409,6 +409,20 @@ local options = {
                 end
             end,
         },
+
+        tooltipGuildCounts = {
+            order = 63,
+            type = "toggle",
+            name = L["SHOW_GUILD_BANK_ITEM_COUNTS"],
+            desc = L["SHOW_GUILD_BANK_ITEM_COUNTS_DESC"],
+            width = 1.5,
+            get = function() return TheQuartermaster.db.profile.tooltipGuildCounts end,
+            set = function(_, value)
+                TheQuartermaster.db.profile.tooltipGuildCounts = value
+            end,
+            disabled = function() return not TheQuartermaster.db.profile.tooltipEnhancement end,
+        },
+
         spacer6 = {
             order = 69,
             type = "description",

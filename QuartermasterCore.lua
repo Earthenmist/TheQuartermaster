@@ -50,6 +50,31 @@ local defaults = ns.DEFAULTS
 -- Local theme color calculator (kept here to avoid load-order issues)
 -- Mirrors Modules/UI/QM_QM_SharedWidgets.lua CalculateThemeColors()
 local function CalculateThemeColorsCore(masterR, masterG, masterB)
+    -- Clamp extremely bright / low-saturation colors (e.g. PRIEST white) so the theme remains readable
+    local function NormalizeAccentColor(r, g, b)
+        local maxc = math.max(r, g, b)
+        local minc = math.min(r, g, b)
+        local lum  = (r + g + b) / 3
+        local sat  = maxc - minc
+
+        -- If the color is both very bright and nearly gray/white, cap it harder to avoid washing out the UI
+        local cap = 0.90
+        if lum > 0.85 and sat < 0.12 then
+            cap = 0.78
+        elseif lum > 0.90 then
+            cap = 0.85
+        end
+
+        if maxc > cap and maxc > 0 then
+            local s = cap / maxc
+            r, g, b = r * s, g * s, b * s
+        end
+
+        return r, g, b
+    end
+
+    masterR, masterG, masterB = NormalizeAccentColor(masterR, masterG, masterB)
+
     local function Desaturate(r, g, b, amount)
         local gray = (r + g + b) / 3
         return r + (gray - r) * amount,
@@ -269,60 +294,12 @@ function TheQuartermaster:OnEnable()
 
 		self._tooltipMoneyFixApplied = true
 	end
-    
-    -- CRITICAL: Check for addon conflicts immediately on enable (only if bank module enabled)
-    -- This runs on both initial login AND /reload
-    -- Detect if user re-enabled conflicting addons/modules
-    C_Timer.After(0.5, function()
-        if not TheQuartermaster or not TheQuartermaster.db or not TheQuartermaster.db.profile then
-            return
-        end
-        
-        -- Skip conflict detection if bank module is disabled
-        if not TheQuartermaster.db.profile.bankModuleEnabled then
-            return
-        end
-        
-        -- Check if there are existing conflict choices
-        local hasConflictChoices = next(TheQuartermaster.db.profile.bankConflictChoices) ~= nil
-        
-        -- Detect all currently conflicting addons
-        local conflicts = TheQuartermaster:DetectBankAddonConflicts()
-        
-        -- Reset choices for re-enabled addons (if conflict exists AND choice was useWarband)
-        if conflicts and #conflicts > 0 and TheQuartermaster.db.profile.bankConflictChoices then
-            for _, addonName in ipairs(conflicts) do
-                local choice = TheQuartermaster.db.profile.bankConflictChoices[addonName]
-                
-                if choice == "useWarband" then
-                    -- User chose Warband but addon is back, reset choice
-                    TheQuartermaster.db.profile.bankConflictChoices[addonName] = nil
-                    TheQuartermaster:Print("|cffffaa00" .. addonName .. " was re-enabled! Choose again...|r")
-                end
-            end
-        end
-        
-        -- Call CheckBankConflictsOnLogin if:
-        -- 1. No choices exist yet (fresh enable or choices were reset)
-        -- 2. OR conflicts detected that need resolution
-        if not hasConflictChoices or (conflicts and #conflicts > 0) then
-            C_Timer.After(1, function()
-                if TheQuartermaster and TheQuartermaster.CheckBankConflictsOnLogin then
-                    TheQuartermaster:CheckBankConflictsOnLogin()
-                end
-            end)
-        end
-    end)
-    
-    -- Initialize conflict queue and guards
-    self._conflictQueue = {}
-    self._isProcessingConflict = false
-    
+
+    -- Bank addon conflict detection removed (addon no longer overrides bags/banks)
     -- Session flag to prevent duplicate saves
     self.characterSaved = false
     
     -- Register events
-    self:RegisterEvent("ADDON_LOADED", "OnAddonLoaded") -- Detect when conflicting addons are loaded
     self:RegisterEvent("BANKFRAME_OPENED", "OnBankOpened")
     self:RegisterEvent("BANKFRAME_CLOSED", "OnBankClosed")
     self:RegisterEvent("PLAYERBANKSLOTS_CHANGED", "OnBagUpdate") -- Personal bank slot changes
@@ -333,7 +310,19 @@ function TheQuartermaster:OnEnable()
         self:RegisterEvent("GUILDBANKFRAME_CLOSED", "OnGuildBankClosed")
         self:RegisterEvent("GUILDBANKBAGSLOTS_CHANGED", "OnBagUpdate") -- Guild bank slot changes
     end
-    
+
+
+
+
+    -- Guild Bank UI is load-on-demand (Blizzard_GuildBankUI). As a safety net, we hook the frame
+    -- OnShow/OnHide so caching works even if open/close events are missed.
+    self:RegisterEvent("ADDON_LOADED", "OnAddonLoaded")
+    C_Timer.After(1, function()
+        if TheQuartermaster and TheQuartermaster.HookGuildBankFrame then
+            TheQuartermaster:HookGuildBankFrame()
+        end
+    end)
+
     self:RegisterEvent("PLAYER_MONEY", "OnMoneyChanged")
     self:RegisterEvent("ACCOUNT_MONEY", "OnMoneyChanged") -- Warband Bank gold changes
     self:RegisterEvent("CURRENCY_DISPLAY_UPDATE", "OnCurrencyChanged") -- Currency changes
@@ -777,41 +766,11 @@ end)
         else
             self:Print("Minimap button module not loaded")
         end
-    
     elseif cmd == "bankcheck" then
-        -- Check for bank addon conflicts
-        local conflicts = self:DetectBankAddonConflicts()
-        
-        self:Print("=== Bank Conflict Status ===")
-        
-        if conflicts and #conflicts > 0 then
-            self:Print("Conflicting addons detected:")
-            for _, addonName in ipairs(conflicts) do
-                local choice = self.db.profile.bankConflictChoices[addonName]
-                if choice == "useWarband" then
-                    self:Print(string.format("  |cff00ccff%s|r: |cff00ff00Using The Quartermaster|r", addonName))
-                elseif choice == "useOther" then
-                    self:Print(string.format("  |cff00ccff%s|r: |cff888888Using %s|r", addonName, addonName))
-                else
-                    self:Print(string.format("  |cff00ccff%s|r: |cffff9900Not resolved yet|r", addonName))
-                end
-            end
-            self:Print("")
-            self:Print("To reset: Type |cff00ccff/tq bankreset|r")
-        else
-            self:Print("|cff00ff00✓ No conflicts detected|r")
-            self:Print("The Quartermaster is managing your bank UI!")
-        end
-        
-        self:Print("==========================")
-    
+        self:Print("Bank addon conflict checks were removed in v1.0.9+")
     elseif cmd == "bankreset" then
-        -- Reset ALL bank conflict choices
-        self.db.profile.bankConflictChoices = {}
-        self:ClearConflictCache()
-        self:Print("|cff00ff00All bank conflict choices reset!|r")
-        self:Print("Type |cff00ccff/reload|r to see conflict popups again.")
-    
+        self:Print("Nothing to reset: bank addon conflict system has been removed.")
+
     elseif cmd == "vaultcheck" or cmd == "testvault" then
         -- Test vault notification system
         if self.TestVaultCheck then
@@ -1058,38 +1017,8 @@ function TheQuartermaster:OnBankOpened()
                 TheQuartermaster:ScanWarbandBank()
             end
         end
-        
-        -- CRITICAL: Check for addon conflicts when bank opens (only if module enabled)
-        -- This catches runtime changes (user opened ElvUI bags settings, re-enabled module, etc.)
-        if TheQuartermaster.db.profile.bankModuleEnabled and TheQuartermaster and TheQuartermaster.db and TheQuartermaster.db.profile and TheQuartermaster.db.profile.bankConflictChoices then
-            local conflicts = TheQuartermaster:DetectBankAddonConflicts()
-            if conflicts and #conflicts > 0 then
-                -- Check each conflict to see if user previously chose "useWarband"
-                -- If so, they've re-enabled the addon/module and need to choose again
-                local choicesReset = false
-                
-                for _, addonName in ipairs(conflicts) do
-                    local choice = TheQuartermaster.db.profile.bankConflictChoices[addonName]
-                    
-                    if choice == "useWarband" then
-                        -- User previously chose Warband but addon/module is enabled again!
-                        -- RESET the choice so popup will show
-                        TheQuartermaster.db.profile.bankConflictChoices[addonName] = nil
-                        choicesReset = true
-                    end
-                end
-                
-                -- If we reset any choices OR there are new conflicts, show popup
-                if choicesReset or not next(TheQuartermaster.db.profile.bankConflictChoices) then
-                    -- Use CheckBankConflictsOnLogin which has throttling built-in
-                    if TheQuartermaster.CheckBankConflictsOnLogin then
-                        TheQuartermaster:CheckBankConflictsOnLogin()
-                    end
-                end
-            end
-        end
-        
-        -- Auto-open window ONLY if bank module enabled AND using TheQuartermaster mode
+
+        -- Auto-open window ONLY if bank module enabled
         local useOther = TheQuartermaster:IsUsingOtherBankAddon()
         if TheQuartermaster.db.profile.bankModuleEnabled and not useOther and TheQuartermaster.db.profile.autoOpenWindow ~= false then
             if TheQuartermaster and TheQuartermaster.ShowMainWindowWithItems then
@@ -1106,320 +1035,24 @@ end
     Detect conflicting bank addons (CACHED)
     @return string|nil - Name of conflicting addon, or nil if none detected
 ]]
+
+--[[-------------------------------------------------------------------------
+    Bank addon conflict detection (removed)
+    The Quartermaster no longer overrides bags/banks, so conflict popups and
+    addon/module toggling are no longer needed. Keep lightweight stubs for
+    backwards-compatibility with existing saved variables and older UI code.
+---------------------------------------------------------------------------]]
+
 function TheQuartermaster:DetectBankAddonConflicts()
-    -- Wrap in pcall to prevent errors from breaking the addon
-    local success, conflicts = pcall(function()
-        local found = {}
-        
-        -- TWW (11.0+) uses C_AddOns.IsAddOnLoaded(), older versions use IsAddOnLoaded()
-        local IsLoaded = C_AddOns and C_AddOns.IsAddOnLoaded or IsAddOnLoaded
-        
-        -- List of known conflicting addons (popular bank/bag addons)
-        local conflictingAddons = {
-            -- Popular bag addons
-            "Bagnon", "Combuctor", "ArkInventory", "AdiBags", "Baganator",
-            "LiteBag", "TBag", "BaudBag", "Inventorian",
-            -- ElvUI modules
-            "ElvUI_Bags", "ElvUI",
-            -- Bank-specific
-            "BankStack", "BankItems", "Sorted",
-            -- Generic names (legacy)
-            "BankUI", "InventoryManager", "BagAddon", "BankModifier",
-            "CustomBank", "AdvancedInventory", "BagSystem"
-        }
-        
-        for _, addonName in ipairs(conflictingAddons) do
-            if IsLoaded(addonName) then
-                -- ElvUI special check: Only add if bags module is enabled
-                if addonName == "ElvUI" then
-                    -- Check if ElvUI Bags module is ACTUALLY enabled
-                    local elvuiConflict = false  -- Default: no conflict
-                    
-                    if ElvUI then
-                        local E = ElvUI[1]
-                        if E then
-                            -- Bags is ENABLED if ANY of these is explicitly TRUE
-                            local privateBagsEnabled = false
-                            local dbBagsEnabled = false
-                            
-                            -- Check global setting (E.private.bags.enable)
-                            if E.private and E.private.bags and E.private.bags.enable == true then
-                                privateBagsEnabled = true
-                            end
-                            
-                            -- Check profile setting (E.db.bags.enabled)
-                            if E.db and E.db.bags and E.db.bags.enabled == true then
-                                dbBagsEnabled = true
-                            end
-                            
-                            -- Conflict if ANY setting is enabled
-                            elvuiConflict = privateBagsEnabled or dbBagsEnabled
-                        else
-                            -- Can't access E, assume no conflict (safer default)
-                            elvuiConflict = false
-                        end
-                    else
-                        -- ElvUI not loaded yet, no conflict
-                        elvuiConflict = false
-                    end
-                    
-                    if elvuiConflict then
-                        table.insert(found, addonName)
-                    end
-                else
-                    -- Other addons: always conflict if loaded
-                    table.insert(found, addonName)
-                end
-            end
-        end
-        
-        return found
-    end)
-    
-    if success then
-        return conflicts
-    else
-        return {}
-    end
+    return {}
 end
 
---[[
-    Helper: Check if any conflict addon is set to "useOther"
-    Safe wrapper to prevent nil table errors
-]]
 function TheQuartermaster:IsUsingOtherBankAddon()
-    if not self.db or not self.db.profile or not self.db.profile.bankConflictChoices then
-        return false
-    end
-    
-    for addonName, choice in pairs(self.db.profile.bankConflictChoices) do
-        if choice == "useOther" then
-            return true
-        end
-    end
-    
     return false
 end
 
---[[
-    Clear conflict cache (call this after disabling an addon)
-]]
 function TheQuartermaster:ClearConflictCache()
     self._conflictCheckCache = nil
-end
-
---[[
-    Disable conflicting addon's bank module
-    @param addonName string - Name of conflicting addon
-    @return boolean success, string message
-]]
-function TheQuartermaster:DisableConflictingBankModule(addonName)
-    if not addonName or addonName == "" then
-        return false, "Unknown addon. Please disable manually."
-    end
-    
-    -- ElvUI special handling - disable only bags module, not entire addon
-    if addonName == "ElvUI" then
-        -- Check if ElvUI is loaded
-        if ElvUI then
-            local E = ElvUI[1]
-            if E then
-                -- Method 1: Disable per-profile setting
-                if E.db and E.db.bags then
-                    E.db.bags.enabled = false
-                end
-                
-                -- Method 2: Disable global setting (CRITICAL!)
-                if E.private and E.private.bags then
-                    E.private.bags.enable = false
-                end
-                
-                -- Method 3: Try to disable module directly via ElvUI API
-                if E.DisableModule then
-                    pcall(function() E:DisableModule('Bags') end)
-                end
-                
-                -- Method 4: Disable bags in ALL profiles (fallback)
-                if E.data and E.data.profiles then
-                    for profileName, profileData in pairs(E.data.profiles) do
-                        if profileData.bags then
-                            profileData.bags.enabled = false
-                        end
-                    end
-                end
-                
-                -- Mark that bags module was disabled in our own DB
-                if not self.db.profile.elvuiModuleStates then
-                    self.db.profile.elvuiModuleStates = {}
-                end
-                self.db.profile.elvuiModuleStates.bagsDisabled = true
-                
-                self:Print("|cff00ff00ElvUI Bags module disabled successfully!|r")
-                return true, "ElvUI Bags module disabled. Please /reload to apply changes."
-            end
-        end
-        
-        -- Fallback if ElvUI not accessible yet
-        return true, "ElvUI bags will be disabled. Please /reload to apply changes."
-    end
-    
-    -- Bagnon, Combuctor, AdiBags, etc. - disable entire addon
-    local DisableAddon = C_AddOns and C_AddOns.DisableAddOn or DisableAddOn
-    DisableAddon(addonName)
-    return true, string.format("%s disabled. Please /reload to apply changes.", addonName)
-end
-
---[[
-    Enable conflicting addon's bank module (when user chooses to use it)
-    @param addonName string - Name of conflicting addon
-    @return boolean success, string message
-]]
-function TheQuartermaster:EnableConflictingBankModule(addonName)
-    if not addonName then
-        return false, "No addon name provided"
-    end
-    
-    -- ElvUI special handling - enable bags module only
-    if addonName == "ElvUI" then
-        if ElvUI then
-            local E = ElvUI[1]
-            if E then
-                -- Method 1: Enable per-profile setting
-                if E.db and E.db.bags then
-                    E.db.bags.enabled = true
-                end
-                
-                -- Method 2: Enable global setting (CRITICAL!)
-                if E.private and E.private.bags then
-                    E.private.bags.enable = true
-                end
-                
-                -- Method 3: Try to enable module directly via ElvUI API
-                if E.EnableModule then
-                    pcall(function() E:EnableModule('Bags') end)
-                end
-                
-                -- Method 4: Enable bags in ALL profiles (fallback)
-                if E.data and E.data.profiles then
-                    for profileName, profileData in pairs(E.data.profiles) do
-                        if profileData.bags then
-                            profileData.bags.enabled = true
-                        end
-                    end
-                end
-                
-                -- Clear disabled state in our own DB
-                if self.db.profile.elvuiModuleStates then
-                    self.db.profile.elvuiModuleStates.bagsDisabled = false
-                end
-                
-                self:Print("|cff00ff00ElvUI Bags module enabled successfully!|r")
-                return true, "ElvUI Bags module enabled. Please /reload to apply changes."
-            end
-        end
-        
-        return true, "ElvUI bags will be enabled. Please /reload to apply changes."
-    end
-    
-    -- Other addons - enable entire addon
-    local EnableAddon = C_AddOns and C_AddOns.EnableAddOn or EnableAddOn
-    EnableAddon(addonName)
-    return true, string.format("%s enabled. Please /reload to apply changes.", addonName)
-end
-
---[[
-    Show bank addon conflict warning popup with disable option
-    @param addonName string - Name of conflicting addon
-]]
-function TheQuartermaster:QueueConflictPopup(addonName)
-    if not self._conflictQueue then
-        self._conflictQueue = {}
-    end
-    table.insert(self._conflictQueue, addonName)
-end
-
-function TheQuartermaster:ShowNextConflictPopup()
-    if not self._conflictQueue then
-        self._conflictQueue = {}
-    end
-    
-    if self._isProcessingConflict or #self._conflictQueue == 0 then
-        return
-    end
-    
-    self._isProcessingConflict = true
-    local addonName = table.remove(self._conflictQueue, 1)
-    self:ShowBankAddonConflictWarning(addonName)
-end
-
-function TheQuartermaster:CheckBankConflictsOnLogin()
-    -- Throttle: Don't check more than once every 1 second
-    -- Prevents duplicate popups from multiple triggers (OnEnable, OnPlayerEnteringWorld, etc.)
-    local now = time()
-    if self._lastConflictCheck and (now - self._lastConflictCheck) < 1 then
-        return
-    end
-    self._lastConflictCheck = now
-    
-    -- Don't interrupt an ongoing conflict resolution
-    if self._isProcessingConflict then
-        return
-    end
-    
-    -- Initialize flags
-    self._needsReload = false
-    
-    -- Safety check: Ensure db is initialized
-    if not self.db or not self.db.profile or not self.db.profile.bankConflictChoices then
-        return
-    end
-    
-    -- Skip if bank module is disabled
-    if not self.db.profile.bankModuleEnabled then
-        return
-    end
-    
-    -- Detect all conflicting addons
-    local conflicts = self:DetectBankAddonConflicts()
-    
-    if not conflicts or #conflicts == 0 then
-        return -- No conflicts
-    end
-    
-    -- Filter out addons that user already made a choice for
-    -- Note: Choices are already reset in OnEnable/OnBankOpened if user re-enabled addons
-    local unresolvedConflicts = {}
-    for _, addonName in ipairs(conflicts) do
-        local choice = self.db.profile.bankConflictChoices[addonName]
-        
-        -- Show popup if:
-        -- 1. No choice exists yet (first time, or choice was reset due to re-enable)
-        -- 2. User previously chose "useWarband" but addon is still detected
-        --    (This shouldn't happen if our disable logic works, but safe fallback)
-        if not choice then
-            -- No choice = need to ask user
-            table.insert(unresolvedConflicts, addonName)
-        elseif choice == "useWarband" then
-            -- User chose Warband but addon still detected (shouldn't happen normally)
-            -- This is a safety net in case disable failed
-            table.insert(unresolvedConflicts, addonName)
-        end
-        -- Skip if choice == "useOther" (user wants to keep the other addon)
-    end
-    
-    if #unresolvedConflicts == 0 then
-        return -- All conflicts already resolved
-    end
-    
-    self:Print("|cffffaa00Showing conflict popup for " .. #unresolvedConflicts .. " addon(s)|r")
-    
-    -- Queue all unresolved conflicts
-    for _, addonName in ipairs(unresolvedConflicts) do
-        self:QueueConflictPopup(addonName)
-    end
-    
-    -- Start showing popups
-    self:ShowNextConflictPopup()
 end
 
 function TheQuartermaster:ShowReloadPopup()
@@ -1457,128 +1090,8 @@ function TheQuartermaster:PLAYER_REGEN_ENABLED()
 end
 
 
-function TheQuartermaster:ShowBankAddonConflictWarning(addonName)
-    -- Create or update popup dialog
-    StaticPopupDialogs["TheQuartermaster_BANK_CONFLICT"] = {
-        text = "",
-        button1 = "Use The Quartermaster",
-        button2 = "Use " .. addonName,
-        OnAccept = function(self)
-            -- Button 1: User wants to use The Quartermaster - disable conflicting addon
-            local addonName = self.data
-            TheQuartermaster.db.profile.bankConflictChoices[addonName] = "useWarband"
-            
-            local success, message = TheQuartermaster:DisableConflictingBankModule(addonName)
-            if not success then
-                TheQuartermaster:Print(message)
-            end
-            
-            -- Mark that we need reload (if addon was disabled)
-            if success then
-                -- Track that we disabled this addon
-                TheQuartermaster.db.profile.toggledAddons[addonName] = "disabled"
-                TheQuartermaster._needsReload = true
-                TheQuartermaster:ClearConflictCache()
-            end
-            
-            TheQuartermaster._isProcessingConflict = false
-            
-            -- Process next conflict OR reload if no more conflicts
-            if #TheQuartermaster._conflictQueue > 0 then
-                -- More conflicts to resolve (small delay for UX)
-                C_Timer.After(0.3, function()
-                    if TheQuartermaster then
-                        TheQuartermaster:ShowNextConflictPopup()
-                    end
-                end)
-            elseif TheQuartermaster._needsReload then
-                -- All done, show reload popup
-                TheQuartermaster:ShowReloadPopup()
-            end
-        end,
-        OnCancel = function(self)
-            -- Button 2: User wants to keep the other addon
-            local addonName = self.data
-            TheQuartermaster.db.profile.bankConflictChoices[addonName] = "useOther"
-            
-            -- NEW: Automatically disable bank module since user chose other addon
-            TheQuartermaster.db.profile.bankModuleEnabled = false
-            
-            -- Track that user chose this addon (it's already enabled)
-            TheQuartermaster.db.profile.toggledAddons[addonName] = "enabled"
-            
-            TheQuartermaster:Print(string.format(
-                "|cff00ff00Using %s for bank UI.|r The Quartermaster will run in background mode (data tracking only).",
-                addonName
-            ))
-            
-            -- Enable the conflicting addon (make sure it's active)
-            local success, message = TheQuartermaster:EnableConflictingBankModule(addonName)
-            if success then
-                TheQuartermaster._needsReload = true
-            end
-            
-            TheQuartermaster._isProcessingConflict = false
-            
-            -- Process next conflict OR finish if no more conflicts
-            if #TheQuartermaster._conflictQueue > 0 then
-                -- More conflicts to resolve (small delay for UX)
-                C_Timer.After(0.3, function()
-                    if TheQuartermaster then
-                        TheQuartermaster:ShowNextConflictPopup()
-                    end
-                end)
-            elseif TheQuartermaster._needsReload then
-                -- Some addons were enabled/disabled, show reload popup
-                TheQuartermaster:ShowReloadPopup()
-            else
-                -- All done, no reload needed
-                TheQuartermaster:Print("|cff00ff00All conflicts resolved! No reload needed.|r")
-            end
-        end,
-        timeout = 0,
-        whileDead = true,
-        hideOnEscape = false, -- Force user to choose
-        preferredIndex = 3,
-    }
-    
-    -- Set dynamic text
-    local warningText
-    
-    -- ElvUI special message (only bags module will be disabled)
-    if addonName == "ElvUI" then
-        warningText = string.format(
-            "|cffff9900Bank Addon Conflict|r\n\n" ..
-            "You have |cff00ccff%s|r installed.\n\n" ..
-            "Which addon do you want to use for bank UI?\n\n" ..
-            "|cff00ff00Use The Quartermaster:|r Disable ElvUI |cffaaaaaa(Bags module only)|r\n" ..
-            "|cff888888Use %s:|r TheQuartermaster works in background mode\n\n" ..
-            "|cff00ff00Note:|r Only the ElvUI Bags module will be disabled,\n" ..
-            "not the entire ElvUI addon.\n\n" ..
-            "Characters, PvE, and Statistics tabs work regardless of choice.",
-            addonName, addonName
-        )
-    else
-        -- Generic message for other addons
-        warningText = string.format(
-            "|cffff9900Bank Addon Conflict|r\n\n" ..
-            "You have |cff00ccff%s|r installed.\n\n" ..
-            "Which addon do you want to use for bank UI?\n\n" ..
-            "|cff00ff00Use The Quartermaster:|r Disable %s automatically\n" ..
-            "|cff888888Use %s:|r TheQuartermaster works in background mode\n\n" ..
-            "Characters, PvE, and Statistics tabs work regardless of choice.",
-            addonName, addonName, addonName
-        )
-    end
-    
-    StaticPopupDialogs["TheQuartermaster_BANK_CONFLICT"].text = warningText
-    local dialog = StaticPopup_Show("TheQuartermaster_BANK_CONFLICT")
-    if dialog then
-        dialog.data = addonName
-    end
-end
 
--- Setup BankFrame hook to make it invisible (but NOT hidden - keeps API working!)
+
 function TheQuartermaster:SetupBankFrameHook()
     if not BankFrame then return end
     if self.bankFrameHooked then return end
@@ -1744,24 +1257,25 @@ end
 function TheQuartermaster:OnGuildBankOpened()
     self.guildBankIsOpen = true
     self.currentBankType = "guild"
-    
-    -- Suppress Blizzard's Guild Bank frame if not using another addon
-    if not self:IsUsingOtherBankAddon() then
-        self:SuppressGuildBankFrame()
-        
-        -- Open main window to Guild Bank tab
-        if self.ShowMainWindow then
-            self:ShowMainWindow()
-            -- Switch to Guild Bank tab (will be implemented in UI module)
-            if self.SwitchBankTab then
-                self:SwitchBankTab("guild")
-            end
-        end
-    end
+
+    -- NOTE: The Quartermaster is view-only for Guild Bank.
+    -- We do NOT suppress Blizzard's GuildBankFrame here because the client
+    -- populates tab data lazily when the frame is visible/open. Suppressing
+    -- too early can result in GetNumGuildBankTabs() returning 0 and an empty cache.
     
     -- Scan guild bank
-    if self.db.profile.autoScan and self.ScanGuildBank then
-        C_Timer.After(0.3, function()
+    if self.ScanGuildBank then
+        -- Request tab contents first, then scan after the client has had time to populate.
+        C_Timer.After(0.5, function()
+            local n = GetNumGuildBankTabs()
+            if n and n > 0 and QueryGuildBankTab then
+                for i = 1, n do
+                    QueryGuildBankTab(i)
+                end
+            end
+        end)
+
+        C_Timer.After(1.0, function()
             if TheQuartermaster and TheQuartermaster.ScanGuildBank then
                 TheQuartermaster:ScanGuildBank()
             end
@@ -1790,6 +1304,45 @@ function TheQuartermaster:OnGuildBankClosed()
     -- Refresh UI if open
     if self.RefreshUI then
         self:RefreshUI()
+    end
+end
+
+
+-- ADDON_LOADED handler (used for load-on-demand UI like Blizzard_GuildBankUI)
+-- NOTE: AceEvent passes (event, addonName) for ADDON_LOADED.
+-- Our handler must accept the event argument or addonName will be wrong.
+function TheQuartermaster:OnAddonLoaded(event, addonName)
+    if addonName == "Blizzard_GuildBankUI" then
+        if self.HookGuildBankFrame then
+            self:HookGuildBankFrame()
+        end
+    end
+end
+
+-- Fallback hook for Guild Bank open/close detection
+function TheQuartermaster:HookGuildBankFrame()
+    if self._guildBankHooked then return end
+    if not GuildBankFrame then return end
+    if not ENABLE_GUILD_BANK then return end
+
+    GuildBankFrame:HookScript("OnShow", function()
+        if TheQuartermaster and not TheQuartermaster.guildBankIsOpen then
+            TheQuartermaster:OnGuildBankOpened()
+        end
+    end)
+
+    GuildBankFrame:HookScript("OnHide", function()
+        if TheQuartermaster and TheQuartermaster.guildBankIsOpen then
+            TheQuartermaster:OnGuildBankClosed()
+        end
+    end)
+
+    self._guildBankHooked = true
+
+    -- If the frame is already open (e.g. UI loaded before hooks or after /reload),
+    -- OnShow will not fire again. Detect and handle it immediately.
+    if GuildBankFrame:IsShown() and not self.guildBankIsOpen then
+        self:OnGuildBankOpened()
     end
 end
 
@@ -1966,53 +1519,6 @@ end
     Called when an addon is loaded
     Check if it's a conflicting bank addon that user previously disabled
 ]]
-function TheQuartermaster:OnAddonLoaded(event, addonName)
-    if not self.db or not self.db.profile or not self.db.profile.bankConflictChoices then
-        return
-    end
-    
-    -- List of known conflicting addons
-    local conflictingAddons = {
-        "Bagnon", "Combuctor", "ArkInventory", "AdiBags", "Baganator",
-        "LiteBag", "TBag", "BaudBag", "Inventorian",
-        "ElvUI_Bags", "ElvUI",
-        "BankStack", "BankItems", "Sorted",
-        "BankUI", "InventoryManager", "BagAddon", "BankModifier",
-        "CustomBank", "AdvancedInventory", "BagSystem"
-    }
-    
-    -- Check if this is a conflicting addon
-    local isConflicting = false
-    for _, conflictAddon in ipairs(conflictingAddons) do
-        if addonName == conflictAddon then
-            isConflicting = true
-            break
-        end
-    end
-    
-    if not isConflicting then
-        return -- Not a conflicting addon
-    end
-    
-    -- Check if user previously chose "useWarband" for this addon
-    local previousChoice = self.db.profile.bankConflictChoices[addonName]
-    
-    if previousChoice == "useWarband" then
-        -- User re-enabled an addon they previously disabled
-        -- Reset choice and show popup after a delay
-        
-        -- Reset the choice so popup will show
-        self.db.profile.bankConflictChoices[addonName] = nil
-        
-        -- Show conflict popup after brief delay (addon needs to fully initialize)
-        C_Timer.After(2, function()
-            if TheQuartermaster and TheQuartermaster.CheckBankConflictsOnLogin then
-                -- CheckBankConflictsOnLogin has throttling, safe to call
-                TheQuartermaster:CheckBankConflictsOnLogin()
-            end
-        end)
-    end
-end
 
 --[[
     Called when player enters the world (login or reload)
@@ -2064,25 +1570,6 @@ function TheQuartermaster:OnPlayerEnteringWorld(event, isInitialLogin, isReloadi
         end
     end)
     
-    -- CRITICAL: Secondary conflict check after longer delay
-    -- This catches addons that load late (ElvUI modules, etc.)
-    -- Runs BOTH on initial login AND reload to ensure nothing is missed
-    if isInitialLogin or isReloadingUi then
-        C_Timer.After(3, function()
-            if TheQuartermaster and TheQuartermaster.CheckBankConflictsOnLogin then
-                -- This is a safety net in case OnEnable check was too early
-                TheQuartermaster:CheckBankConflictsOnLogin()
-            end
-        end)
-        
-        -- Extra check after 6 seconds for very late-loading addons
-        C_Timer.After(6, function()
-            if TheQuartermaster and TheQuartermaster.CheckBankConflictsOnLogin then
-                -- Final safety check
-                TheQuartermaster:CheckBankConflictsOnLogin()
-            end
-        end)
-    end
 end
 
 --[[
@@ -2399,6 +1886,7 @@ function TheQuartermaster:OnBagUpdate(eventOrBagIDs, ...)
     local warbandUpdated = false
     local personalUpdated = false
     local inventoryUpdated = false
+    local guildUpdated = false
     local needsRescan = false
 
     if type(eventOrBagIDs) == "table" then
@@ -2431,6 +1919,7 @@ function TheQuartermaster:OnBagUpdate(eventOrBagIDs, ...)
             needsRescan = true
         elseif event == "GUILDBANKBAGSLOTS_CHANGED" then
             -- We treat guild bank similarly: refresh the cache if the UI is open.
+            guildUpdated = true
             needsRescan = true
         else
             return
@@ -2461,6 +1950,9 @@ function TheQuartermaster:OnBagUpdate(eventOrBagIDs, ...)
             end
             if self.bankIsOpen and self.ScanPersonalBank then
                 self:ScanPersonalBank()
+            end
+            if self.guildBankIsOpen and self.ScanGuildBank then
+                self:ScanGuildBank()
             end
             
             -- Invalidate item caches (data changed)

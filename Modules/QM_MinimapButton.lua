@@ -11,6 +11,7 @@
 
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
+local ENABLE_GUILD_BANK = ns.ENABLE_GUILD_BANK
 
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
@@ -82,23 +83,37 @@ local function BuildTooltip(tip, addon)
     end
     tip:AddDoubleLine("Characters Tracked:", charCount, 0.7, 0.7, 0.7, 1, 1, 1)
 
-    -- Last scan time
-    local lastScan = (addon.db and addon.db.global and addon.db.global.warbandBank and addon.db.global.warbandBank.lastScan) or 0
-    lastScan = tonumber(lastScan) or 0
-    if lastScan > 0 then
-        local timeSince = time() - lastScan
-        local timeStr
+    -- Last scan times
+    local function FormatSince(ts)
+        ts = tonumber(ts) or 0
+        if ts <= 0 then return "Never" end
+        local timeSince = time() - ts
         if timeSince < 60 then
-            timeStr = string.format("%d seconds ago", timeSince)
+            return string.format("%d seconds ago", timeSince)
         elseif timeSince < 3600 then
-            timeStr = string.format("%d minutes ago", math.floor(timeSince / 60))
+            return string.format("%d minutes ago", math.floor(timeSince / 60))
         else
-            timeStr = string.format("%d hours ago", math.floor(timeSince / 3600))
+            return string.format("%d hours ago", math.floor(timeSince / 3600))
         end
-        tip:AddDoubleLine("Last Scan:", timeStr, 0.7, 0.7, 0.7, 1, 1, 1)
-    else
-        tip:AddDoubleLine("Last Scan:", "Never", 0.7, 0.7, 0.7, 1, 0.5, 0.5)
     end
+
+    local warbandLast = (addon.db and addon.db.global and addon.db.global.warbandBank and addon.db.global.warbandBank.lastScan) or 0
+    local personalLast = (addon.db and addon.db.char and addon.db.char.personalBank and addon.db.char.personalBank.lastScan) or 0
+
+    local guildLast = 0
+    if addon.db and addon.db.global and addon.db.global.guildBank then
+        local guildName = GetGuildInfo("player")
+        if guildName and addon.db.global.guildBank[guildName] then
+            guildLast = addon.db.global.guildBank[guildName].lastScan or 0
+        end
+    end
+
+    tip:AddDoubleLine("Warband Scan:", FormatSince(warbandLast), 0.7, 0.7, 0.7, 1, 1, 1)
+    tip:AddDoubleLine("Bank Scan:", FormatSince(personalLast), 0.7, 0.7, 0.7, 1, 1, 1)
+    if ENABLE_GUILD_BANK and IsInGuild() then
+        tip:AddDoubleLine("Guild Scan:", FormatSince(guildLast), 0.7, 0.7, 0.7, 1, 1, 1)
+    end
+
 
     tip:AddLine(" ")
     tip:AddLine("|cff00ff00Left-Click:|r Toggle window", 0.7, 0.7, 0.7)

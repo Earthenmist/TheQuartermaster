@@ -6,7 +6,7 @@
 local ADDON_NAME, ns = ...
 
 -- Feature Flags
-ns.ENABLE_GUILD_BANK = false -- Set to true when ready to enable Guild Bank features
+ns.ENABLE_GUILD_BANK = true -- Enable Guild Bank (view-only) caching & Items tab
 
 -- Warband tab count (Account Bank tabs)
 ns.WARBAND_TAB_COUNT = 5
@@ -23,11 +23,6 @@ ns.WARBAND_BAGS = {
 -- Personal Bank Bag IDs
 local personalBankBags = {}
 
--- Main bank container (BANK = -1 in most clients)
-if Enum.BagIndex.Bank then
-    table.insert(personalBankBags, Enum.BagIndex.Bank)
-end
-
 -- Bank bag slots (6-11 in TWW, bag 12 is Warband now!)
 for i = 1, (NUM_BANKBAGSLOTS or 7) do
     local bagEnum = Enum.BagIndex["BankBag_" .. i]
@@ -40,8 +35,11 @@ for i = 1, (NUM_BANKBAGSLOTS or 7) do
 end
 
 -- Fallback: if enums didn't work, use numeric IDs (6-11, NOT 12!)
+-- Note: We intentionally do NOT include the main bank container (-1) here.
+-- TheQuartermaster is view-only and already displays bank bag tabs correctly; including -1
+-- can produce an empty "Bank" tab on some clients.
 if #personalBankBags == 0 then
-    personalBankBags = { -1, 6, 7, 8, 9, 10, 11 }
+    personalBankBags = { 6, 7, 8, 9, 10, 11 }
 end
 
 ns.PERSONAL_BANK_BAGS = personalBankBags

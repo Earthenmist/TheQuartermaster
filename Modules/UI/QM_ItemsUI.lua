@@ -9,7 +9,7 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Feature Flags
-local ENABLE_GUILD_BANK = false -- Set to true when ready to enable Guild Bank features
+local ENABLE_GUILD_BANK = ns.ENABLE_GUILD_BANK
 
 -- Import shared UI components (always get fresh reference)
 local function GetCOLORS()
@@ -40,6 +40,60 @@ local function FormatMoney(amount)
     return tostring(tonumber(amount) or 0)
 end
 
+
+-- ==============================
+-- Item info resolution helpers
+-- (fixes "Item ####" names until item data is cached client-side)
+-- ==============================
+local _tq_pendingInfoRefresh = false
+local function _TQ_QueueInfoRefresh()
+    if _tq_pendingInfoRefresh then return end
+    _tq_pendingInfoRefresh = true
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.25, function()
+            _tq_pendingInfoRefresh = false
+            if TheQuartermaster and TheQuartermaster.RefreshUI then
+                TheQuartermaster:RefreshUI()
+            end
+        end)
+    else
+        _tq_pendingInfoRefresh = false
+    end
+end
+
+local function _TQ_ResolveItemInfo(item)
+    if not item or not item.itemID then return end
+
+    local itemID = tonumber(item.itemID)
+    if not itemID then return end
+
+    local name, link, quality, _, _, itemType, itemSubType, _, _, icon, _, classID, subclassID = GetItemInfo(itemID)
+    if name and name ~= "" then
+        item.name = name
+        item.itemLink = item.itemLink or link
+        if item.quality == nil then item.quality = quality end
+        item.itemType = item.itemType or itemType
+        item.itemSubType = item.itemSubType or itemSubType
+        item.iconFileID = item.iconFileID or icon
+        item.classID = item.classID or classID
+        item.subclassID = item.subclassID or subclassID
+        return true
+    end
+
+    if C_Item and C_Item.RequestLoadItemDataByID then
+        C_Item.RequestLoadItemDataByID(itemID)
+        _TQ_QueueInfoRefresh()
+    end
+
+    if (not item.iconFileID) and type(GetItemInfoInstant) == "function" then
+        local _, _, _, _, iconFileID, cID, scID = GetItemInfoInstant(itemID)
+        item.iconFileID = iconFileID or item.iconFileID
+        item.classID = item.classID or cID
+        item.subclassID = item.subclassID or scID
+    end
+end
+
+
 -- Import shared UI layout constants
 local UI_LAYOUT = ns.UI_LAYOUT
 local ROW_HEIGHT = UI_LAYOUT.ROW_HEIGHT
@@ -62,6 +116,73 @@ local function MatchesSearch(item, searchText)
     return (name:find(s, 1, true) ~= nil) or (link:find(s, 1, true) ~= nil)
 end
 
+
+-- Best-effort enrichment for items that were scanned before item data fully loaded.
+-- This prevents rows showing as "Item 12345" and being mis-grouped into Misc.
+local QUALITY_FROM_COLOR = {
+    ["9d9d9d"] = 0, -- poor
+    ["ffffff"] = 1, -- common
+    ["1eff00"] = 2, -- uncommon
+    ["0070dd"] = 3, -- rare
+    ["a335ee"] = 4, -- epic
+    ["ff8000"] = 5, -- legendary
+    ["e6cc80"] = 6, -- artifact
+    ["00ccff"] = 7, -- heirloom
+}
+
+local function EnrichItemInPlace(item)
+    if not item then return end
+
+    local itemID = tonumber(item.itemID)
+    local link = item.itemLink
+
+    -- icon / class info (available instantly even if full item data isn't cached)
+    if itemID and (not item.classID or not item.subclassID or not item.iconFileID) and type(GetItemInfoInstant) == "function" then
+        local _, _, _, _, iconFileID, classID, subclassID = GetItemInfoInstant(itemID)
+        item.iconFileID = item.iconFileID or iconFileID
+        item.classID = item.classID or classID
+        item.subclassID = item.subclassID or subclassID
+    end
+
+    -- type/subtype from class IDs (doesn't require cached GetItemInfo)
+    if (not item.itemType or item.itemType == "") and item.classID and type(GetItemClassInfo) == "function" then
+        item.itemType = GetItemClassInfo(item.classID) or item.itemType
+    end
+    if (not item.itemSubType or item.itemSubType == "") and item.classID and item.subclassID and type(GetItemSubClassInfo) == "function" then
+        item.itemSubType = GetItemSubClassInfo(item.classID, item.subclassID) or item.itemSubType
+    end
+
+    -- quality (prefer stored value; otherwise derive from link color or C_Item helper)
+    if item.quality == nil and link then
+        local color = link:match("|c%x%x(%x%x%x%x%x%x)%x%x%x%x") or link:match("|c%x%x%x%x(%x%x%x%x%x%x)")
+        if color then
+            color = color:lower()
+            item.quality = QUALITY_FROM_COLOR[color]
+        end
+    end
+    if item.quality == nil and itemID and C_Item and C_Item.GetItemQualityByID then
+        item.quality = C_Item.GetItemQualityByID(itemID)
+    end
+    if item.quality == nil then
+        item.quality = 1 -- default to common (white) instead of poor-grey
+    end
+
+    -- name
+    if (not item.name or item.name == "") and link then
+        local n = link:match("%[(.-)%]")
+        if n and n ~= "" then item.name = n end
+    end
+    if (not item.name or item.name == "") and itemID and type(GetItemInfo) == "function" then
+        local n = GetItemInfo(itemID)
+        if n and n ~= "" then item.name = n end
+    end
+
+    -- request async load if needed
+    if itemID and C_Item and C_Item.RequestLoadItemDataByID then
+        C_Item.RequestLoadItemDataByID(itemID)
+    end
+end
+
 local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearchText)
     local COLORS = GetCOLORS()
 
@@ -69,10 +190,10 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
     local bagSizes = pb and pb.bagSizes or {}
     local bagItems = pb and pb.items or {}
 
-    -- NOTE: We intentionally *hide* the base "Bank" container tab from the UI.
-    -- The slot view is primarily used for the bank *bags*; the base bank container
-    -- tab is redundant and makes the tab bar feel cluttered.
-    local firstVisibleTab = 2
+    -- Personal Bank Slot View shows the purchased bank bags only.
+    -- (We intentionally do NOT include the base "Bank" container here; this avoids
+    -- an empty "Bank" tab on some clients and matches the cached data layout.)
+    local firstVisibleTab = 1
     local maxTab = #ns.PERSONAL_BANK_BAGS
 
     local tabIndex = (self.db and self.db.profile and self.db.profile.personalBankSlotTab) or firstVisibleTab
@@ -82,7 +203,7 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
         self.db.profile.personalBankSlotTab = tabIndex
     end
 
-    -- Sub-tabs for bank containers (Bank + each bank bag)
+    -- Sub-tabs for bank bags
     local bagTabBar = CreateFrame("Frame", nil, parent)
     bagTabBar:SetSize(width, 28)
     bagTabBar:SetPoint("TOPLEFT", 8, -yOffset)
@@ -119,7 +240,7 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
 
         local label = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         label:SetPoint("CENTER")
-        label:SetText("Bag " .. (i - 1))
+        label:SetText("Bag " .. i)
         label:SetTextColor(1, 1, 1, active and 0.95 or 0.8)
 
         btn:SetScript("OnClick", function()
@@ -203,8 +324,8 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
         local item = itemsForBag and itemsForBag[slotID] or nil
         local match = MatchesSearch(item, itemsSearchText)
 
-        if item and item.iconFileID then
-            icon:SetTexture(item.iconFileID)
+        if item then
+            icon:SetTexture(item.iconFileID or item.icon or item.texture or 134400)
             local count = tonumber(item.stackCount) or 1
             countText:SetText(count > 1 and tostring(count) or "")
         else
@@ -420,6 +541,223 @@ local function DrawWarbandBankSlotView(self, parent, yOffset, width, itemsSearch
     end
 
     local rows = math.ceil(numSlots / cols)
+    local gridHeight = rows * (slotSize + pad) + 6
+    grid:SetHeight(gridHeight)
+
+    return yOffset + gridHeight
+end
+
+--============================================================================
+-- GUILD BANK SLOT/TAB VIEW (view-only)
+--============================================================================
+
+local function DrawGuildBankSlotView(self, parent, yOffset, width, itemsSearchText)
+    local COLORS = GetCOLORS()
+
+    local guildName = GetGuildInfo("player")
+    local gb = (guildName and self.db and self.db.global and self.db.global.guildBank and self.db.global.guildBank[guildName]) or nil
+    local tabs = gb and gb.tabs or {}
+
+    -- Determine how many tabs we know about (prefer live API when the bank is open)
+    local maxTab = 0
+    if GetNumGuildBankTabs then
+        maxTab = tonumber(GetNumGuildBankTabs()) or 0
+    end
+    if maxTab <= 0 then
+        for k in pairs(tabs) do
+            if type(k) == "number" and k > maxTab then maxTab = k end
+        end
+    end
+
+    if maxTab <= 0 then
+        local msg = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        msg:SetPoint("TOPLEFT", 18, -yOffset)
+        msg:SetTextColor(0.7, 0.7, 0.7)
+        msg:SetText(L["NO_GUILD_BANK_DATA_CACHED_YET_OPEN_YOUR_GUILD_BANK"]) 
+        return yOffset + 30
+    end
+
+    local tabIndex = (self.db and self.db.profile and self.db.profile.guildBankSlotTab) or 1
+    if tabIndex < 1 then tabIndex = 1 end
+    if tabIndex > maxTab then tabIndex = maxTab end
+    if self.db and self.db.profile then
+        self.db.profile.guildBankSlotTab = tabIndex
+    end
+
+    -- Sub-tabs for guild bank tabs
+    local tabBar = CreateFrame("Frame", nil, parent)
+    tabBar:SetSize(width, 28)
+    tabBar:SetPoint("TOPLEFT", 8, -yOffset)
+
+    local btnW = 90
+    local btnH = 22
+    local spacing = 6
+    local maxCols = math.max(1, math.floor((width + spacing) / (btnW + spacing)))
+
+    for i = 1, maxTab do
+        local row = math.floor((i - 1) / maxCols)
+        local col = (i - 1) % maxCols
+
+        local btn = CreateFrame("Button", nil, tabBar, "BackdropTemplate")
+        btn:SetSize(btnW, btnH)
+        btn:SetPoint("TOPLEFT", col * (btnW + spacing), -row * (btnH + spacing))
+        btn:SetBackdrop({
+            bgFile = "Interface\\BUTTONS\\WHITE8X8",
+            edgeFile = "Interface\\BUTTONS\\WHITE8X8",
+            edgeSize = 1,
+        })
+
+        local active = (i == tabIndex)
+        local bg = active and COLORS.tabActive or COLORS.tabInactive
+        btn:SetBackdropColor(bg[1], bg[2], bg[3], 1)
+        if active then
+            btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 1)
+        else
+            btn:SetBackdropBorderColor(0.15, 0.15, 0.18, 0.5)
+        end
+
+        local label = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        label:SetPoint("CENTER")
+        local tabName = (tabs[i] and tabs[i].name) or ("Tab " .. i)
+        label:SetText(tabName)
+        label:SetTextColor(1, 1, 1, active and 0.95 or 0.8)
+
+        btn:SetScript("OnClick", function()
+            self.db.profile.guildBankSlotTab = i
+            self:RefreshUI()
+        end)
+        btn:SetScript("OnEnter", function(b)
+            b:SetBackdropColor(COLORS.tabHover[1], COLORS.tabHover[2], COLORS.tabHover[3], 1)
+            b:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.9)
+        end)
+        btn:SetScript("OnLeave", function(b)
+            local a = (self.db.profile.guildBankSlotTab == i)
+            local c = a and COLORS.tabActive or COLORS.tabInactive
+            b:SetBackdropColor(c[1], c[2], c[3], 1)
+            if a then
+                b:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 1)
+            else
+                b:SetBackdropBorderColor(0.15, 0.15, 0.18, 0.5)
+            end
+        end)
+    end
+
+    local tabRows = math.ceil(maxTab / maxCols)
+    local tabBarHeight = (tabRows * btnH) + ((tabRows - 1) * spacing)
+    yOffset = yOffset + tabBarHeight + 12
+
+    -- Guild bank has 98 slots per tab (14 x 7)
+    local MAX_SLOTS = 98
+
+    local itemsForTab = (tabs and tabs[tabIndex] and tabs[tabIndex].items) or nil
+    if not itemsForTab then
+        local msg = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        msg:SetPoint("TOPLEFT", 18, -yOffset)
+        msg:SetTextColor(0.7, 0.7, 0.7)
+        msg:SetText(L["NO_GUILD_BANK_DATA_CACHED_YET_OPEN_YOUR_GUILD_BANK"]) 
+        return yOffset + 30
+    end
+
+    local grid = CreateFrame("Frame", nil, parent)
+    grid:SetPoint("TOPLEFT", 8, -yOffset)
+    grid:SetSize(width, 1)
+
+    local slotSize = 32
+    local pad = 4
+    local cols = math.max(8, math.floor((width - 10) / (slotSize + pad)))
+
+    local function StyleSlot(btn, highlighted)
+        if highlighted then
+            btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.9)
+        else
+            btn:SetBackdropBorderColor(0.15, 0.15, 0.18, 0.7)
+        end
+    end
+
+    for slotID = 1, MAX_SLOTS do
+        local index = slotID
+        local row = math.floor((index - 1) / cols)
+        local col = (index - 1) % cols
+
+        local btn = CreateFrame("Button", nil, grid, "BackdropTemplate")
+        btn:SetSize(slotSize, slotSize)
+        btn:SetPoint("TOPLEFT", col * (slotSize + pad), -row * (slotSize + pad))
+        btn:SetBackdrop({
+            bgFile = "Interface\\BUTTONS\\WHITE8X8",
+            edgeFile = "Interface\\BUTTONS\\WHITE8X8",
+            edgeSize = 1,
+        })
+        btn:SetBackdropColor(0.05, 0.05, 0.06, 1)
+        StyleSlot(btn, false)
+
+        local icon = btn:CreateTexture(nil, "ARTWORK")
+        icon:SetAllPoints()
+        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        icon:SetAlpha(0.95)
+
+        local itemData = itemsForTab[slotID]
+        local tex = (itemData and (itemData.iconFileID or itemData.icon or itemData.texture))
+        if tex then
+            icon:SetTexture(tex)
+        elseif itemData then
+            icon:SetTexture(134400)
+        else
+            icon:SetTexture(nil)
+        end
+
+        -- stack count
+        local countText = btn:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+        countText:SetPoint("BOTTOMRIGHT", -2, 2)
+        local count = itemData and itemData.stackCount
+        if count and count > 1 then
+            countText:SetText(count)
+            countText:Show()
+        else
+            countText:SetText("")
+            countText:Hide()
+        end
+
+		-- Search highlight (fade non-matches)
+		icon:SetDesaturated(false)
+		icon:SetAlpha(0.95)
+		countText:SetAlpha(1)
+		if itemsSearchText and itemsSearchText ~= "" and itemData then
+			local name, link = GetItemInfo(itemData.itemID)
+			local probe = {
+				name = itemData.name or name,
+				itemLink = itemData.itemLink or link,
+			}
+			-- If we can't resolve a name/link yet, don't aggressively fade it (avoids flicker while cache warms).
+			local match = true
+			if probe.name or probe.itemLink then
+				match = MatchesSearch(probe, itemsSearchText)
+			end
+			if not match then
+				icon:SetDesaturated(true)
+				icon:SetAlpha(0.25)
+				countText:SetAlpha(0.35)
+			end
+		end
+
+        btn:SetScript("OnEnter", function(b)
+            StyleSlot(b, true)
+            if itemData and (itemData.itemLink or itemData.itemID) then
+                GameTooltip:SetOwner(b, "ANCHOR_RIGHT")
+                if itemData.itemLink then
+                    GameTooltip:SetHyperlink(itemData.itemLink)
+                else
+                    GameTooltip:SetItemByID(itemData.itemID)
+                end
+                GameTooltip:Show()
+            end
+        end)
+        btn:SetScript("OnLeave", function(b)
+            StyleSlot(b, false)
+            GameTooltip:Hide()
+        end)
+    end
+
+    local rows = math.ceil(MAX_SLOTS / cols)
     local gridHeight = rows * (slotSize + pad) + 6
     grid:SetHeight(gridHeight)
 
@@ -988,6 +1326,66 @@ end
 			end
 		end)
     end
+
+    -- ===== GUILD BANK VIEW MODE TOGGLE =====
+    -- Guild Bank can be shown as either a grouped list or a slot+tab layout.
+    if currentItemsSubTab == "guild" then
+        -- Gold display for Guild Bank (cached; display-only)
+        local guildGoldDisplay = tabFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        guildGoldDisplay:SetPoint("RIGHT", tabFrame, "RIGHT", -110, 0)
+        local guildGold = (TheQuartermaster and TheQuartermaster.GetCachedGuildBankMoney and TheQuartermaster:GetCachedGuildBankMoney()) or 0
+        guildGoldDisplay:SetText(FormatMoney(guildGold))
+        if TheQuartermaster.db and TheQuartermaster.db.profile and TheQuartermaster.db.profile.discretionMode then
+            guildGoldDisplay:SetTextColor(unpack(COLORS.textDim))
+        else
+            guildGoldDisplay:SetTextColor(unpack(COLORS.textNormal))
+        end
+
+        local mode = (self.db and self.db.profile and self.db.profile.guildBankViewMode) or "slots"
+        local toggleBtn = CreateFrame("Button", nil, tabFrame, "BackdropTemplate")
+        toggleBtn:SetSize(96, 24)
+        toggleBtn:SetPoint("RIGHT", tabFrame, "RIGHT", -5, 0)
+        toggleBtn:SetBackdrop({
+            bgFile = "Interface\\BUTTONS\\WHITE8X8",
+            edgeFile = "Interface\\BUTTONS\\WHITE8X8",
+            edgeSize = 1,
+        })
+        toggleBtn:SetBackdropColor(COLORS.tabInactive[1], COLORS.tabInactive[2], COLORS.tabInactive[3], 1)
+        toggleBtn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.65)
+
+        toggleBtn.text = toggleBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        toggleBtn.text:SetPoint("CENTER")
+        toggleBtn.text:SetTextColor(1, 1, 1, 0.95)
+        toggleBtn.text:SetText(mode == "slots" and "List View" or "Slot View")
+
+        toggleBtn:SetScript("OnClick", function()
+            local cur = (self.db.profile.guildBankViewMode or "slots")
+            self.db.profile.guildBankViewMode = (cur == "slots") and "list" or "slots"
+            self:RefreshUI()
+        end)
+
+        toggleBtn:SetScript("OnEnter", function(btn)
+            btn:SetBackdropColor(COLORS.tabHover[1], COLORS.tabHover[2], COLORS.tabHover[3], 1)
+            btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.9)
+            GameTooltip:SetOwner(btn, "ANCHOR_TOP")
+            GameTooltip:AddLine("Guild Bank View", 1, 0.82, 0)
+            GameTooltip:AddLine("Toggle between the grouped list view and a slot + tab view.", 0.8, 0.8, 0.8, true)
+            GameTooltip:Show()
+        end)
+
+        toggleBtn:SetScript("OnLeave", function(btn)
+            btn:SetBackdropColor(COLORS.tabInactive[1], COLORS.tabInactive[2], COLORS.tabInactive[3], 1)
+            btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.65)
+            GameTooltip:Hide()
+        end)
+
+        toggleBtn:HookScript("OnShow", function(btn)
+            local m = (self.db.profile.guildBankViewMode or "slots")
+            if btn.text then
+                btn.text:SetText(m == "slots" and "List View" or "Slot View")
+            end
+        end)
+    end
     yOffset = yOffset + 40
     
     -- Get items based on selected sub-tab
@@ -1128,15 +1526,14 @@ end
                     end)
                     btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-                    -- Search highlight (fade non-matches)
-                    if searchText and searchText ~= "" then
-                        local s = searchText:lower()
-                        local name = (item.name or ""):lower()
-                        if not name:find(s, 1, true) then
-                            icon:SetDesaturated(true)
-                            icon:SetAlpha(0.35)
-                        end
-                    end
+					-- Search highlight (fade non-matches)
+					-- Use the shared matcher so we consistently check name *and* itemLink.
+					if itemsSearchText and itemsSearchText ~= "" then
+						if not MatchesSearch(item, itemsSearchText) then
+							icon:SetDesaturated(true)
+							icon:SetAlpha(0.35)
+						end
+					end
                 end
             end
 
@@ -1318,6 +1715,7 @@ end
     if itemsSearchText and itemsSearchText ~= "" then
         local filtered = {}
         for _, item in ipairs(items) do
+        EnrichItemInPlace(item)
             local itemName = (item.name or ""):lower()
             local itemLink = (item.itemLink or ""):lower()
             if itemName:find(itemsSearchText, 1, true) or itemLink:find(itemsSearchText, 1, true) then
@@ -1403,10 +1801,28 @@ end
             return DrawWarbandBankSlotView(self, parent, yOffset, width, itemsSearchText)
         end
     end
+
+    -- GUILD BANK: Slot + tab view (shows empty slots too)
+    if currentItemsSubTab == "guild" then
+        local viewMode = (self.db and self.db.profile and self.db.profile.guildBankViewMode) or "slots"
+        if viewMode == "slots" then
+            return DrawGuildBankSlotView(self, parent, yOffset, width, itemsSearchText)
+        end
+    end
     
     -- ===== EMPTY STATE =====
     if #items == 0 then
-        return DrawEmptyState(self, parent, yOffset, itemsSearchText ~= "", itemsSearchText)
+        local hint
+        if currentItemsSubTab == "warband" then
+            hint = "Open your Warband Bank to scan items"
+        elseif currentItemsSubTab == "guild" then
+            hint = "Open your Guild Bank to scan items"
+        elseif currentItemsSubTab == "personal" then
+            hint = "Open your Personal Bank to scan items"
+        elseif currentItemsSubTab == "inventory" then
+            hint = "Open your bags to scan items"
+        end
+        return DrawEmptyState(self, parent, yOffset, itemsSearchText ~= "", itemsSearchText, hint)
     end
     
     -- ===== GROUP ITEMS BY TYPE =====
@@ -1414,13 +1830,17 @@ end
     local groupOrder = {}
     
     for _, item in ipairs(items) do
-        local typeName = item.itemType or "Miscellaneous"
+        local typeName = item.itemType
+        if not typeName or typeName == "" then
+            typeName = "Miscellaneous"
+        end
         if not groups[typeName] then
-            -- Use persisted expanded state, default to true (expanded)
+            -- Use persisted expanded state.
+            -- For Items List View we default categories to *expanded* so behaviour matches Storage.
             local groupKey = currentItemsSubTab .. "_" .. typeName
             if expandedGroups[groupKey] == nil then
-            expandedGroups[groupKey] = false
-        end
+                expandedGroups[groupKey] = true
+            end
             groups[typeName] = { name = typeName, items = {}, groupKey = groupKey }
             table.insert(groupOrder, typeName)
         end
@@ -1431,6 +1851,10 @@ end
     table.sort(groupOrder)
     
     -- ===== DRAW GROUPS =====
+    -- NOTE: Use actual widget heights for layout.
+    -- Fixed y increments can drift (scaling, font metrics, dynamic text),
+    -- which can manifest as overlapping/"bleeding" sections or large blank gaps
+    -- until something forces a full rebuild.
     local rowIdx = 0
     for _, typeName in ipairs(groupOrder) do
         local group = groups[typeName]
@@ -1463,9 +1887,16 @@ end
             function(isExpanded) ToggleGroup(gKey, isExpanded) end,
             typeIcon
         )
+        groupHeader:ClearAllPoints()
         groupHeader:SetPoint("TOPLEFT", 10, -yOffset)
-        
-        yOffset = yOffset + HEADER_SPACING
+
+        do
+            local h = groupHeader:GetHeight()
+            if not h or h <= 0 then
+                h = HEADER_SPACING
+            end
+            yOffset = yOffset + h + 6
+        end
         
         -- Draw items in this group (if expanded)
         if isExpanded then
@@ -1484,22 +1915,38 @@ end
                 
                 -- Update quantity
                 row.qtyText:SetText(format("|cffffff00%d|r", item.stackCount or 1))
-                
+                _TQ_ResolveItemInfo(item)
+
                 -- Update icon
-                row.icon:SetTexture(item.iconFileID or 134400)
+                row.icon:SetTexture(item.iconFileID or item.icon or item.texture or 134400)
                 
                 -- Update name (with pet cage handling)
                 local nameWidth = width - 200
                 row.nameText:SetWidth(nameWidth)
-                local baseName = item.name or format("Item %s", tostring(item.itemID or "?"))
+                -- NOTE: some caches may store an empty string for name/itemName while item data is still loading.
+                -- In Lua, "" is truthy, so we must treat empty as missing or rows appear blank.
+                local baseName = (item.name and item.name ~= "" and item.name)
+                    or (item.itemName and item.itemName ~= "" and item.itemName)
+                    or format("Item %s", tostring(item.itemID or "?"))
                 -- Use GetItemDisplayName to handle caged pets (shows pet name instead of "Pet Cage")
                 local displayName = TheQuartermaster:GetItemDisplayName(item.itemID, baseName, item.classID)
+                if not displayName or displayName == "" then
+                    displayName = baseName
+                end
                 row.nameText:SetText(format("|cff%s%s|r", GetQualityHex(item.quality), displayName))
                 
                 -- Update location
                 local locText
                 if currentItemsSubTab == "warband" then
                     locText = item.tabIndex and format("Tab %d", item.tabIndex) or ""
+                elseif currentItemsSubTab == "guild" then
+                    if item.tabName and item.tabName ~= "" then
+                        locText = item.tabName
+                    elseif item.tabIndex then
+                        locText = format("Tab %d", item.tabIndex)
+                    else
+                        locText = ""
+                    end
                 else
                     locText = item.bagIndex and format("Bag %d", item.bagIndex) or ""
                 end
@@ -1574,7 +2021,13 @@ end
                     end
                 end)
                 
-                yOffset = yOffset + ROW_SPACING
+                do
+                    local rh = row:GetHeight()
+                    if not rh or rh <= 0 then
+                        rh = ROW_HEIGHT
+                    end
+                    yOffset = yOffset + rh + 2
+                end
             end  -- for item in group.items
         end  -- if group.expanded
     end  -- for typeName in groupOrder

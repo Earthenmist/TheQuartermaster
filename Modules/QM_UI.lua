@@ -56,7 +56,7 @@ local ROW_HEIGHT = 26
 local mainFrame = nil
 local goldTransferFrame = nil
 local currentTab = "stats" -- Default to Characters tab
-local currentItemsSubTab = "warband" -- Default to Warband Bank
+local currentItemsSubTab = "inventory" -- Default to Inventory
 local expandedGroups = {} -- Persisted expand/collapse state for item groups
 
 -- Search text state (exposed to namespace for sub-modules to access directly)
@@ -75,6 +75,17 @@ ns.UI_SetItemsSubTab = function(val)
         if val == "personal" or val == "warband" or val == "guild" then
             TheQuartermaster:SyncBankTab()
         end
+    end
+
+    -- If the guild bank view is selected while the GuildBankFrame is open,
+    -- trigger a scan so the cache populates even when auto-scan is disabled.
+    if val == "guild" and TheQuartermaster and TheQuartermaster.guildBankIsOpen and TheQuartermaster.ScanGuildBank then
+        -- Delay slightly so tab data has time to populate.
+        C_Timer.After(0.2, function()
+            if TheQuartermaster and TheQuartermaster.guildBankIsOpen and TheQuartermaster.ScanGuildBank then
+                TheQuartermaster:ScanGuildBank()
+            end
+        end)
     end
 end
 ns.UI_GetItemsSearchText = function() return ns.itemsSearchText end
@@ -291,7 +302,7 @@ function TheQuartermaster:CreateMainWindow()
     tinsert(UISpecialFrames, "TheQuartermasterFrame")
     
     -- ===== NAV SIDEBAR =====
-    -- Sidebar navigation (distinct from Warband Nexus' top-tab layout)
+    -- Sidebar navigation (distinct from other addons' top-tab layout)
     local nav = CreateFrame("Frame", nil, f, "BackdropTemplate")
     nav:SetWidth(160)
     nav:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 8, -8)

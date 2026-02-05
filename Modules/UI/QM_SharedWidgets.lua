@@ -14,6 +14,30 @@ local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Calculate all theme variations from a master color
 local function CalculateThemeColors(masterR, masterG, masterB)
+    -- Clamp extremely bright / low-saturation colors (e.g. PRIEST white) so the theme remains readable
+    local function NormalizeAccentColor(r, g, b)
+        local maxc = math.max(r, g, b)
+        local minc = math.min(r, g, b)
+        local lum  = (r + g + b) / 3
+        local sat  = maxc - minc
+
+        local cap = 0.90
+        if lum > 0.85 and sat < 0.12 then
+            cap = 0.78
+        elseif lum > 0.90 then
+            cap = 0.85
+        end
+
+        if maxc > cap and maxc > 0 then
+            local s = cap / maxc
+            r, g, b = r * s, g * s, b * s
+        end
+
+        return r, g, b
+    end
+
+    masterR, masterG, masterB = NormalizeAccentColor(masterR, masterG, masterB)
+
     -- Helper: Desaturate color
     local function Desaturate(r, g, b, amount)
         local gray = (r + g + b) / 3
@@ -846,7 +870,7 @@ end
 -- DRAW EMPTY STATE (Shared by Items and Storage tabs)
 --============================================================================
 
-local function DrawEmptyState(addon, parent, startY, isSearch, searchText)
+local function DrawEmptyState(addon, parent, startY, isSearch, searchText, emptyHintText)
     -- Validate parent frame
     if not parent or not parent.CreateTexture then
         return startY or 0
@@ -870,7 +894,12 @@ local function DrawEmptyState(addon, parent, startY, isSearch, searchText)
     desc:SetPoint("TOP", 0, -yOffset)
     desc:SetTextColor(0.5, 0.5, 0.5)
     local displayText = searchText or ""
-    desc:SetText(isSearch and ("No items match '" .. displayText .. "'") or "Open your Warband Bank to scan items")
+    if isSearch then
+        desc:SetText("No items match '" .. displayText .. "'")
+    else
+        -- Optional caller-provided hint (Items tab uses this to distinguish Warband/Guild/Personal etc.)
+        desc:SetText(emptyHintText or "Open the relevant bank to scan items")
+    end
     
     return yOffset + 50
 end
