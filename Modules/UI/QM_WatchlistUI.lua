@@ -201,8 +201,17 @@ yOffset = yOffset + 84
     end
 
 
+
 -- ===== HOW TO PIN NOTICE =====
-yOffset = yOffset + 15
+-- Keep the notice near the bottom of the visible viewport when the list is short,
+-- but allow it to flow naturally after content when the list is long.
+local viewportH = (parent:GetParent() and parent:GetParent():GetHeight()) or 520
+local desiredTop = viewportH - 85 -- approx height + padding
+if yOffset < desiredTop then
+    yOffset = desiredTop
+else
+    yOffset = yOffset + 15
+end
 
 local noticeFrame = CreateFrame("Frame", nil, parent, "BackdropTemplate")
 noticeFrame:SetSize(width - 20, 60)
@@ -233,10 +242,10 @@ noticeSubText:SetPoint("TOPLEFT", noticeIcon, "TOPRIGHT", 10, -15)
 noticeSubText:SetPoint("RIGHT", -10, 0)
 noticeSubText:SetJustifyH("LEFT")
 noticeSubText:SetTextColor(0.8, 0.8, 0.8)
-noticeSubText:SetText("Open Global Search, then click the star icon next to a result to pin/unpin items or currencies.")
+noticeSubText:SetText("Tip: In Global Search, right-click a result row to Pin/Unpin. You can also click the star icon.")
 
 yOffset = yOffset + 75
 
-    parent:SetHeight(yOffset + 20)
+parent:SetHeight(yOffset + 20)
     return yOffset
 end

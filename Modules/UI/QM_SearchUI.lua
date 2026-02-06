@@ -85,6 +85,29 @@ row.pin.icon:SetAlpha(0.9)
     return row
 end
 
+
+-- Context menu helper (right-click rows)
+local function QM_SearchUI_ContextMenu(self, kind, id)
+    if not kind or not id then return end
+    local menu = {}
+    if kind == "item" then
+        local pinned = self:IsWatchlistedItem(id)
+        table.insert(menu, {
+            text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+            func = function() self:ToggleWatchlistItem(id) end,
+        })
+    elseif kind == "currency" then
+        local pinned = self:IsWatchlistedCurrency(id)
+        table.insert(menu, {
+            text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+            func = function() self:ToggleWatchlistCurrency(id) end,
+        })
+    end
+    if #menu > 0 then
+        EasyMenu(menu, CreateFrame("Frame", "QM_SearchContextMenu", UIParent, "UIDropDownMenuTemplate"), "cursor", 0 , 0, "MENU")
+    end
+end
+
 function TheQuartermaster:DrawGlobalSearch(parent)
 
 local yOffset = 8
