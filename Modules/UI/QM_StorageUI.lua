@@ -58,10 +58,6 @@ end
 
 
 -- Context menu helper (right-click rows)
-local function QM_ShowStorageWatchlistMenu(itemID)
-    itemID = tonumber(itemID)
-    if not itemID then return end
-
 local function QM_CopyItemLinkToChat(itemLink)
     if not itemLink then return end
     if ChatFrame_OpenChat then
