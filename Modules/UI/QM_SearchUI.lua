@@ -255,5 +255,6 @@ function TheQuartermaster:DrawGlobalSearch(parent)
         yOffset = yOffset + 10
     end
 
-    return yOffset
+        parent:SetHeight(yOffset + 20)
+        return yOffset
 end

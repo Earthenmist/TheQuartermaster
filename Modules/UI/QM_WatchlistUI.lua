@@ -182,5 +182,6 @@ function TheQuartermaster:DrawWatchlist(parent)
         end
     end
 
+    parent:SetHeight(yOffset + 20)
     return yOffset
 end
