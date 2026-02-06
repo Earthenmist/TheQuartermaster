@@ -167,6 +167,23 @@ function TheQuartermaster:ShowInfoDialog()
     AddText("Currency", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
     AddText("View currencies in a filtered expansion-organized layout or the default Blizzard ordering. Optional “Hide Quantity 0” keeps the list clean.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
 
+
+-- Global Search Tab
+AddText("Global Search", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+AddText("Search items and currencies across all cached characters and storage locations in one place.", "GameFontNormal", {0.9, 0.9, 0.9}, 8)
+AddText("• Mode: All / Items / Currency", "GameFontNormal", {0.9, 0.9, 0.9}, 4)
+AddText("• Optional: Include Guild Bank (cached)", "GameFontNormal", {0.9, 0.9, 0.9}, 10)
+AddText("Pinning:", "GameFontNormal", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 6)
+AddText("• Click the star icon on a result row to Pin/Unpin.", "GameFontNormal", {0.9, 0.9, 0.9}, 4)
+AddText("• Or right-click a result row for a quick menu (Pin/Unpin, Copy Item Link).", "GameFontNormal", {0.9, 0.9, 0.9}, 12)
+
+-- Watchlist Tab
+AddText("Watchlist", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+AddText("Keep a short list of items and currencies you care about and see total owned across your Warband at a glance.", "GameFontNormal", {0.9, 0.9, 0.9}, 8)
+AddText("• Items show total quantity with a breakdown by character/location in the tooltip.", "GameFontNormal", {0.9, 0.9, 0.9}, 4)
+AddText("• Currencies show total across characters.", "GameFontNormal", {0.9, 0.9, 0.9}, 10)
+AddText("Tip: You can also Pin/Unpin directly from Items and Storage screens via right-click on rows (List or Slot view).", "GameFontHighlightSmall", {0.75, 0.75, 0.75}, 14)
+
     -- Statistics Tab
     AddText("Statistics", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
     AddText("Account-wide collection stats such as achievement points, mounts, companions, toys, and storage usage.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
