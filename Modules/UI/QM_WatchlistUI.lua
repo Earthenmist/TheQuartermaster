@@ -72,20 +72,24 @@ function TheQuartermaster:DrawWatchlist(parent)
 
     
 -- ===== HEADER CARD =====
-local titleCard = CreateCard(parent, 70)
+local titleCard = CreateCard(parent, 72)
 titleCard:SetPoint("TOPLEFT", 10, -yOffset)
 titleCard:SetPoint("TOPRIGHT", -10, -yOffset)
 
+local icon = titleCard:CreateTexture(nil, "ARTWORK")
+icon:SetSize(36, 36)
+icon:SetPoint("LEFT", 16, 0)
+icon:SetTexture("Interface\\Icons\\INV_Misc_EngGizmos_30") -- clipboard/list style
+
 local titleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-titleText:SetPoint("TOPLEFT", 16, -12)
+titleText:SetPoint("TOPLEFT", icon, "TOPRIGHT", 12, -2)
 titleText:SetText("Watchlist")
-titleText:SetTextColor(1, 1, 1)
+titleText:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
 
 local subText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-subText:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -6)
+subText:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -2)
 subText:SetText("Pinned items and currencies (totals across your Warband)")
-subText:SetTextColor(0.75, 0.75, 0.75)
-
+subText:SetTextColor(0.7, 0.7, 0.7)
 yOffset = yOffset + 72
 
     local wl = (self.db and self.db.profile and self.db.profile.watchlist) or { items = {}, currencies = {}, includeGuildBank = true }

@@ -48,16 +48,19 @@ local function CreateRow(parent, y, width, height)
     row.count:SetJustifyH("RIGHT")
     row.count:SetTextColor(1, 1, 1)
 
-    row.pin = CreateFrame("Button", nil, row, "BackdropTemplate")
-    row.pin:SetSize(22, 22)
-    row.pin:SetPoint("RIGHT", row.meta, "LEFT", -8, 0)
-    row.pin:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
-    row.pin:SetBackdropColor(0, 0, 0, 0.25)
+    
+row.pin = CreateFrame("Button", nil, row, "BackdropTemplate")
+row.pin:SetSize(22, 22)
+row.pin:SetPoint("RIGHT", row.meta, "LEFT", -8, 0)
+row.pin:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
+row.pin:SetBackdropColor(0, 0, 0, 0.20)
 
-    row.pin.text = row.pin:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    row.pin.text:SetPoint("CENTER")
-    row.pin.text:SetText("★")
-    row.pin.text:SetTextColor(1, 1, 1)
+row.pin.icon = row.pin:CreateTexture(nil, "ARTWORK")
+row.pin.icon:SetAllPoints()
+-- Favorite star icon (texture avoids missing-font glyphs)
+row.pin.icon:SetTexture("Interface\\Common\\FavoritesIcon")
+row.pin.icon:SetAlpha(0.9)
+    row.pin.icon:SetVertexColor(1, 1, 1)
 
     row:SetScript("OnEnter", function(self)
         self:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.8)
@@ -192,7 +195,7 @@ local searchText = ns.globalSearchText or ""
 
                 local itemID = item and item.itemID
                 local pinned = itemID and self:IsWatchlistedItem(itemID)
-                row.pin.text:SetTextColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
+                row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
 
                 row.pin:SetScript("OnClick", function()
                     if itemID then self:ToggleWatchlistItem(itemID) end
@@ -238,7 +241,7 @@ local searchText = ns.globalSearchText or ""
                 row.count:SetText(tostring(c.quantity or c.count or 0))
 
                 local pinned = currencyID and self:IsWatchlistedCurrency(currencyID)
-                row.pin.text:SetTextColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
+                row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
 
                 row.pin:SetScript("OnClick", function()
                     if currencyID then self:ToggleWatchlistCurrency(currencyID) end

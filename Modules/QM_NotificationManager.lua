@@ -9,19 +9,22 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.13c"
+local CURRENT_VERSION = "1.0.13"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.13c",
+    version = "1.0.13",
     date = "2026-02-06",
     changes = {
-    
-    "Added a new **Global Search** screen to instantly find items across your Warband, banks, bags, and optional Guild Bank cache.",
-    "Added a new **Watchlist** screen to pin important items and currencies and view totals across your Warband.",
-    "Search results support quick pin/unpin and tooltip preview.",
-    
-}--[[============================================================================
+        "Added a new **Global Search** screen to instantly find items across your Warband, banks, bags, and optional Guild Bank cache.",
+        "Added a new **Watchlist** screen to pin important items and currencies and view totals across your Warband.",
+        "Search results support quick pin/unpin and tooltip preview.",
+    }
+}
+
+--[[============================================================================
+    NOTIFICATION QUEUE
+============================================================================]]
     NOTIFICATION QUEUE
 ============================================================================]]
 
