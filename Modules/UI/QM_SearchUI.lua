@@ -75,87 +75,102 @@ function TheQuartermaster:DrawGlobalSearch(parent)
     local yOffset = 8
     local width = parent:GetWidth() - 20
 
-    -- Header card
-    local header = CreateCard(parent, "Global Search", "Find items and currencies across your Warband and characters", yOffset)
-    header:SetWidth(width)
-    yOffset = yOffset + 72
+    
+-- ===== HEADER CARD =====
+local titleCard = CreateCard(parent, 70)
+titleCard:SetPoint("TOPLEFT", 10, -yOffset)
+titleCard:SetPoint("TOPRIGHT", -10, -yOffset)
 
-    -- Search controls card
-    local controls = CreateCard(parent, nil, nil, yOffset)
-    controls:SetWidth(width)
-    controls:SetHeight(80)
+local titleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+titleText:SetPoint("TOPLEFT", 16, -12)
+titleText:SetText("Global Search")
+titleText:SetTextColor(1, 1, 1)
 
-    local wl = self.db and self.db.profile and self.db.profile.watchlist
-    if not wl then
-        wl = { includeGuildBank = true }
+local subText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+subText:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -6)
+subText:SetText("Find items and currencies across your Warband, characters, and caches")
+subText:SetTextColor(0.75, 0.75, 0.75)
+
+yOffset = yOffset + 72
+
+    -- ===== CONTROLS CARD =====
+local controls = CreateCard(parent, 88)
+controls:SetPoint("TOPLEFT", 10, -yOffset)
+controls:SetPoint("TOPRIGHT", -10, -yOffset)
+
+local wl = self.db and self.db.profile and self.db.profile.watchlist
+if not wl then wl = { includeGuildBank = true } end
+
+local mode = ns.globalSearchMode or "all"
+local includeGuild = (ns.globalSearchIncludeGuild ~= nil) and ns.globalSearchIncludeGuild or (wl.includeGuildBank ~= false)
+
+-- Search box
+if not controls.searchBox then
+    local box, clear = CreateSearchBox(controls, 10, "Search items or currency...", function(text)
+        ns.globalSearchText = text or ""
+        self:PopulateContent()
+    end, 0.4)
+    box:ClearAllPoints()
+    box:SetPoint("TOPLEFT", 14, -14)
+    box:SetPoint("TOPRIGHT", -14, -14)
+    controls.searchBox = box
+end
+
+-- Mode dropdown
+if not controls.modeDrop then
+    local drop = CreateFrame("Frame", nil, controls, "UIDropDownMenuTemplate")
+    drop:SetPoint("TOPLEFT", 2, -42)
+    UIDropDownMenu_SetWidth(drop, 120)
+    UIDropDownMenu_SetText(drop, "All")
+
+    local function SetMode(newMode, label)
+        ns.globalSearchMode = newMode
+        UIDropDownMenu_SetText(drop, label)
+        self:PopulateContent()
     end
 
-    local mode = ns.globalSearchMode or "all"
-    local includeGuild = (ns.globalSearchIncludeGuild ~= nil) and ns.globalSearchIncludeGuild or (wl.includeGuildBank ~= false)
+    UIDropDownMenu_Initialize(drop, function()
+        local info = UIDropDownMenu_CreateInfo()
+        info.text, info.func = "All", function() SetMode("all", "All") end
+        UIDropDownMenu_AddButton(info)
+        info.text, info.func = "Items", function() SetMode("items", "Items") end
+        UIDropDownMenu_AddButton(info)
+        info.text, info.func = "Currency", function() SetMode("currency", "Currency") end
+        UIDropDownMenu_AddButton(info)
+    end)
 
-    -- Create (or reuse) search box inside this screen
-    if not controls.searchBox then
-        local box, clear = CreateSearchBox(controls, 10, "Search items or currency...", function(text)
-            ns.globalSearchText = text or ""
-            self:PopulateContent()
-        end, 0.4)
-        box:ClearAllPoints()
-        box:SetPoint("TOPLEFT", 14, -14)
-        box:SetPoint("TOPRIGHT", -14, -14)
-        controls.searchBox = box
-    end
+    controls.modeDrop = drop
+end
 
-    -- Mode dropdown (very lightweight)
-    if not controls.modeDrop then
-        local drop = CreateFrame("Frame", nil, controls, "UIDropDownMenuTemplate")
-        drop:SetPoint("TOPLEFT", 6, -38)
-        UIDropDownMenu_SetWidth(drop, 120)
-        UIDropDownMenu_SetText(drop, "All")
-
-        local function SetMode(newMode, label)
-            ns.globalSearchMode = newMode
-            UIDropDownMenu_SetText(drop, label)
-            self:PopulateContent()
+-- Include Guild Bank checkbox
+if not controls.guildCheck then
+    local cb = CreateFrame("CheckButton", nil, controls, "UICheckButtonTemplate")
+    cb:SetPoint("LEFT", controls.modeDrop, "RIGHT", 30, 2)
+    cb.text = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    cb.text:SetPoint("LEFT", cb, "RIGHT", 6, 0)
+    cb.text:SetText("Include Guild Bank")
+    cb:SetScript("OnClick", function(selfBtn)
+        ns.globalSearchIncludeGuild = selfBtn:GetChecked()
+        if TheQuartermaster.db and TheQuartermaster.db.profile and TheQuartermaster.db.profile.watchlist then
+            TheQuartermaster.db.profile.watchlist.includeGuildBank = ns.globalSearchIncludeGuild
         end
+        TheQuartermaster:PopulateContent()
+    end)
+    controls.guildCheck = cb
+end
 
-        UIDropDownMenu_Initialize(drop, function()
-            local info = UIDropDownMenu_CreateInfo()
-            info.text, info.func = "All", function() SetMode("all", "All") end
-            UIDropDownMenu_AddButton(info)
-            info.text, info.func = "Items", function() SetMode("items", "Items") end
-            UIDropDownMenu_AddButton(info)
-            info.text, info.func = "Currency", function() SetMode("currency", "Currency") end
-            UIDropDownMenu_AddButton(info)
-        end)
+controls.guildCheck:SetChecked(includeGuild)
 
-        controls.modeDrop = drop
-    end
+-- Keep dropdown label in sync
+if mode == "items" then
+    UIDropDownMenu_SetText(controls.modeDrop, "Items")
+elseif mode == "currency" then
+    UIDropDownMenu_SetText(controls.modeDrop, "Currency")
+else
+    UIDropDownMenu_SetText(controls.modeDrop, "All")
+end
 
-    -- Include Guild Bank checkbox
-    if not controls.guildCheck then
-        local cb = CreateFrame("CheckButton", nil, controls, "UICheckButtonTemplate")
-        cb:SetPoint("LEFT", controls.modeDrop, "RIGHT", 30, 2)
-        cb.text = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-        cb.text:SetPoint("LEFT", cb, "RIGHT", 6, 0)
-        cb.text:SetText("Include Guild Bank")
-        cb:SetScript("OnClick", function(selfBtn)
-            ns.globalSearchIncludeGuild = selfBtn:GetChecked()
-            if TheQuartermaster.db and TheQuartermaster.db.profile and TheQuartermaster.db.profile.watchlist then
-                TheQuartermaster.db.profile.watchlist.includeGuildBank = ns.globalSearchIncludeGuild
-            end
-            TheQuartermaster:PopulateContent()
-        end)
-        controls.guildCheck = cb
-    end
-
-    controls.guildCheck:SetChecked(includeGuild)
-
-    -- Fix dropdown label on refresh
-    if mode == "items" then UIDropDownMenu_SetText(controls.modeDrop, "Items")
-    elseif mode == "currency" then UIDropDownMenu_SetText(controls.modeDrop, "Currency")
-    else UIDropDownMenu_SetText(controls.modeDrop, "All") end
-
-    yOffset = yOffset + 92
+yOffset = yOffset + 96
 
     local searchText = ns.globalSearchText or ""
     if searchText == "" then

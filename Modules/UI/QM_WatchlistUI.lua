@@ -70,9 +70,23 @@ function TheQuartermaster:DrawWatchlist(parent)
     local yOffset = 8
     local width = parent:GetWidth() - 20
 
-    local card = CreateCard(parent, "Watchlist", "Pinned items and currencies (totals across your Warband)", yOffset)
-    card:SetWidth(width)
-    yOffset = yOffset + 72
+    
+-- ===== HEADER CARD =====
+local titleCard = CreateCard(parent, 70)
+titleCard:SetPoint("TOPLEFT", 10, -yOffset)
+titleCard:SetPoint("TOPRIGHT", -10, -yOffset)
+
+local titleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+titleText:SetPoint("TOPLEFT", 16, -12)
+titleText:SetText("Watchlist")
+titleText:SetTextColor(1, 1, 1)
+
+local subText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+subText:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -6)
+subText:SetText("Pinned items and currencies (totals across your Warband)")
+subText:SetTextColor(0.75, 0.75, 0.75)
+
+yOffset = yOffset + 72
 
     local wl = (self.db and self.db.profile and self.db.profile.watchlist) or { items = {}, currencies = {}, includeGuildBank = true }
     wl.items = wl.items or {}
