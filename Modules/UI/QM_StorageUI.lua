@@ -21,6 +21,23 @@ local function GetCOLORS()
     return ns.UI_COLORS
 end
 
+
+-- Context menu helper (right-click rows)
+local function QM_ShowStorageWatchlistMenu(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return end
+
+    local pinned = TheQuartermaster:IsWatchlistedItem(itemID)
+    local menu = {
+        {
+            text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+            func = function() TheQuartermaster:ToggleWatchlistItem(itemID) end,
+        },
+    }
+
+    EasyMenu(menu, CreateFrame("Frame", "QM_StorageRowContextMenu", UIParent, "UIDropDownMenuTemplate"), "cursor", 0, 0, "MENU")
+end
+
 -- Import pooling functions
 local AcquireStorageRow = ns.UI_AcquireStorageRow
 local ReleaseStorageRow = ns.UI_ReleaseStorageRow
@@ -630,6 +647,17 @@ local itemRow = CreateFrame("Button", nil, parent, "BackdropTemplate")
                                             GameTooltip:Hide()
                                         end)
 
+itemRow:SetScript("OnMouseUp", function(_, button)
+    if button == "RightButton" and item.itemID then
+        QM_ShowStorageWatchlistMenu(item.itemID)
+        return
+    end
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
+
+
                                         yOffset = yOffset + ROW_SPACING
                                     end
                                 end
@@ -814,6 +842,17 @@ end
                                 self:SetBackdropColor(i % 2 == 0 and 0.07 or 0.05, i % 2 == 0 and 0.07 or 0.05, i % 2 == 0 and 0.09 or 0.06, 1)
                                 GameTooltip:Hide()
                             end)
+
+itemRow:SetScript("OnMouseUp", function(_, button)
+    if button == "RightButton" and item.itemID then
+        QM_ShowStorageWatchlistMenu(item.itemID)
+        return
+    end
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
+
                             
                             yOffset = yOffset + ROW_SPACING
                         end
@@ -1043,6 +1082,17 @@ for charKey, charData in pairs(self.db.global.characters or {}) do
                                             self:SetBackdropColor(i % 2 == 0 and 0.07 or 0.05, i % 2 == 0 and 0.07 or 0.05, i % 2 == 0 and 0.09 or 0.06, 1)
                                             GameTooltip:Hide()
                                         end)
+
+itemRow:SetScript("OnMouseUp", function(_, button)
+    if button == "RightButton" and item.itemID then
+        QM_ShowStorageWatchlistMenu(item.itemID)
+        return
+    end
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
+
                                         
                                         yOffset = yOffset + ROW_SPACING
                                     end

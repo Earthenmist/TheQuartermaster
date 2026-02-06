@@ -23,6 +23,23 @@ local DrawEmptyState = ns.UI_DrawEmptyState
 local AcquireItemRow = ns.UI_AcquireItemRow
 local ReleaseAllPooledChildren = ns.UI_ReleaseAllPooledChildren
 
+-- Context menu helper (right-click rows)
+local function QM_ShowItemWatchlistMenu(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return end
+
+    local pinned = TheQuartermaster:IsWatchlistedItem(itemID)
+    local menu = {
+        {
+            text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+            func = function() TheQuartermaster:ToggleWatchlistItem(itemID) end,
+        },
+    }
+
+    EasyMenu(menu, CreateFrame("Frame", "QM_ItemRowContextMenu", UIParent, "UIDropDownMenuTemplate"), "cursor", 0, 0, "MENU")
+end
+
+
 -- Money formatting helper (lazy-resolved to avoid load-order issues)
 local function FormatMoney(amount)
     local addon = ns and ns.TheQuartermaster
@@ -2016,10 +2033,15 @@ end
                 -- Click handlers for item interaction
                 -- View-only: no item movement. Keep Shift+Left-Click to link in chat.
                 row:SetScript("OnMouseUp", function(_, button)
-                    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
-                        ChatEdit_InsertLink(item.itemLink)
-                    end
-                end)
+    if button == "RightButton" and item.itemID then
+        QM_ShowItemWatchlistMenu(item.itemID)
+        return
+    end
+
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
                 
                 do
                     local rh = row:GetHeight()
