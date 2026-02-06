@@ -200,6 +200,43 @@ yOffset = yOffset + 84
         end
     end
 
+
+-- ===== HOW TO PIN NOTICE =====
+yOffset = yOffset + 15
+
+local noticeFrame = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+noticeFrame:SetSize(width - 20, 60)
+noticeFrame:SetPoint("TOPLEFT", 10, -yOffset)
+noticeFrame:SetBackdrop({
+    bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    tile = true, tileSize = 16, edgeSize = 12,
+    insets = { left = 3, right = 3, top = 3, bottom = 3 }
+})
+noticeFrame:SetBackdropColor(0.1, 0.1, 0.15, 0.9)
+noticeFrame:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.8)
+
+local noticeIcon = noticeFrame:CreateTexture(nil, "ARTWORK")
+noticeIcon:SetSize(24, 24)
+noticeIcon:SetPoint("LEFT", 10, 0)
+noticeIcon:SetTexture("Interface\\Common\\FavoritesIcon")
+
+local noticeText = noticeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+noticeText:SetPoint("LEFT", noticeIcon, "RIGHT", 10, 5)
+noticeText:SetPoint("RIGHT", -10, 5)
+noticeText:SetJustifyH("LEFT")
+noticeText:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
+noticeText:SetText("How to pin to Watchlist")
+
+local noticeSubText = noticeFrame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+noticeSubText:SetPoint("TOPLEFT", noticeIcon, "TOPRIGHT", 10, -15)
+noticeSubText:SetPoint("RIGHT", -10, 0)
+noticeSubText:SetJustifyH("LEFT")
+noticeSubText:SetTextColor(0.8, 0.8, 0.8)
+noticeSubText:SetText("Open Global Search, then click the star icon next to a result to pin/unpin items or currencies.")
+
+yOffset = yOffset + 75
+
     parent:SetHeight(yOffset + 20)
     return yOffset
 end
