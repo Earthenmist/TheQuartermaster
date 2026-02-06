@@ -74,7 +74,6 @@ local function QM_CopyItemLinkToChat(itemLink)
     end
 end
 
-
 local function QM_SearchForItem(itemName, itemID)
     local f = TheQuartermaster.UI and TheQuartermaster.UI.mainFrame
     if not f then return end
@@ -83,14 +82,12 @@ local function QM_SearchForItem(itemName, itemID)
 
     local query = itemName
     if (not query or query == "") and itemID then
-        query = (GetItemInfo(itemID))
+        query = GetItemInfo(itemID)
     end
     query = query or ""
 
-    if ns then
-        ns.globalSearchText = query
-        ns.globalSearchMode = ns.globalSearchMode or "all"
-    end
+    ns.globalSearchText = query
+    ns.globalSearchMode = ns.globalSearchMode or "all"
 
     if f.searchBox and f.searchBox.SetText then
         f.searchBox:SetText(query)
@@ -101,53 +98,31 @@ local function QM_SearchForItem(itemName, itemID)
     f:Show()
 end
 
-    if f.ShowTab then
-        f:ShowTab("search")
-    end
-
-    local query = itemName
-    if (not query or query == "") and itemID then
-        query = (GetItemInfo(itemID))
-    end
-    query = query or ""
-
-    if ns then
-        ns.globalSearchText = query
-    end
-    if f.searchBox and f.searchBox.SetText then
-        f.searchBox:SetText(query)
-        if f.searchBox.SetFocus then f.searchBox:SetFocus() end
-    end
-
-    if TheQuartermaster.RefreshUI then
-        TheQuartermaster:RefreshUI()
-    elseif f.PopulateContent then
-        f:PopulateContent()
-    end
-end
-
+local function QM_ShowStorageWatchlistMenu(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return end
 
     local pinned = TheQuartermaster:IsWatchlistedItem(itemID)
     local menu = {
-            {
-                text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
-                func = function() TheQuartermaster:ToggleWatchlistItem(itemID) end,
-            },
-            {
-                text = "Copy Item Link",
-                func = function()
-                    local link = select(2, GetItemInfo(itemID))
-                    QM_CopyItemLinkToChat(link)
-                end,
-            },
-            {
-                text = "Search this item",
-                func = function()
-                    local name = (GetItemInfo(itemID))
-                    QM_SearchForItem(name, itemID)
-                end,
-            },
-        }
+        {
+            text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+            func = function() TheQuartermaster:ToggleWatchlistItem(itemID) end,
+        },
+        {
+            text = "Copy Item Link",
+            func = function()
+                local _, link = GetItemInfo(itemID)
+                QM_CopyItemLinkToChat(link)
+            end,
+        },
+        {
+            text = "Search this item",
+            func = function()
+                local name = GetItemInfo(itemID)
+                QM_SearchForItem(name, itemID)
+            end,
+        },
+    }
 
     QM_OpenRowMenu(menu, UIParent)
 end

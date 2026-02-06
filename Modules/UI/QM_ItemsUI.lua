@@ -105,9 +105,31 @@ QM_CopyItemLinkToChat = function(itemLink)
 end
 
 
+
 QM_SearchForItem = function(itemName, itemID)
     local f = TheQuartermaster.UI and TheQuartermaster.UI.mainFrame
     if not f then return end
+
+    -- Tab system uses currentTab + PopulateContent()
+    f.currentTab = "search"
+
+    local query = itemName
+    if (not query or query == "") and itemID then
+        query = GetItemInfo(itemID)
+    end
+    query = query or ""
+
+    ns.globalSearchText = query
+    ns.globalSearchMode = ns.globalSearchMode or "all"
+
+    if f.searchBox and f.searchBox.SetText then
+        f.searchBox:SetText(query)
+        if f.searchBox.SetFocus then f.searchBox:SetFocus() end
+    end
+
+    TheQuartermaster:PopulateContent()
+    f:Show()
+end
 
 -- Money formatting helper (lazy-resolved to avoid load-order issues)
 local function FormatMoney(amount)
