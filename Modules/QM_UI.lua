@@ -406,8 +406,8 @@ f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tab
 -- Separator (theme color) between primary sections and utility tabs
 local sep = CreateFrame("Frame", nil, nav, "BackdropTemplate")
 sep:SetHeight(4)
-sep:SetPoint("TOPLEFT", nav, "TOPLEFT", 10, -(10 + tabSpacing * 9) + 6)
-sep:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -10, -(10 + tabSpacing * 9) + 6)
+sep:SetPoint("TOPLEFT", nav, "TOPLEFT", 10, -(10 + tabSpacing * 9) - 4)
+sep:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -10, -(10 + tabSpacing * 9) - 4)
 sep:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
 local accent = COLORS.accent
 sep:SetBackdropColor(accent[1], accent[2], accent[3], 0.9)
