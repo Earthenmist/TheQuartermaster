@@ -64,6 +64,9 @@ ns.itemsSearchText = ""
 ns.storageSearchText = ""
 ns.currencySearchText = ""
 ns.reputationSearchText = ""
+ns.globalSearchText = ""
+ns.globalSearchMode = "all"
+ns.globalSearchIncludeGuild = nil
 
 -- Namespace exports for state management (used by sub-modules)
 ns.UI_GetItemsSubTab = function() return currentItemsSubTab end
@@ -387,16 +390,19 @@ function TheQuartermaster:CreateMainWindow()
     end
     
     -- Create tabs with equal spacing (105px width + 5px gap = 110px spacing)
-    local tabSpacing = 36
-        f.tabButtons["stats"] = CreateTabButton(nav, "Dashboard", "stats", 10)
+    
+local tabSpacing = 36
+f.tabButtons["stats"] = CreateTabButton(nav, "Dashboard", "stats", 10)
 f.tabButtons["chars"] = CreateTabButton(nav, "Characters", "chars", 10 + tabSpacing * 1)
-    f.tabButtons["exp"] = CreateTabButton(nav, "Experience", "exp", 10 + tabSpacing * 2)
-    f.tabButtons["guild"] = CreateTabButton(nav, "Guilds", "guild", 10 + tabSpacing * 3)
-    f.tabButtons["items"] = CreateTabButton(nav, "Items", "items", 10 + tabSpacing * 4)
-    f.tabButtons["storage"] = CreateTabButton(nav, "Storage", "storage", 10 + tabSpacing * 5)
-    f.tabButtons["pve"] = CreateTabButton(nav, "PvE", "pve", 10 + tabSpacing * 6)
-    f.tabButtons["reputations"] = CreateTabButton(nav, "Reputations", "reputations", 10 + tabSpacing * 7)
-    f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tabSpacing * 8)
+f.tabButtons["exp"] = CreateTabButton(nav, "Experience", "exp", 10 + tabSpacing * 2)
+f.tabButtons["guild"] = CreateTabButton(nav, "Guilds", "guild", 10 + tabSpacing * 3)
+f.tabButtons["search"] = CreateTabButton(nav, "Search", "search", 10 + tabSpacing * 4)
+f.tabButtons["watchlist"] = CreateTabButton(nav, "Watchlist", "watchlist", 10 + tabSpacing * 5)
+f.tabButtons["items"] = CreateTabButton(nav, "Items", "items", 10 + tabSpacing * 6)
+f.tabButtons["storage"] = CreateTabButton(nav, "Storage", "storage", 10 + tabSpacing * 7)
+f.tabButtons["pve"] = CreateTabButton(nav, "PvE", "pve", 10 + tabSpacing * 8)
+f.tabButtons["reputations"] = CreateTabButton(nav, "Reputations", "reputations", 10 + tabSpacing * 9)
+f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tabSpacing * 10)
 -- Sidebar actions (Information + Settings) - match nav button style, anchored to bottom
 local infoNav = CreateTabButton(nav, L["INFORMATION"] or "Information", "info_action", 10) -- yOffset ignored after re-anchor
 local settingsNav = CreateTabButton(nav, L["SETTINGS"] or "Settings", "settings_action", 10) -- yOffset ignored after re-anchor
@@ -771,6 +777,10 @@ function TheQuartermaster:PopulateContent()
         height = self:DrawGuildSummaryList(scrollChild)
     elseif mainFrame.currentTab == "currency" then
         height = self:DrawCurrencyTab(scrollChild)
+    elseif mainFrame.currentTab == "search" then
+        height = self:DrawGlobalSearch(scrollChild)
+    elseif mainFrame.currentTab == "watchlist" then
+        height = self:DrawWatchlist(scrollChild)
     elseif mainFrame.currentTab == "items" then
         height = self:DrawItemList(scrollChild)
     elseif mainFrame.currentTab == "storage" then

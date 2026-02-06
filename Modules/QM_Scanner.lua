@@ -475,6 +475,21 @@ function TheQuartermaster:ScanInventory()
     self.db.char.inventory.totalSlots = totalSlots
     self.db.char.inventory.usedSlots = usedSlots
 
+
+    -- Persist inventory snapshot to global characters so other modules (Global Search/Watchlist) can query alts.
+    local playerKey = UnitName("player") .. "-" .. GetRealmName()
+    if self.db.global and self.db.global.characters then
+        self.db.global.characters[playerKey] = self.db.global.characters[playerKey] or {}
+        self.db.global.characters[playerKey].inventory = {
+            items = self.db.char.inventory.items,
+            bagSizes = self.db.char.inventory.bagSizes,
+            bagIDs = self.db.char.inventory.bagIDs,
+            usedSlots = usedSlots,
+            totalSlots = totalSlots,
+            lastScan = self.db.char.inventory.lastScan,
+        }
+    end
+
     if self.RefreshUI then
         self:RefreshUI()
     end

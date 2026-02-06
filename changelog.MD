@@ -1,3 +1,8 @@
+## 1.0.13 - 2026-02-06
+- Added a new **Global Search** screen to instantly find items and currencies across your Warband and characters.
+- Added a new **Watchlist** screen to pin important items and currencies and view totals across your Warband.
+- Search results support quick pin/unpin and tooltip preview.
+
 # TheQuartermaster — Changelog
 
 📜 Changelog – Version 1.0.12  
