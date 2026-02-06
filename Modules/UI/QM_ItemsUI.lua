@@ -65,14 +65,73 @@ local function QM_ShowItemWatchlistMenu(itemID)
 
     local pinned = TheQuartermaster:IsWatchlistedItem(itemID)
     local menu = {
-        {
-            text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
-            func = function() TheQuartermaster:ToggleWatchlistItem(itemID) end,
-        },
-    }
+            {
+                text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+                func = function() TheQuartermaster:ToggleWatchlistItem(itemID) end,
+            },
+            {
+                text = "Copy Item Link",
+                func = function()
+                    local link = select(2, GetItemInfo(itemID))
+                    QM_CopyItemLinkToChat(link)
+                end,
+            },
+            {
+                text = "Search this item",
+                func = function()
+                    local name = (GetItemInfo(itemID))
+                    QM_SearchForItem(name, itemID)
+                end,
+            },
+        }
 
     QM_OpenRowMenu(menu, UIParent)
 end
+
+local function QM_CopyItemLinkToChat(itemLink)
+    if not itemLink then return end
+    -- Put link into chat edit box so user can Ctrl+C
+    if ChatFrame_OpenChat then
+        ChatFrame_OpenChat(itemLink)
+    else
+        local editBox = ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow()
+        if editBox then
+            editBox:Insert(itemLink)
+        end
+    end
+end
+
+local function QM_SearchForItem(itemName, itemID)
+    local f = TheQuartermaster.UI and TheQuartermaster.UI.mainFrame
+    if not f then return end
+
+    -- Switch to Search tab
+    if f.ShowTab then
+        f:ShowTab("search")
+    end
+
+    local query = itemName
+    if (not query or query == "") and itemID then
+        query = (GetItemInfo(itemID))
+    end
+    query = query or ""
+
+    -- Set search box + global value
+    if ns then
+        ns.globalSearchText = query
+    end
+    if f.searchBox and f.searchBox.SetText then
+        f.searchBox:SetText(query)
+        if f.searchBox.SetFocus then f.searchBox:SetFocus() end
+    end
+
+    if TheQuartermaster.RefreshUI then
+        TheQuartermaster:RefreshUI()
+    elseif f.PopulateContent then
+        f:PopulateContent()
+    end
+end
+
 
 
 -- Money formatting helper (lazy-resolved to avoid load-order issues)
@@ -412,7 +471,42 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
                 GameTooltip:Show()
             end
         end)
-        btn:SetScript("OnLeave", function()
+        
+btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+btn:SetScript("OnMouseUp", function(_, button)
+    if not item then return end
+
+    if button == "RightButton" and item.itemID then
+        -- Use the same context menu as list rows
+        local pinned = TheQuartermaster:IsWatchlistedItem(item.itemID)
+        local menu = {
+            {
+                text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+                func = function() TheQuartermaster:ToggleWatchlistItem(item.itemID) end,
+            },
+            {
+                text = "Copy Item Link",
+                func = function()
+                    QM_CopyItemLinkToChat(item.itemLink or select(2, GetItemInfo(item.itemID)))
+                end,
+            },
+            {
+                text = "Search this item",
+                func = function()
+                    QM_SearchForItem(item.name or GetItemInfo(item.itemID), item.itemID)
+                end,
+            },
+        }
+        QM_OpenRowMenu(menu, btn)
+        return
+    end
+
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
+
+btn:SetScript("OnLeave", function()
             GameTooltip:Hide()
         end)
     end
@@ -583,7 +677,42 @@ local function DrawWarbandBankSlotView(self, parent, yOffset, width, itemsSearch
                     GameTooltip:Show()
                 end
             end)
-            btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+            
+btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+btn:SetScript("OnMouseUp", function(_, button)
+    if not item then return end
+
+    if button == "RightButton" and item.itemID then
+        -- Use the same context menu as list rows
+        local pinned = TheQuartermaster:IsWatchlistedItem(item.itemID)
+        local menu = {
+            {
+                text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+                func = function() TheQuartermaster:ToggleWatchlistItem(item.itemID) end,
+            },
+            {
+                text = "Copy Item Link",
+                func = function()
+                    QM_CopyItemLinkToChat(item.itemLink or select(2, GetItemInfo(item.itemID)))
+                end,
+            },
+            {
+                text = "Search this item",
+                func = function()
+                    QM_SearchForItem(item.name or GetItemInfo(item.itemID), item.itemID)
+                end,
+            },
+        }
+        QM_OpenRowMenu(menu, btn)
+        return
+    end
+
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
+
+btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
         else
             icon:SetTexture(nil)
             countText:SetText("")
@@ -1576,7 +1705,42 @@ end
                         end
                         GameTooltip:Show()
                     end)
-                    btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+                    
+btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+btn:SetScript("OnMouseUp", function(_, button)
+    if not item then return end
+
+    if button == "RightButton" and item.itemID then
+        -- Use the same context menu as list rows
+        local pinned = TheQuartermaster:IsWatchlistedItem(item.itemID)
+        local menu = {
+            {
+                text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+                func = function() TheQuartermaster:ToggleWatchlistItem(item.itemID) end,
+            },
+            {
+                text = "Copy Item Link",
+                func = function()
+                    QM_CopyItemLinkToChat(item.itemLink or select(2, GetItemInfo(item.itemID)))
+                end,
+            },
+            {
+                text = "Search this item",
+                func = function()
+                    QM_SearchForItem(item.name or GetItemInfo(item.itemID), item.itemID)
+                end,
+            },
+        }
+        QM_OpenRowMenu(menu, btn)
+        return
+    end
+
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
+
+btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
 					-- Search highlight (fade non-matches)
 					-- Use the shared matcher so we consistently check name *and* itemLink.
@@ -1727,7 +1891,42 @@ end
                         GameTooltip:SetHyperlink(data.itemLink)
                         GameTooltip:Show()
                     end)
-                    btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+                    
+btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+btn:SetScript("OnMouseUp", function(_, button)
+    if not item then return end
+
+    if button == "RightButton" and item.itemID then
+        -- Use the same context menu as list rows
+        local pinned = TheQuartermaster:IsWatchlistedItem(item.itemID)
+        local menu = {
+            {
+                text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+                func = function() TheQuartermaster:ToggleWatchlistItem(item.itemID) end,
+            },
+            {
+                text = "Copy Item Link",
+                func = function()
+                    QM_CopyItemLinkToChat(item.itemLink or select(2, GetItemInfo(item.itemID)))
+                end,
+            },
+            {
+                text = "Search this item",
+                func = function()
+                    QM_SearchForItem(item.name or GetItemInfo(item.itemID), item.itemID)
+                end,
+            },
+        }
+        QM_OpenRowMenu(menu, btn)
+        return
+    end
+
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
+
+btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
                     if search ~= "" then
                         local n = ((data.name or "") .. " " .. (data.itemLink or "")):lower()

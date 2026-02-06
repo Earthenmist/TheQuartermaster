@@ -11,6 +11,19 @@ local QM_OpenRowMenu_DROPDOWN
 local function QM_OpenRowMenu(menu, anchor)
     if not menu or #menu == 0 then return end
 
+local function QM_CopyItemLinkToChat(itemLink)
+    if not itemLink then return end
+    if ChatFrame_OpenChat then
+        ChatFrame_OpenChat(itemLink)
+    else
+        local editBox = ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow()
+        if editBox then
+            editBox:Insert(itemLink)
+        end
+    end
+end
+
+
     -- Modern menu API
     if MenuUtil and MenuUtil.CreateContextMenu then
         MenuUtil.CreateContextMenu(anchor or UIParent, function(_, rootDescription)
@@ -122,16 +135,23 @@ end
 
 
 -- Context menu helper (right-click rows)
-local function QM_SearchUI_ContextMenu(self, kind, id)
+local function QM_SearchUI_ContextMenu(self, kind, id, anchor)
     if not kind or not id then return end
     local menu = {}
     if kind == "item" then
-        local pinned = self:IsWatchlistedItem(id)
-        table.insert(menu, {
-            text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
-            func = function() self:ToggleWatchlistItem(id) end,
-        })
-    elseif kind == "currency" then
+            local pinned = self:IsWatchlistedItem(id)
+            table.insert(menu, {
+                text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+                func = function() self:ToggleWatchlistItem(id) end,
+            })
+            table.insert(menu, {
+                text = "Copy Item Link",
+                func = function()
+                    local _, link = GetItemInfo(id)
+                    QM_CopyItemLinkToChat(link)
+                end,
+            })
+        elseif kind == "currency" then
         local pinned = self:IsWatchlistedCurrency(id)
         table.insert(menu, {
             text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
@@ -139,7 +159,7 @@ local function QM_SearchUI_ContextMenu(self, kind, id)
         })
     end
     if #menu > 0 then
-        QM_OpenRowMenu(menu, UIParent)
+        QM_OpenRowMenu(menu, anchor or UIParent)
     end
 end
 
