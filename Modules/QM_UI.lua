@@ -641,7 +641,7 @@ function TheQuartermaster:PopulateContent()
     end
     
     -- Show/hide searchArea and create persistent search boxes
-    local isSearchTab = (mainFrame.currentTab == "items" or mainFrame.currentTab == "storage" or mainFrame.currentTab == "currency" or mainFrame.currentTab == "reputations")
+    local isSearchTab = (mainFrame.currentTab == "items" or mainFrame.currentTab == "storage" or mainFrame.currentTab == "currency" or mainFrame.currentTab == "reputations" or mainFrame.currentTab == "search")
     
     if mainFrame.searchArea then
         if isSearchTab then
@@ -725,30 +725,58 @@ function TheQuartermaster:PopulateContent()
                 reputationSearch:SetPoint("TOPRIGHT", -10, -8)  -- Responsive
                 reputationSearch:Hide()
                 mainFrame.persistentSearchBoxes.reputations = reputationSearch
+
+-- Global Search box (for Search tab)
+local globalSearch, globalClear = CreateSearchBox(
+    mainFrame.searchArea,
+    10,
+    "Search items or currency...",
+    function(searchText)
+        ns.globalSearchText = searchText or ""
+        self:PopulateContent()
+    end,
+    0.4
+)
+globalSearch:ClearAllPoints()
+globalSearch:SetPoint("TOPLEFT", 10, -8)
+globalSearch:SetPoint("TOPRIGHT", -10, -8)
+globalSearch:Hide()
+mainFrame.persistentSearchBoxes.global = globalSearch
+
             end
             
             -- Show appropriate search box
-            if mainFrame.currentTab == "items" then
-                mainFrame.persistentSearchBoxes.items:Show()
-                mainFrame.persistentSearchBoxes.storage:Hide()
-                mainFrame.persistentSearchBoxes.currency:Hide()
-                mainFrame.persistentSearchBoxes.reputations:Hide()
-            elseif mainFrame.currentTab == "storage" then
-                mainFrame.persistentSearchBoxes.items:Hide()
-                mainFrame.persistentSearchBoxes.storage:Show()
-                mainFrame.persistentSearchBoxes.currency:Hide()
-                mainFrame.persistentSearchBoxes.reputations:Hide()
-            elseif mainFrame.currentTab == "currency" then
-                mainFrame.persistentSearchBoxes.items:Hide()
-                mainFrame.persistentSearchBoxes.storage:Hide()
-                mainFrame.persistentSearchBoxes.currency:Show()
-                mainFrame.persistentSearchBoxes.reputations:Hide()
-            else -- reputations
-                mainFrame.persistentSearchBoxes.items:Hide()
-                mainFrame.persistentSearchBoxes.storage:Hide()
-                mainFrame.persistentSearchBoxes.currency:Hide()
-                mainFrame.persistentSearchBoxes.reputations:Show()
-            end
+if mainFrame.currentTab == "items" then
+    mainFrame.persistentSearchBoxes.items:Show()
+    mainFrame.persistentSearchBoxes.storage:Hide()
+    mainFrame.persistentSearchBoxes.currency:Hide()
+    mainFrame.persistentSearchBoxes.reputations:Hide()
+    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
+elseif mainFrame.currentTab == "storage" then
+    mainFrame.persistentSearchBoxes.items:Hide()
+    mainFrame.persistentSearchBoxes.storage:Show()
+    mainFrame.persistentSearchBoxes.currency:Hide()
+    mainFrame.persistentSearchBoxes.reputations:Hide()
+    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
+elseif mainFrame.currentTab == "currency" then
+    mainFrame.persistentSearchBoxes.items:Hide()
+    mainFrame.persistentSearchBoxes.storage:Hide()
+    mainFrame.persistentSearchBoxes.currency:Show()
+    mainFrame.persistentSearchBoxes.reputations:Hide()
+    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
+elseif mainFrame.currentTab == "search" then
+    mainFrame.persistentSearchBoxes.items:Hide()
+    mainFrame.persistentSearchBoxes.storage:Hide()
+    mainFrame.persistentSearchBoxes.currency:Hide()
+    mainFrame.persistentSearchBoxes.reputations:Hide()
+    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Show() end
+else -- reputations
+    mainFrame.persistentSearchBoxes.items:Hide()
+    mainFrame.persistentSearchBoxes.storage:Hide()
+    mainFrame.persistentSearchBoxes.currency:Hide()
+    mainFrame.persistentSearchBoxes.reputations:Show()
+    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
+end
         else
             mainFrame.searchArea:Hide()
             
@@ -763,6 +791,7 @@ function TheQuartermaster:PopulateContent()
                 mainFrame.persistentSearchBoxes.storage:Hide()
                 mainFrame.persistentSearchBoxes.currency:Hide()
                 mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
             end
         end
     end

@@ -7,7 +7,6 @@ local TheQuartermaster = ns.TheQuartermaster
 
 local COLORS = ns.UI_COLORS
 local CreateCard = ns.UI_CreateCard
-local CreateSearchBox = ns.UI_CreateSearchBox
 
 local function DrawEmptyState(parent, text, yOffset)
     local msg = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
@@ -72,31 +71,36 @@ local function CreateRow(parent, y, width, height)
 end
 
 function TheQuartermaster:DrawGlobalSearch(parent)
-    local yOffset = 8
-    local width = parent:GetWidth() - 20
 
-    
--- ===== HEADER CARD =====
-local titleCard = CreateCard(parent, 70)
-titleCard:SetPoint("TOPLEFT", 10, -yOffset)
-titleCard:SetPoint("TOPRIGHT", -10, -yOffset)
+local yOffset = 8
+local width = parent:GetWidth() - 20
 
-local titleText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-titleText:SetPoint("TOPLEFT", 16, -12)
-titleText:SetText("Global Search")
-titleText:SetTextColor(1, 1, 1)
+-- Header card (icon + title/subtitle)
+local header = CreateCard(parent, 72)
+header:SetWidth(width)
+header:SetPoint("TOPLEFT", 10, -yOffset)
 
-local subText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-subText:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -6)
-subText:SetText("Find items and currencies across your Warband, characters, and caches")
-subText:SetTextColor(0.75, 0.75, 0.75)
+local icon = header:CreateTexture(nil, "ARTWORK")
+icon:SetSize(36, 36)
+icon:SetPoint("LEFT", 16, 0)
+icon:SetTexture("Interface\Icons\INV_Misc_Spyglass_02")
 
-yOffset = yOffset + 72
+local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+title:SetPoint("TOPLEFT", icon, "TOPRIGHT", 12, -2)
+title:SetText("Global Search")
+title:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
 
-    -- ===== CONTROLS CARD =====
-local controls = CreateCard(parent, 88)
+local subtitle = header:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
+subtitle:SetText("Find items and currencies across your Warband, characters, and caches")
+subtitle:SetTextColor(0.65, 0.65, 0.65)
+
+yOffset = yOffset + 86
+
+-- Controls card (extra padding)
+local controls = CreateCard(parent, 64)
+controls:SetWidth(width)
 controls:SetPoint("TOPLEFT", 10, -yOffset)
-controls:SetPoint("TOPRIGHT", -10, -yOffset)
 
 local wl = self.db and self.db.profile and self.db.profile.watchlist
 if not wl then wl = { includeGuildBank = true } end
@@ -104,22 +108,10 @@ if not wl then wl = { includeGuildBank = true } end
 local mode = ns.globalSearchMode or "all"
 local includeGuild = (ns.globalSearchIncludeGuild ~= nil) and ns.globalSearchIncludeGuild or (wl.includeGuildBank ~= false)
 
--- Search box
-if not controls.searchBox then
-    local box, clear = CreateSearchBox(controls, 10, "Search items or currency...", function(text)
-        ns.globalSearchText = text or ""
-        self:PopulateContent()
-    end, 0.4)
-    box:ClearAllPoints()
-    box:SetPoint("TOPLEFT", 14, -14)
-    box:SetPoint("TOPRIGHT", -14, -14)
-    controls.searchBox = box
-end
-
 -- Mode dropdown
 if not controls.modeDrop then
     local drop = CreateFrame("Frame", nil, controls, "UIDropDownMenuTemplate")
-    drop:SetPoint("TOPLEFT", 2, -42)
+    drop:SetPoint("TOPLEFT", 6, -18) -- padding
     UIDropDownMenu_SetWidth(drop, 120)
     UIDropDownMenu_SetText(drop, "All")
 
@@ -145,7 +137,7 @@ end
 -- Include Guild Bank checkbox
 if not controls.guildCheck then
     local cb = CreateFrame("CheckButton", nil, controls, "UICheckButtonTemplate")
-    cb:SetPoint("LEFT", controls.modeDrop, "RIGHT", 30, 2)
+    cb:SetPoint("LEFT", controls.modeDrop, "RIGHT", 30, 0)
     cb.text = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     cb.text:SetPoint("LEFT", cb, "RIGHT", 6, 0)
     cb.text:SetText("Include Guild Bank")
@@ -161,20 +153,17 @@ end
 
 controls.guildCheck:SetChecked(includeGuild)
 
--- Keep dropdown label in sync
-if mode == "items" then
-    UIDropDownMenu_SetText(controls.modeDrop, "Items")
-elseif mode == "currency" then
-    UIDropDownMenu_SetText(controls.modeDrop, "Currency")
-else
-    UIDropDownMenu_SetText(controls.modeDrop, "All")
-end
+-- Fix dropdown label on refresh
+if mode == "items" then UIDropDownMenu_SetText(controls.modeDrop, "Items")
+elseif mode == "currency" then UIDropDownMenu_SetText(controls.modeDrop, "Currency")
+else UIDropDownMenu_SetText(controls.modeDrop, "All") end
 
-yOffset = yOffset + 96
+yOffset = yOffset + 74
 
-    local searchText = ns.globalSearchText or ""
+local searchText = ns.globalSearchText or ""
+
     if searchText == "" then
-        return DrawEmptyState(parent, "Type in the box above to search across your Warband.", yOffset)
+        return DrawEmptyState(parent, "Type in the search box above to search across your Warband.", yOffset)
     end
 
     local results = self:PerformGlobalSearch(searchText, mode, includeGuild)

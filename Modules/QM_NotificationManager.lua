@@ -9,11 +9,11 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.13"
+local CURRENT_VERSION = "1.0.13c"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.13",
+    version = "1.0.13c",
     date = "2026-02-06",
     changes = {
     
