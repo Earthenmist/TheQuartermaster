@@ -60,6 +60,18 @@ row.pin.icon:SetAllPoints()
 -- Favorite star icon (texture avoids missing-font glyphs)
 row.pin.icon:SetTexture("Interface\\Common\\FavoritesIcon")
 row.pin.icon:SetAlpha(0.9)
+
+    row.pin:SetScript("OnEnter", function(btn)
+        GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+        local text = btn.isPinned and "Unpin from Watchlist" or "Pin to Watchlist"
+        GameTooltip:AddLine(text, 1, 1, 1)
+        GameTooltip:AddLine("Click to toggle.", 0.7, 0.7, 0.7)
+        GameTooltip:Show()
+    end)
+    row.pin:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+
     row.pin.icon:SetVertexColor(1, 1, 1)
 
     row:SetScript("OnEnter", function(self)

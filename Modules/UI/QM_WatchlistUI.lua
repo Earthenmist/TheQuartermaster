@@ -90,7 +90,7 @@ local subText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSma
 subText:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -2)
 subText:SetText("Pinned items and currencies (totals across your Warband)")
 subText:SetTextColor(0.7, 0.7, 0.7)
-yOffset = yOffset + 72
+yOffset = yOffset + 84
 
     local wl = (self.db and self.db.profile and self.db.profile.watchlist) or { items = {}, currencies = {}, includeGuildBank = true }
     wl.items = wl.items or {}
@@ -100,7 +100,7 @@ yOffset = yOffset + 72
     local itemsTitle = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     itemsTitle:SetPoint("TOPLEFT", 10, -yOffset)
     itemsTitle:SetText("Items")
-    itemsTitle:SetTextColor(1, 1, 1)
+    itemsTitle:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
     yOffset = yOffset + 26
 
     local anyItems = false
@@ -152,7 +152,7 @@ yOffset = yOffset + 72
     local curTitle = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     curTitle:SetPoint("TOPLEFT", 10, -yOffset)
     curTitle:SetText("Currency")
-    curTitle:SetTextColor(1, 1, 1)
+    curTitle:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
     yOffset = yOffset + 26
 
     local anyCur = false
