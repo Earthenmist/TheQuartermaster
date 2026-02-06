@@ -187,7 +187,7 @@ header:SetPoint("TOPLEFT", 10, -yOffset)
 local icon = header:CreateTexture(nil, "ARTWORK")
 icon:SetSize(36, 36)
 icon:SetPoint("LEFT", 16, 0)
-icon:SetTexture("Interface\Icons\INV_Misc_Spyglass_02")
+icon:SetTexture("Interface\\Icons\\INV_Misc_Spyglass_02")
 
 local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
 title:SetPoint("TOPLEFT", icon, "TOPRIGHT", 12, -2)
