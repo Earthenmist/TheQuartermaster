@@ -5,6 +5,41 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+
+-- Context menu utility (works on modern + classic dropdown APIs)
+local QM_OpenRowMenu_DROPDOWN
+local function QM_OpenRowMenu(menu, anchor)
+    if not menu or #menu == 0 then return end
+
+    -- Modern menu API
+    if MenuUtil and MenuUtil.CreateContextMenu then
+        MenuUtil.CreateContextMenu(anchor or UIParent, function(_, rootDescription)
+            for _, entry in ipairs(menu) do
+                rootDescription:CreateButton(entry.text, entry.func)
+            end
+        end)
+        return
+    end
+
+    -- Legacy dropdown API fallback
+    if not QM_OpenRowMenu_DROPDOWN then
+        QM_OpenRowMenu_DROPDOWN = CreateFrame("Frame", "QM_SearchContextMenuDrop", UIParent, "UIDropDownMenuTemplate")
+    end
+
+    if UIDropDownMenu_Initialize and ToggleDropDownMenu and UIDropDownMenu_CreateInfo then
+        UIDropDownMenu_Initialize(QM_OpenRowMenu_DROPDOWN, function(self, level)
+            local info = UIDropDownMenu_CreateInfo()
+            for _, entry in ipairs(menu) do
+                info.text = entry.text
+                info.func = entry.func
+                info.notCheckable = true
+                UIDropDownMenu_AddButton(info, level)
+            end
+        end, "MENU")
+        ToggleDropDownMenu(1, nil, QM_OpenRowMenu_DROPDOWN, "cursor", 0, 0)
+    end
+end
+
 local COLORS = ns.UI_COLORS
 local CreateCard = ns.UI_CreateCard
 
@@ -104,7 +139,7 @@ local function QM_SearchUI_ContextMenu(self, kind, id)
         })
     end
     if #menu > 0 then
-        EasyMenu(menu, CreateFrame("Frame", "QM_SearchContextMenu", UIParent, "UIDropDownMenuTemplate"), "cursor", 0 , 0, "MENU")
+        QM_OpenRowMenu(menu, UIParent)
     end
 end
 
