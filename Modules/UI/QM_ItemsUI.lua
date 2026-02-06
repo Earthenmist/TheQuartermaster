@@ -104,9 +104,33 @@ QM_CopyItemLinkToChat = function(itemLink)
     end
 end
 
+
 QM_SearchForItem = function(itemName, itemID)
     local f = TheQuartermaster.UI and TheQuartermaster.UI.mainFrame
     if not f then return end
+
+    -- Switch to Search tab (tab system uses currentTab)
+    f.currentTab = "search"
+
+    local query = itemName
+    if (not query or query == "") and itemID then
+        query = (GetItemInfo(itemID))
+    end
+    query = query or ""
+
+    if ns then
+        ns.globalSearchText = query
+        ns.globalSearchMode = ns.globalSearchMode or "all"
+    end
+
+    if f.searchBox and f.searchBox.SetText then
+        f.searchBox:SetText(query)
+        if f.searchBox.SetFocus then f.searchBox:SetFocus() end
+    end
+
+    TheQuartermaster:PopulateContent()
+    f:Show()
+end
 
     -- Switch to Search tab
     if f.ShowTab then

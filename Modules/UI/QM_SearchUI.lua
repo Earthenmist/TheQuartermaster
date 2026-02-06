@@ -1,3 +1,4 @@
+
 --[[
     The Quartermaster - Global Search UI
 ]]
@@ -5,24 +6,10 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
-
 -- Context menu utility (works on modern + classic dropdown APIs)
 local QM_OpenRowMenu_DROPDOWN
 local function QM_OpenRowMenu(menu, anchor)
     if not menu or #menu == 0 then return end
-
-local function QM_CopyItemLinkToChat(itemLink)
-    if not itemLink then return end
-    if ChatFrame_OpenChat then
-        ChatFrame_OpenChat(itemLink)
-    else
-        local editBox = ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow()
-        if editBox then
-            editBox:Insert(itemLink)
-        end
-    end
-end
-
 
     -- Modern menu API
     if MenuUtil and MenuUtil.CreateContextMenu then
@@ -50,6 +37,18 @@ end
             end
         end, "MENU")
         ToggleDropDownMenu(1, nil, QM_OpenRowMenu_DROPDOWN, "cursor", 0, 0)
+    end
+end
+
+local function QM_CopyItemLinkToChat(itemLink)
+    if not itemLink then return end
+    if ChatFrame_OpenChat then
+        ChatFrame_OpenChat(itemLink)
+    else
+        local editBox = ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow()
+        if editBox then
+            editBox:Insert(itemLink)
+        end
     end
 end
 
@@ -337,11 +336,11 @@ local searchText = ns.globalSearchText or ""
             for i=1, math.min(#cur, 60) do
                 local r = cur[i]
                 local currencyID = r.currencyID
-                row.kind = "currency"
-                row.currencyID = currencyID
-                row.itemID = nil
                 local c = r.currency or {}
                 local row = CreateRow(parent, yOffset, width, rowH)
+                row.kind = "item"
+                row.itemID = itemID
+                row.currencyID = nil
 
                 row.icon:SetTexture(c.iconFileID or c.icon or 134400)
                 row.name:SetText(c.name or ("Currency " .. tostring(currencyID)))
