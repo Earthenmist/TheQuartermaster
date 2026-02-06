@@ -9,19 +9,19 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.12"
+local CURRENT_VERSION = "1.0.13"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.12",
-    date = "2026-02-05",
+    version = "1.0.13",
+    date = "2026-02-06",
     changes = {
-    "Enabled **Guild Bank** on the **Items** screen (appears after Warband Bank when in a guild).",    
-    "Code has been tidied up and refactored for better maintainability.",    
-    "Created a Dashboard as the first opening screen.",
-    "Sidebar navigation now represents the primary interaction model for all sections and actions.", 
+        "Added a new **Global Search** screen to instantly find items across your Warband, banks, bags, and optional Guild Bank cache.",
+        "Added a new **Watchlist** screen to pin important items and currencies and view totals across your Warband.",
+        "Search results support quick pin/unpin and tooltip preview.",
     }
 }
+
 --[[============================================================================
     NOTIFICATION QUEUE
 ============================================================================]]
@@ -895,5 +895,4 @@ function TheQuartermaster:TestVaultCheck()
     
     self:Print("|cff00ccff======================|r")
 end
-
 

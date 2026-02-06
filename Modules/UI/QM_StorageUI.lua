@@ -6,6 +6,41 @@
 local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
+
+-- Context menu utility (works on modern + classic dropdown APIs)
+local QM_OpenRowMenu_DROPDOWN
+local function QM_OpenRowMenu(menu, anchor)
+    if not menu or #menu == 0 then return end
+
+    -- Modern menu API
+    if MenuUtil and MenuUtil.CreateContextMenu then
+        MenuUtil.CreateContextMenu(anchor or UIParent, function(_, rootDescription)
+            for _, entry in ipairs(menu) do
+                rootDescription:CreateButton(entry.text, entry.func)
+            end
+        end)
+        return
+    end
+
+    -- Legacy dropdown API fallback
+    if not QM_OpenRowMenu_DROPDOWN then
+        QM_OpenRowMenu_DROPDOWN = CreateFrame("Frame", "QM_RowContextMenuDrop2", UIParent, "UIDropDownMenuTemplate")
+    end
+
+    if UIDropDownMenu_Initialize and ToggleDropDownMenu and UIDropDownMenu_CreateInfo then
+        UIDropDownMenu_Initialize(QM_OpenRowMenu_DROPDOWN, function(self, level)
+            local info = UIDropDownMenu_CreateInfo()
+            for _, entry in ipairs(menu) do
+                info.text = entry.text
+                info.func = entry.func
+                info.notCheckable = true
+                UIDropDownMenu_AddButton(info, level)
+            end
+        end, "MENU")
+        ToggleDropDownMenu(1, nil, QM_OpenRowMenu_DROPDOWN, "cursor", 0, 0)
+    end
+end
+
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Import shared UI components (always get fresh reference)
@@ -19,6 +54,73 @@ local GetQualityHex = ns.UI_GetQualityHex
 local DrawEmptyState = ns.UI_DrawEmptyState
 local function GetCOLORS()
     return ns.UI_COLORS
+end
+
+
+-- Context menu helper (right-click rows)
+local function QM_CopyItemLinkToChat(itemLink)
+    if not itemLink then return end
+    if ChatFrame_OpenChat then
+        ChatFrame_OpenChat(itemLink)
+    else
+        local editBox = ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow()
+        if editBox then
+            editBox:Insert(itemLink)
+        end
+    end
+end
+
+local function QM_SearchForItem(itemName, itemID)
+    local f = TheQuartermaster.UI and TheQuartermaster.UI.mainFrame
+    if not f then return end
+
+    f.currentTab = "search"
+
+    local query = itemName
+    if (not query or query == "") and itemID then
+        query = GetItemInfo(itemID)
+    end
+    query = query or ""
+
+    ns.globalSearchText = query
+    ns.globalSearchMode = ns.globalSearchMode or "all"
+
+    if f.searchBox and f.searchBox.SetText then
+        f.searchBox:SetText(query)
+        if f.searchBox.SetFocus then f.searchBox:SetFocus() end
+    end
+
+    TheQuartermaster:PopulateContent()
+    f:Show()
+end
+
+local function QM_ShowStorageWatchlistMenu(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return end
+
+    local pinned = TheQuartermaster:IsWatchlistedItem(itemID)
+    local menu = {
+        {
+            text = pinned and "Unpin from Watchlist" or "Pin to Watchlist",
+            func = function() TheQuartermaster:ToggleWatchlistItem(itemID) end,
+        },
+        {
+            text = "Copy Item Link",
+            func = function()
+                local _, link = GetItemInfo(itemID)
+                QM_CopyItemLinkToChat(link)
+            end,
+        },
+        {
+            text = "Search this item",
+            func = function()
+                local name = GetItemInfo(itemID)
+                QM_SearchForItem(name, itemID)
+            end,
+        },
+    }
+
+    QM_OpenRowMenu(menu, UIParent)
 end
 
 -- Import pooling functions
@@ -630,6 +732,17 @@ local itemRow = CreateFrame("Button", nil, parent, "BackdropTemplate")
                                             GameTooltip:Hide()
                                         end)
 
+itemRow:SetScript("OnMouseUp", function(_, button)
+    if button == "RightButton" and item.itemID then
+        QM_ShowStorageWatchlistMenu(item.itemID)
+        return
+    end
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
+
+
                                         yOffset = yOffset + ROW_SPACING
                                     end
                                 end
@@ -814,6 +927,17 @@ end
                                 self:SetBackdropColor(i % 2 == 0 and 0.07 or 0.05, i % 2 == 0 and 0.07 or 0.05, i % 2 == 0 and 0.09 or 0.06, 1)
                                 GameTooltip:Hide()
                             end)
+
+itemRow:SetScript("OnMouseUp", function(_, button)
+    if button == "RightButton" and item.itemID then
+        QM_ShowStorageWatchlistMenu(item.itemID)
+        return
+    end
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
+
                             
                             yOffset = yOffset + ROW_SPACING
                         end
@@ -1043,6 +1167,17 @@ for charKey, charData in pairs(self.db.global.characters or {}) do
                                             self:SetBackdropColor(i % 2 == 0 and 0.07 or 0.05, i % 2 == 0 and 0.07 or 0.05, i % 2 == 0 and 0.09 or 0.06, 1)
                                             GameTooltip:Hide()
                                         end)
+
+itemRow:SetScript("OnMouseUp", function(_, button)
+    if button == "RightButton" and item.itemID then
+        QM_ShowStorageWatchlistMenu(item.itemID)
+        return
+    end
+    if button == "LeftButton" and IsShiftKeyDown() and item.itemLink then
+        ChatEdit_InsertLink(item.itemLink)
+    end
+end)
+
                                         
                                         yOffset = yOffset + ROW_SPACING
                                     end

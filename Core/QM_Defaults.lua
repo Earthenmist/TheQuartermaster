@@ -61,6 +61,13 @@ ns.DEFAULTS = {
         tooltipEnhancement = true, -- Show item locations in tooltips by default
         tooltipGuildCounts = true, -- Show cached guild bank counts in tooltips by default
 
+        -- Watchlist (account-wide pins)
+        watchlist = {
+            items = {},       -- { [itemID] = true }
+            currencies = {},  -- { [currencyID] = true }
+            includeGuildBank = true,
+        },
+
         -- Gold settings
         goldReserve = 0, -- Minimum gold to keep when depositing
 

@@ -946,7 +946,7 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
     local searchIcon = searchFrame:CreateTexture(nil, "ARTWORK")
     searchIcon:SetSize(16, 16)
     searchIcon:SetPoint("LEFT", 10, 0)
-    searchIcon:SetTexture("Interface\\Icons\\INV_Misc_Spyglass_03")
+    searchIcon:SetTexture("Interface\\Icons\\INV_Misc_Spyglass_02")
     searchIcon:SetAlpha(0.5)
     
     -- EditBox

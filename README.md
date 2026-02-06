@@ -22,6 +22,22 @@ It provides a unified dashboard to track your entire account’s progression, st
 - Section-based category grouping with collapsible headers.
 - Visual consistency across list and grid views.
 
+
+
+### 🔎 Global Search (New in v1.0.13)
+- Search **Items + Currency** across all cached characters and storage locations.
+- Mode selector: **All / Items / Currency**
+- Optional: **Include Guild Bank** (cached).
+- **Pin/Unpin** results to a Watchlist (star icon on rows).
+- **Right-click** result rows for quick actions (Pin/Unpin, Copy Item Link).
+
+### ⭐ Watchlist (New in v1.0.13)
+- Keep a curated list of items and currencies you care about.
+- Shows **total owned across your Warband**, with tooltip breakdowns by character/location.
+- You can Pin/Unpin from:
+  - Global Search results (star or right-click)
+  - Items and Storage screens (List or Slot view) via **right-click** row menu
+
 ### 💰 Currencies
 - Warband-wide currency tracking.
 - Unified currency list with filters.
@@ -125,3 +141,17 @@ Special thanks to all beta testers and contributors who helped refine TheQuarter
 
 This addon is provided as-is for personal use.
 Redistribution or modification without permission is not permitted.
+
+
+---
+
+## 🧭 Usage Tips
+- The Quartermaster builds its database as you play. If something is missing, log into that character and open the relevant UI once (bags/bank/warband bank/guild bank).
+- **Pinning to Watchlist**
+  - Global Search: click the ⭐ star on a row or right-click the row.
+  - Items/Storage: right-click an item row (List or Slot view) → Pin/Unpin.
+- **Copy Item Link**: right-click an item row → Copy Item Link (opens it in chat for easy Ctrl+C).
+
+## 📅 Release Notes
+- v1.0.13 (2026-02-06) – Global Search + Watchlist, right-click menus, and pinning improvements.
+

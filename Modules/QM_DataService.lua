@@ -1004,6 +1004,96 @@ function TheQuartermaster:PerformItemSearch(searchTerm)
         end
     end
     
+    -- Search Inventories (all characters)
+    if self.db.global.characters then
+        for charKey, charData in pairs(self.db.global.characters) do
+            if charData.inventory and charData.inventory.items then
+                for bagIndex, bagData in pairs(charData.inventory.items) do
+                    for slotID, item in pairs(bagData) do
+                        local match = false
+                        if item.name and item.name:lower():find(searchLower) then match = true end
+                        if searchID and item.itemID == searchID then match = true end
+                        if match then
+                            table.insert(results, {
+                                item = item,
+                                location = "Bags",
+                                locationDetail = (charData.name or charKey) .. " (" .. (charData.realm or "Unknown") .. ")",
+                                character = charData.name,
+                            })
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Search Guild Banks (cached)
+    if self.db.global.guildBank then
+        for guildName, guildData in pairs(self.db.global.guildBank) do
+            if guildData and guildData.tabs then
+                for tabIndex, tab in pairs(guildData.tabs) do
+                    if tab and tab.items then
+                        for slotIndex, item in pairs(tab.items) do
+                            local match = false
+                            if item.name and item.name:lower():find(searchLower) then match = true end
+                            if searchID and item.itemID == searchID then match = true end
+                            if match then
+                                table.insert(results, {
+                                    item = item,
+                                    location = "Guild Bank",
+                                    locationDetail = guildName .. " - " .. (tab.name or ("Tab " .. tabIndex)),
+                                    character = nil,
+                                    guild = guildName,
+                                })
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return results
+end
+
+--[[
+    Perform currency search across all characters
+    @param searchTerm string
+    @return table results
+]]
+function TheQuartermaster:PerformCurrencySearch(searchTerm)
+    if not searchTerm or searchTerm == "" then
+        return {}
+    end
+
+    local results = {}
+    local searchLower = searchTerm:lower()
+    local searchID = tonumber(searchTerm)
+
+    local characters = self.GetAllCharacters and self:GetAllCharacters() or {}
+    for _, char in ipairs(characters) do
+        if char.currencies then
+            for currencyID, cur in pairs(char.currencies) do
+                local match = false
+                local name = cur.name or cur.currencyName
+                if name and tostring(name):lower():find(searchLower, 1, true) then
+                    match = true
+                end
+                if searchID and tonumber(currencyID) == searchID then
+                    match = true
+                end
+                if match then
+                    table.insert(results, {
+                        currencyID = tonumber(currencyID),
+                        currency = cur,
+                        character = char.name,
+                        realm = char.realm,
+                    })
+                end
+            end
+        end
+    end
+
     return results
 end
 
