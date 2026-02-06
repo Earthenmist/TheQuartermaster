@@ -7,6 +7,9 @@ local ADDON_NAME, ns = ...
 local TheQuartermaster = ns.TheQuartermaster
 
 
+local QM_CopyItemLinkToChat
+local QM_SearchForItem
+
 -- Context menu utility (works on modern + classic dropdown APIs)
 local QM_OpenRowMenu_DROPDOWN
 local function QM_OpenRowMenu(menu, anchor)
@@ -88,7 +91,7 @@ local function QM_ShowItemWatchlistMenu(itemID)
     QM_OpenRowMenu(menu, UIParent)
 end
 
-local function QM_CopyItemLinkToChat(itemLink)
+QM_CopyItemLinkToChat = function(itemLink)
     if not itemLink then return end
     -- Put link into chat edit box so user can Ctrl+C
     if ChatFrame_OpenChat then
@@ -101,7 +104,7 @@ local function QM_CopyItemLinkToChat(itemLink)
     end
 end
 
-local function QM_SearchForItem(itemName, itemID)
+QM_SearchForItem = function(itemName, itemID)
     local f = TheQuartermaster.UI and TheQuartermaster.UI.mainFrame
     if not f then return end
 

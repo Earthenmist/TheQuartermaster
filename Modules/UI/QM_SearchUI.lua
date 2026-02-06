@@ -130,7 +130,19 @@ row.pin.icon:SetAlpha(0.9)
         GameTooltip:Hide()
     end)
 
-    return row
+    
+row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+row:SetScript("OnMouseUp", function(selfRow, btn)
+    if btn == "RightButton" then
+        if selfRow.kind == "item" and selfRow.itemID then
+            QM_SearchUI_ContextMenu(TheQuartermaster, "item", selfRow.itemID, selfRow)
+        elseif selfRow.kind == "currency" and selfRow.currencyID then
+            QM_SearchUI_ContextMenu(TheQuartermaster, "currency", selfRow.currencyID, selfRow)
+        end
+    end
+end)
+
+return row
 end
 
 
@@ -284,6 +296,9 @@ local searchText = ns.globalSearchText or ""
                 row.count:SetText(tostring(item and (item.stackCount or item.count or 1) or 1))
 
                 local itemID = item and item.itemID
+                row.kind = "item"
+                row.itemID = itemID
+                row.currencyID = nil
                 local pinned = itemID and self:IsWatchlistedItem(itemID)
                 row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
 
@@ -322,6 +337,9 @@ local searchText = ns.globalSearchText or ""
             for i=1, math.min(#cur, 60) do
                 local r = cur[i]
                 local currencyID = r.currencyID
+                row.kind = "currency"
+                row.currencyID = currencyID
+                row.itemID = nil
                 local c = r.currency or {}
                 local row = CreateRow(parent, yOffset, width, rowH)
 
