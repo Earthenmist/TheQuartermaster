@@ -157,6 +157,42 @@ local ITEM_CLASS_TRADEGOODS = Enum and Enum.ItemClass and Enum.ItemClass.Tradego
 local ITEM_CLASS_GEM       = Enum and Enum.ItemClass and Enum.ItemClass.Gem or 3
 local ITEM_CLASS_REAGENT   = Enum and Enum.ItemClass and Enum.ItemClass.Reagent or nil
 
+-- Tooltip scanner (used to confirm Crafting Reagent label and derive expansion tag).
+local QM_ReagentScanTooltip
+local function QM_EnsureReagentTooltip()
+    if QM_ReagentScanTooltip then return end
+    QM_ReagentScanTooltip = CreateFrame("GameTooltip", "QM_ReagentScanTooltip", UIParent, "GameTooltipTemplate")
+    QM_ReagentScanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+end
+
+local function QM_GetCraftingReagentLabel(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return nil end
+    QM_EnsureReagentTooltip()
+
+    QM_ReagentScanTooltip:ClearLines()
+    local ok = pcall(function()
+        QM_ReagentScanTooltip:SetHyperlink("item:" .. itemID)
+    end)
+    if not ok then
+        return nil
+    end
+
+    local numLines = QM_ReagentScanTooltip:NumLines() or 0
+    for i = 2, numLines do
+        local left = _G["QM_ReagentScanTooltipTextLeft" .. i]
+        local text = left and left:GetText()
+        if text and text:find("Crafting Reagent", 1, true) then
+            return text
+        end
+    end
+    return nil
+end
+
+local function QM_HasCraftingReagentLine(itemID)
+    return QM_GetCraftingReagentLabel(itemID) ~= nil
+end
+
 local function QM_IsReagentItemID(item)
     if not item or not item.itemID then return false end
 
@@ -170,10 +206,12 @@ local function QM_IsReagentItemID(item)
         classID = cID
     end
 
-    if not classID then
-        return false
+    -- If the tooltip explicitly says "Crafting Reagent", treat it as a reagent even if classID is odd.
+    if QM_HasCraftingReagentLine(item.itemID) then
+        return true
     end
 
+    if not classID then return false end
     if classID == ITEM_CLASS_TRADEGOODS or classID == ITEM_CLASS_GEM or classID == ITEM_CLASS_REAGENT then
         return true
     end

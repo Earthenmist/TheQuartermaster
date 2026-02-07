@@ -14,6 +14,37 @@ local ITEM_CLASS_TRADEGOODS = Enum and Enum.ItemClass and Enum.ItemClass.Tradego
 local ITEM_CLASS_GEM       = Enum and Enum.ItemClass and Enum.ItemClass.Gem or 3
 local ITEM_CLASS_REAGENT   = Enum and Enum.ItemClass and Enum.ItemClass.Reagent or nil
 
+-- Tooltip scanner so we can detect items that are labeled "Crafting Reagent" even if their
+-- item class doesn't fall under Trade Goods/Gem on a given build.
+local QM_WatchlistScanTooltip
+local function QM_EnsureWatchlistTooltip()
+    if QM_WatchlistScanTooltip then return end
+    QM_WatchlistScanTooltip = CreateFrame("GameTooltip", "QM_WatchlistScanTooltip", UIParent, "GameTooltipTemplate")
+    QM_WatchlistScanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+end
+
+local function QM_HasCraftingReagentLine(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return false end
+    QM_EnsureWatchlistTooltip()
+
+    QM_WatchlistScanTooltip:ClearLines()
+    local ok = pcall(function()
+        QM_WatchlistScanTooltip:SetHyperlink("item:" .. itemID)
+    end)
+    if not ok then return false end
+
+    local numLines = QM_WatchlistScanTooltip:NumLines() or 0
+    for i = 2, numLines do
+        local left = _G["QM_WatchlistScanTooltipTextLeft" .. i]
+        local text = left and left:GetText()
+        if text and text:find("Crafting Reagent", 1, true) then
+            return true
+        end
+    end
+    return false
+end
+
 local function IsReagentItemID(itemID)
     itemID = tonumber(itemID)
     if not itemID or type(GetItemInfoInstant) ~= "function" then return false end
@@ -22,7 +53,8 @@ local function IsReagentItemID(itemID)
     if classID == ITEM_CLASS_TRADEGOODS or classID == ITEM_CLASS_GEM or (ITEM_CLASS_REAGENT and classID == ITEM_CLASS_REAGENT) then
         return true
     end
-    return false
+    -- Fallback: the tooltip often includes the expansion tag + "Crafting Reagent".
+    return QM_HasCraftingReagentLine(itemID)
 end
 
 local function DrawEmptyState(parent, text, yOffset)

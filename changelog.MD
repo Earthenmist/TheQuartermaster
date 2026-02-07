@@ -1,6 +1,7 @@
-## Version 1.0.14e (2026-02-07)
-- Fixed a regression where the **Materials** header/controls could be pushed off-screen, making the tab look blank.
-- Materials now uses the same header card layout as other tabs and keeps controls anchored correctly.
+## Version 1.0.14f (2026-02-07)
+- Improved **Materials** reagent detection using the tooltip **Crafting Reagent** label to avoid false positives.
+- Pinned crafting reagents now correctly appear under **Watchlist → Reagents**.
+- Added an **Expansion** filter dropdown to Materials (derived from tooltip tags like **Khaz Algar Crafting Reagent**).
 
 # TheQuartermaster — Changelog
 

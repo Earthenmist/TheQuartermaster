@@ -9,16 +9,16 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14e"
+local CURRENT_VERSION = "1.0.14f"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14e",
+    version = "1.0.14f",
     date = "2026-02-07",
     changes = {
-        "Fixed a rendering issue where the **Materials** tab could appear blank.",
-        "Restored a dedicated **Reagents** section in **Watchlist** (alongside Items and Currency).",
-        "Materials and Global Search reagent filtering remains strict to avoid non-reagent items showing up.",
+        "Improved **Materials** reagent detection using the tooltip **Crafting Reagent** label to avoid false positives.",
+        "Pinned crafting reagents now correctly appear under **Watchlist → Reagents**.",
+        "Added an **Expansion** filter dropdown to Materials (derived from tooltip tags like **Khaz Algar Crafting Reagent**).",
     }
 }
 

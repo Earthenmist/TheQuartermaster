@@ -68,44 +68,53 @@ local ITEM_CLASS_TRADEGOODS = Enum and Enum.ItemClass and Enum.ItemClass.Tradego
 local ITEM_CLASS_GEM       = Enum and Enum.ItemClass and Enum.ItemClass.Gem or 3
 local ITEM_CLASS_REAGENT   = Enum and Enum.ItemClass and Enum.ItemClass.Reagent or nil
 
-local function IsStrictReagent(item)
-    if not item or not item.itemID then return false end
-
-    -- If the scanner cached classID/equipLoc, use it to quickly exclude gear.
-    if item.equipLoc and item.equipLoc ~= "" then return false end
-    if item.classID and (item.classID ~= ITEM_CLASS_TRADEGOODS and item.classID ~= ITEM_CLASS_GEM and item.classID ~= ITEM_CLASS_REAGENT) then
-        return false
-    end
-
-    -- Fallback: use instant info if classID missing.
-    if (not item.classID) and C_Item and C_Item.GetItemInfoInstant then
-        local _, _, _, equipLoc, icon, classID, subclassID = C_Item.GetItemInfoInstant(item.itemID)
-        if equipLoc and equipLoc ~= "" then return false end
-        if classID and (classID ~= ITEM_CLASS_TRADEGOODS and classID ~= ITEM_CLASS_GEM and classID ~= ITEM_CLASS_REAGENT) then
-            return false
-        end
-    end
-
-    -- If we got here, it's likely a mat/gem/reagent item.
-    return true
+-- Tooltip scanner (used to confirm "Crafting Reagent" and derive expansion tags).
+local QM_MaterialsScanTooltip
+local function QM_EnsureMaterialsTooltip()
+    if QM_MaterialsScanTooltip then return end
+    QM_MaterialsScanTooltip = CreateFrame("GameTooltip", "QM_MaterialsScanTooltip", UIParent, "GameTooltipTemplate")
+    QM_MaterialsScanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
 end
 
--- Profession-focused categories (kept intentionally small & relevant)
-local PROF_CATEGORIES = {
-    { key = "all", label = "All" },
-    { key = "alchemy", label = "Alchemy" },
-    { key = "blacksmithing", label = "Blacksmithing" },
-    { key = "cooking", label = "Cooking" },
-    { key = "enchanting", label = "Enchanting" },
-    { key = "engineering", label = "Engineering" },
-    { key = "inscription", label = "Inscription" },
-    { key = "jewelcrafting", label = "Jewelcrafting" },
-    { key = "leatherworking", label = "Leatherworking" },
-    { key = "tailoring", label = "Tailoring" },
-}
+local function QM_GetCraftingReagentLabel(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return nil end
+    QM_EnsureMaterialsTooltip()
 
--- Map itemSubType (and a couple of common itemType strings) to a "best fit" profession category.
--- This is a heuristic, but it's stable and avoids noisy categories.
+    QM_MaterialsScanTooltip:ClearLines()
+    local ok = pcall(function()
+        QM_MaterialsScanTooltip:SetHyperlink("item:" .. itemID)
+    end)
+    if not ok then return nil end
+
+    local numLines = QM_MaterialsScanTooltip:NumLines() or 0
+    for i = 2, numLines do
+        local left = _G["QM_MaterialsScanTooltipTextLeft" .. i]
+        local text = left and left:GetText()
+        if text and text:find("Crafting Reagent", 1, true) then
+            return text
+        end
+    end
+    return nil
+end
+
+local function QM_GetExpansionTagFromLabel(label)
+    if not label then return nil end
+    local tag = label:gsub("%s+Crafting Reagent.*$", "")
+    tag = tag:gsub("^%s+", ""):gsub("%s+$", "")
+    if tag == "" or tag == label then return nil end
+    return tag
+end
+
+local function QM_GetReagentExpansionTag(itemID)
+    return QM_GetExpansionTagFromLabel(QM_GetCraftingReagentLabel(itemID))
+end
+
+local function QM_HasCraftingReagentLine(itemID)
+    return QM_GetCraftingReagentLabel(itemID) ~= nil
+end
+
+-- Map itemSubType to a "best fit" profession category.
 local SUBTYPE_TO_PROF = {
     ["Cloth"] = "tailoring",
     ["Leather"] = "leatherworking",
@@ -126,6 +135,74 @@ local function IsUniversalReagentSubtype(subType)
     return subType == "Optional Reagents" or subType == "Finishing Reagents" or subType == "Reagent"
 end
 
+local function IsStrictReagent(item)
+    if not item or not item.itemID then return false end
+
+    -- If the scanner cached classID/equipLoc, use it to quickly exclude gear.
+    if item.equipLoc and item.equipLoc ~= "" then return false end
+    if item.classID and (item.classID ~= ITEM_CLASS_TRADEGOODS and item.classID ~= ITEM_CLASS_GEM and item.classID ~= ITEM_CLASS_REAGENT) then
+        -- Still allow items explicitly labeled "Crafting Reagent" even if their class is odd.
+        if not QM_HasCraftingReagentLine(item.itemID) then
+            return false
+        end
+    end
+
+    -- Fallback: use instant info if classID missing.
+    if (not item.classID) and C_Item and C_Item.GetItemInfoInstant then
+        local _, _, _, equipLoc, icon, classID, subclassID = C_Item.GetItemInfoInstant(item.itemID)
+        if equipLoc and equipLoc ~= "" then return false end
+        if classID and (classID ~= ITEM_CLASS_TRADEGOODS and classID ~= ITEM_CLASS_GEM and classID ~= ITEM_CLASS_REAGENT) then
+            if not QM_HasCraftingReagentLine(item.itemID) then
+                return false
+            end
+        end
+    end
+
+    -- Tighten further: only include known mat subtypes, universal reagent subtypes, gems,
+    -- or items explicitly labeled "Crafting Reagent".
+    if item.classID == ITEM_CLASS_GEM then
+        return true
+    end
+    local sub = item.itemSubType
+    if sub and (SUBTYPE_TO_PROF[sub] or IsUniversalReagentSubtype(sub)) then
+        return true
+    end
+    if QM_HasCraftingReagentLine(item.itemID) then
+        return true
+    end
+
+    return false
+end
+
+-- Profession-focused categories (kept intentionally small & relevant)
+local PROF_CATEGORIES = {
+    { key = "all", label = "All" },
+    { key = "alchemy", label = "Alchemy" },
+    { key = "blacksmithing", label = "Blacksmithing" },
+    { key = "cooking", label = "Cooking" },
+    { key = "enchanting", label = "Enchanting" },
+    { key = "engineering", label = "Engineering" },
+    { key = "inscription", label = "Inscription" },
+    { key = "jewelcrafting", label = "Jewelcrafting" },
+    { key = "leatherworking", label = "Leatherworking" },
+    { key = "tailoring", label = "Tailoring" },
+}
+
+-- Expansion tags are derived from the item tooltip line like "Khaz Algar Crafting Reagent".
+-- This list is intentionally short and can be extended later without breaking saved selections.
+local EXPANSION_FILTERS = {
+    { key = "all", label = "All" },
+    { key = "Khaz Algar", label = "Khaz Algar" },
+    { key = "Dragon Isles", label = "Dragon Isles" },
+    { key = "Shadowlands", label = "Shadowlands" },
+    { key = "Broken Isles", label = "Broken Isles" },
+    { key = "Draenor", label = "Draenor" },
+    { key = "Pandaria", label = "Pandaria" },
+    { key = "Northrend", label = "Northrend" },
+    { key = "Outland", label = "Outland" },
+    { key = "Classic", label = "Classic" },
+}
+
 local function GetProfessionCategoryForItem(item)
     if not item then return "all" end
     local sub = item.itemSubType
@@ -139,6 +216,11 @@ local function GetProfessionCategoryForItem(item)
     -- Gems may not always have subtypes populated; infer from class.
     if item.classID == ITEM_CLASS_GEM then
         return "jewelcrafting"
+    end
+
+    -- If it is explicitly a crafting reagent but doesn't map cleanly, keep it visible under All.
+    if item.itemID and QM_HasCraftingReagentLine(item.itemID) then
+        return "all"
     end
 
     return "all"
@@ -383,6 +465,12 @@ local function EnsureControls(self, parent)
         UIDropDownMenu_SetWidth(drop, 180)
         c.categoryDrop = drop
 
+        -- Expansion dropdown (derived from tooltip tags like "Khaz Algar Crafting Reagent")
+        local expDrop = CreateFrame("Frame", "QM_MaterialsExpansionDropDown", bar, "UIDropDownMenuTemplate")
+        expDrop:SetPoint("LEFT", drop, "RIGHT", -10, 0)
+        UIDropDownMenu_SetWidth(expDrop, 180)
+        c.expansionDrop = expDrop
+
         local function SetCat(key, label)
             ns.materialsCategory = key
             UIDropDownMenu_SetText(drop, "Category: " .. (label or "All"))
@@ -399,12 +487,35 @@ local function EnsureControls(self, parent)
             end
         end)
 
+        local function SetExpansion(key, label)
+            ns.materialsExpansion = key
+            UIDropDownMenu_SetText(expDrop, "Expansion: " .. (label or "All"))
+            TheQuartermaster:PopulateContent()
+        end
+
+        UIDropDownMenu_Initialize(expDrop, function(frame, level)
+            local info = UIDropDownMenu_CreateInfo()
+            for _, ex in ipairs(EXPANSION_FILTERS) do
+                info.text = ex.label
+                info.func = function() SetExpansion(ex.key, ex.label) end
+                info.notCheckable = true
+                UIDropDownMenu_AddButton(info)
+            end
+        end)
+
         if not ns.materialsCategory then ns.materialsCategory = "all" end
         local label = "All"
         for _, cat in ipairs(PROF_CATEGORIES) do
             if cat.key == ns.materialsCategory then label = cat.label end
         end
         UIDropDownMenu_SetText(drop, "Category: " .. label)
+
+        if not ns.materialsExpansion then ns.materialsExpansion = "all" end
+        local exLabel = "All"
+        for _, ex in ipairs(EXPANSION_FILTERS) do
+            if ex.key == ns.materialsExpansion then exLabel = ex.label end
+        end
+        UIDropDownMenu_SetText(expDrop, "Expansion: " .. exLabel)
     end
 
     return c
@@ -502,6 +613,7 @@ function TheQuartermaster:DrawMaterialsTab(parent)
 
     local searchText = tostring(ns.materialsSearchText or ""):lower()
     local catKey = ns.materialsCategory or "all"
+    local expKey = ns.materialsExpansion or "all"
     local sources = ns.materialsSources or { reagent=true, warband=true, all=true, guild=true }
 
     local data = CollectMaterials(self, {
@@ -511,14 +623,21 @@ function TheQuartermaster:DrawMaterialsTab(parent)
         includeGuild = sources.guild,
     })
 
-    -- Apply filters (profession category + text search)
+    -- Apply filters (profession category + expansion + text search)
     local filtered = {}
     for _, it in ipairs(data) do
         local prof = GetProfessionCategoryForItem(it)
         local okCat = (catKey == "all") or (prof == catKey) or (prof == "all" and IsUniversalReagentSubtype(it.itemSubType))
         if okCat then
-            if searchText == "" or (it.name and it.name:lower():find(searchText, 1, true)) then
-                table.insert(filtered, it)
+            local okExp = true
+            if expKey ~= "all" then
+                local tag = QM_GetReagentExpansionTag(it.itemID)
+                okExp = (tag == expKey)
+            end
+            if okExp then
+                if searchText == "" or (it.name and it.name:lower():find(searchText, 1, true)) then
+                    table.insert(filtered, it)
+                end
             end
         end
     end
