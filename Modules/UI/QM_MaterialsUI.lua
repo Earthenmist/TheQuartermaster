@@ -423,9 +423,27 @@ function TheQuartermaster:DrawMaterialsTab(parent)
     if not parent._qmMaterialsBuilt then
         parent._qmMaterialsBuilt = true
 
-        -- Header card
-        local card = CreateCard(parent, width, 88, "Materials", "Crafting reagents across your Warband, banks, and caches", "Interface\\Icons\\inv_misc_herb_19")
+        -- Header card (match the addon style used by Items/Storage)
+        local card = CreateCard(parent, 70)
         card:SetPoint("TOPLEFT", 10, -20)
+        card:SetPoint("TOPRIGHT", -10, -20)
+
+        local titleIcon = card:CreateTexture(nil, "ARTWORK")
+        titleIcon:SetSize(40, 40)
+        titleIcon:SetPoint("LEFT", 15, 0)
+        titleIcon:SetTexture("Interface\\Icons\\inv_misc_herb_19")
+
+        local titleText = card:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        titleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, 5)
+        local r, g, b = COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]
+        local hex = string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
+        titleText:SetText("|cff" .. hex .. "Materials" .. "|r")
+
+        local subtitleText = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)
+        subtitleText:SetTextColor(0.6, 0.6, 0.6)
+        subtitleText:SetText("Crafting reagents across your Warband, banks, and caches")
+
         card:Show()
         parent.controls.headerCard = card
 
