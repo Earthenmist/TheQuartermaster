@@ -398,10 +398,11 @@ f.tabButtons["chars"] = CreateTabButton(nav, "Characters", "chars", 10 + tabSpac
 f.tabButtons["exp"] = CreateTabButton(nav, "Experience", "exp", 10 + tabSpacing * 2)
 f.tabButtons["guild"] = CreateTabButton(nav, "Guilds", "guild", 10 + tabSpacing * 3)
 f.tabButtons["items"] = CreateTabButton(nav, "Items", "items", 10 + tabSpacing * 4)
-f.tabButtons["storage"] = CreateTabButton(nav, "Storage", "storage", 10 + tabSpacing * 5)
-f.tabButtons["pve"] = CreateTabButton(nav, "PvE", "pve", 10 + tabSpacing * 6)
-f.tabButtons["reputations"] = CreateTabButton(nav, "Reputations", "reputations", 10 + tabSpacing * 7)
-f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tabSpacing * 8)
+f.tabButtons["materials"] = CreateTabButton(nav, "Materials", "materials", 10 + tabSpacing * 5)
+f.tabButtons["storage"] = CreateTabButton(nav, "Storage", "storage", 10 + tabSpacing * 6)
+f.tabButtons["pve"] = CreateTabButton(nav, "PvE", "pve", 10 + tabSpacing * 7)
+f.tabButtons["reputations"] = CreateTabButton(nav, "Reputations", "reputations", 10 + tabSpacing * 8)
+f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tabSpacing * 9)
 
 -- Separator (theme color) between primary sections and utility tabs
 local sep = CreateFrame("Frame", nil, nav, "BackdropTemplate")
@@ -412,8 +413,8 @@ sep:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
 local accent = COLORS.accent
 sep:SetBackdropColor(accent[1], accent[2], accent[3], 0.9)
 
-f.tabButtons["search"] = CreateTabButton(nav, "Search", "search", 10 + tabSpacing * 9 + 20)
-f.tabButtons["watchlist"] = CreateTabButton(nav, "Watchlist", "watchlist", 10 + tabSpacing * 10 + 20)
+f.tabButtons["search"] = CreateTabButton(nav, "Search", "search", 10 + tabSpacing * 10 + 20)
+f.tabButtons["watchlist"] = CreateTabButton(nav, "Watchlist", "watchlist", 10 + tabSpacing * 11 + 20)
 -- Sidebar actions (Information + Settings) - match nav button style, anchored to bottom
 local infoNav = CreateTabButton(nav, L["INFORMATION"] or "Information", "info_action", 10) -- yOffset ignored after re-anchor
 local settingsNav = CreateTabButton(nav, L["SETTINGS"] or "Settings", "settings_action", 10) -- yOffset ignored after re-anchor
@@ -652,7 +653,7 @@ function TheQuartermaster:PopulateContent()
     end
     
     -- Show/hide searchArea and create persistent search boxes
-    local isSearchTab = (mainFrame.currentTab == "items" or mainFrame.currentTab == "storage" or mainFrame.currentTab == "currency" or mainFrame.currentTab == "reputations" or mainFrame.currentTab == "search")
+    local isSearchTab = (mainFrame.currentTab == "items" or mainFrame.currentTab == "materials" or mainFrame.currentTab == "storage" or mainFrame.currentTab == "currency" or mainFrame.currentTab == "reputations" or mainFrame.currentTab == "search")
     
     if mainFrame.searchArea then
         if isSearchTab then
@@ -685,7 +686,7 @@ function TheQuartermaster:PopulateContent()
                 itemsSearch:SetPoint("TOPRIGHT", -10, -8)  -- Responsive
                 itemsSearch:Hide()
                 mainFrame.persistentSearchBoxes.items = itemsSearch
-                
+
                 -- Storage search box (responsive width)
                 local storageSearch, storageClear = CreateSearchBox(
                     mainFrame.searchArea,
@@ -702,6 +703,23 @@ function TheQuartermaster:PopulateContent()
                 storageSearch:SetPoint("TOPRIGHT", -10, -8)  -- Responsive
                 storageSearch:Hide()
                 mainFrame.persistentSearchBoxes.storage = storageSearch
+
+                -- Materials search box (responsive width)
+                local materialsSearch, materialsClear = CreateSearchBox(
+                    mainFrame.searchArea,
+                    10,
+                    "Search materials...",
+                    function(searchText)
+                        ns.materialsSearchText = searchText or ""
+                        self:PopulateContent()
+                    end,
+                    0.4
+                )
+                materialsSearch:ClearAllPoints()
+                materialsSearch:SetPoint("TOPLEFT", 10, -8)
+                materialsSearch:SetPoint("TOPRIGHT", -10, -8)
+                materialsSearch:Hide()
+                mainFrame.persistentSearchBoxes.materials = materialsSearch
                 
                 -- Currency search box (responsive width)
                 local currencySearch, currencyClear = CreateSearchBox(
@@ -759,30 +777,42 @@ mainFrame.persistentSearchBoxes.global = globalSearch
             -- Show appropriate search box
 if mainFrame.currentTab == "items" then
     mainFrame.persistentSearchBoxes.items:Show()
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
+    mainFrame.persistentSearchBoxes.storage:Hide()
+    mainFrame.persistentSearchBoxes.currency:Hide()
+    mainFrame.persistentSearchBoxes.reputations:Hide()
+    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
+elseif mainFrame.currentTab == "materials" then
+    mainFrame.persistentSearchBoxes.items:Hide()
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Show() end
     mainFrame.persistentSearchBoxes.storage:Hide()
     mainFrame.persistentSearchBoxes.currency:Hide()
     mainFrame.persistentSearchBoxes.reputations:Hide()
     if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
 elseif mainFrame.currentTab == "storage" then
     mainFrame.persistentSearchBoxes.items:Hide()
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     mainFrame.persistentSearchBoxes.storage:Show()
     mainFrame.persistentSearchBoxes.currency:Hide()
     mainFrame.persistentSearchBoxes.reputations:Hide()
     if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
 elseif mainFrame.currentTab == "currency" then
     mainFrame.persistentSearchBoxes.items:Hide()
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     mainFrame.persistentSearchBoxes.storage:Hide()
     mainFrame.persistentSearchBoxes.currency:Show()
     mainFrame.persistentSearchBoxes.reputations:Hide()
     if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
 elseif mainFrame.currentTab == "search" then
     mainFrame.persistentSearchBoxes.items:Hide()
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     mainFrame.persistentSearchBoxes.storage:Hide()
     mainFrame.persistentSearchBoxes.currency:Hide()
     mainFrame.persistentSearchBoxes.reputations:Hide()
     if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Show() end
 else -- reputations
     mainFrame.persistentSearchBoxes.items:Hide()
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     mainFrame.persistentSearchBoxes.storage:Hide()
     mainFrame.persistentSearchBoxes.currency:Hide()
     mainFrame.persistentSearchBoxes.reputations:Show()
@@ -799,6 +829,7 @@ end
             -- Hide all search boxes
             if mainFrame.persistentSearchBoxes then
                 mainFrame.persistentSearchBoxes.items:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
                 mainFrame.persistentSearchBoxes.storage:Hide()
                 mainFrame.persistentSearchBoxes.currency:Hide()
                 mainFrame.persistentSearchBoxes.reputations:Hide()
@@ -823,6 +854,8 @@ end
         height = self:DrawWatchlist(scrollChild)
     elseif mainFrame.currentTab == "items" then
         height = self:DrawItemList(scrollChild)
+    elseif mainFrame.currentTab == "materials" then
+        height = self:DrawMaterialsTab(scrollChild)
     elseif mainFrame.currentTab == "storage" then
         height = self:DrawStorageTab(scrollChild)
     elseif mainFrame.currentTab == "pve" then

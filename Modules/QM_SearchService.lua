@@ -11,6 +11,26 @@ local function SafeLower(s)
     return tostring(s):lower()
 end
 
+-- Heuristic: determine whether a cached item should be treated as a crafting material / reagent
+local function IsReagentLikeItem(item)
+    if not item then return false end
+    -- Prefer explicit classID (Trade Goods)
+    if tonumber(item.classID) == 7 then
+        return true
+    end
+    -- Fallback to itemType strings (best-effort; localized in-game, but cached values are usually localized too)
+    local t = SafeLower(item.itemType)
+    if t:find("trade") or t:find("reagent") then
+        return true
+    end
+    -- Common reagent subtypes (best-effort)
+    local st = SafeLower(item.itemSubType)
+    if st:find("herb") or st:find("cloth") or st:find("leather") or st:find("metal") or st:find("stone") or st:find("enchant") or st:find("element") or st:find("parts") or st:find("reagent") then
+        return true
+    end
+    return false
+end
+
 local function GetProfileWatchlist(self)
     if not self.db or not self.db.profile then return nil end
     if not self.db.profile.watchlist then
@@ -165,7 +185,7 @@ function TheQuartermaster:PerformGlobalSearch(searchText, mode, includeGuildBank
 
     local out = { items = {}, currencies = {} }
 
-    if mode == "all" or mode == "items" then
+    if mode == "all" or mode == "items" or mode == "reagents" then
         local itemResults = (self.PerformItemSearch and self:PerformItemSearch(text)) or {}
         if not includeGuildBank then
             local filtered = {}
@@ -176,7 +196,17 @@ function TheQuartermaster:PerformGlobalSearch(searchText, mode, includeGuildBank
             end
             itemResults = filtered
         end
-        out.items = itemResults
+        if mode == "reagents" then
+            local filtered = {}
+            for _, r in ipairs(itemResults) do
+                if r and r.item and IsReagentLikeItem(r.item) then
+                    table.insert(filtered, r)
+                end
+            end
+            out.items = filtered
+        else
+            out.items = itemResults
+        end
     end
 
     if mode == "all" or mode == "currency" then

@@ -88,7 +88,7 @@ titleText:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
 
 local subText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 subText:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -2)
-subText:SetText("Pinned items and currencies (totals across your Warband)")
+subText:SetText("Pinned items, reagents and currencies (totals across your Warband)")
 subText:SetTextColor(0.7, 0.7, 0.7)
 yOffset = yOffset + 84
 
@@ -99,7 +99,7 @@ yOffset = yOffset + 84
     -- Items
     local itemsTitle = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     itemsTitle:SetPoint("TOPLEFT", 10, -yOffset)
-    itemsTitle:SetText("Items")
+    itemsTitle:SetText("Items & Reagents")
     itemsTitle:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
     yOffset = yOffset + 26
 
@@ -109,7 +109,7 @@ yOffset = yOffset + 84
         break
     end
     if not anyItems then
-        yOffset = DrawEmptyState(parent, "No pinned items yet. Use Global Search to pin items quickly.", yOffset)
+        yOffset = DrawEmptyState(parent, "No pinned items yet. Use Global Search or Materials to pin items quickly.", yOffset)
     else
         local rowH = 30
         local shown = 0

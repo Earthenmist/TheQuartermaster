@@ -231,6 +231,8 @@ if not controls.modeDrop then
         UIDropDownMenu_AddButton(info)
         info.text, info.func = "Items", function() SetMode("items", "Items") end
         UIDropDownMenu_AddButton(info)
+        info.text, info.func = "Reagents", function() SetMode("reagents", "Reagents") end
+        UIDropDownMenu_AddButton(info)
         info.text, info.func = "Currency", function() SetMode("currency", "Currency") end
         UIDropDownMenu_AddButton(info)
     end)
@@ -259,6 +261,7 @@ controls.guildCheck:SetChecked(includeGuild)
 
 -- Fix dropdown label on refresh
 if mode == "items" then UIDropDownMenu_SetText(controls.modeDrop, "Items")
+elseif mode == "reagents" then UIDropDownMenu_SetText(controls.modeDrop, "Reagents")
 elseif mode == "currency" then UIDropDownMenu_SetText(controls.modeDrop, "Currency")
 else UIDropDownMenu_SetText(controls.modeDrop, "All") end
 
@@ -272,17 +275,17 @@ local searchText = ns.globalSearchText or ""
 
     local results = self:PerformGlobalSearch(searchText, mode, includeGuild)
 
-    -- Items results
-    if mode == "all" or mode == "items" then
+    -- Items / Reagents results
+    if mode == "all" or mode == "items" or mode == "reagents" then
         local items = results.items or {}
         local title = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOPLEFT", 10, -yOffset)
-        title:SetText("Items")
+        title:SetText(mode == "reagents" and "Reagents" or "Items")
         title:SetTextColor(1, 1, 1)
         yOffset = yOffset + 26
 
         if #items == 0 then
-            yOffset = DrawEmptyState(parent, "No item matches found.", yOffset)
+            yOffset = DrawEmptyState(parent, (mode == "reagents") and "No reagent matches found." or "No item matches found.", yOffset)
         else
             local rowH = 30
             for i=1, math.min(#items, 60) do
