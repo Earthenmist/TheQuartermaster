@@ -434,7 +434,9 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
 
         if item then
             icon:SetTexture(item.iconFileID or item.icon or item.texture or 134400)
-            local count = tonumber(item.stackCount) or 1
+            -- Different caches may store stack size under different keys.
+            -- Inventory (bags) in particular can be `count` rather than `stackCount`.
+            local count = tonumber(item.stackCount or item.count or item.quantity) or 1
             countText:SetText(count > 1 and tostring(count) or "")
         else
             icon:SetTexture(nil)
@@ -648,7 +650,8 @@ local function DrawWarbandBankSlotView(self, parent, yOffset, width, itemsSearch
         local item = itemsForTab and itemsForTab[slotID] or nil
         if item and item.iconFileID then
             icon:SetTexture(item.iconFileID)
-            local count = tonumber(item.stackCount) or 1
+            -- Different caches may store stack size under different keys.
+            local count = tonumber(item.stackCount or item.count or item.quantity) or 1
             countText:SetText(count > 1 and tostring(count) or "")
 
             local match = MatchesSearch(item, itemsSearchText)

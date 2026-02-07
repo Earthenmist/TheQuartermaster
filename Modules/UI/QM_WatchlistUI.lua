@@ -127,6 +127,8 @@ local function CreateRow(parent, y, width, height)
     row.name:SetPoint("LEFT", row.icon, "RIGHT", 8, 0)
     row.name:SetJustifyH("LEFT")
     row.name:SetTextColor(1, 1, 1)
+    -- Keep long names from colliding with the control cluster / progress bar.
+    row.name:SetWidth(260)
 
     row.total = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     row.total:SetPoint("RIGHT", -12, 0)
@@ -142,6 +144,23 @@ local function CreateRow(parent, y, width, height)
     row.remove.text = row.remove:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     row.remove.text:SetPoint("CENTER")
     row.remove.text:SetText("Unpin")
+
+    -- Optional progress bar used for reagent targets.
+    row._qmProgress = CreateFrame("StatusBar", nil, row, "BackdropTemplate")
+    row._qmProgress:SetHeight(10)
+    row._qmProgress:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
+    row._qmProgress:SetMinMaxValues(0, 1)
+    row._qmProgress:SetValue(0)
+    row._qmProgress:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8", edgeFile = "Interface\\BUTTONS\\WHITE8X8", edgeSize = 1 })
+    row._qmProgress:SetBackdropColor(0, 0, 0, 0.35)
+    row._qmProgress:SetBackdropBorderColor(0.35, 0.1, 0.1, 0.6)
+    row._qmProgress:SetStatusBarColor(0.75, 0.12, 0.12, 0.9)
+    row._qmProgress:Hide()
+
+    row._qmProgressText = row._qmProgress:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    row._qmProgressText:SetPoint("CENTER", row._qmProgress, "CENTER", 0, 0)
+    row._qmProgressText:SetTextColor(1, 1, 1, 0.85)
+    row._qmProgressText:SetText("")
     row.remove.text:SetTextColor(1, 1, 1)
 
     row:SetScript("OnEnter", function(self)
@@ -217,8 +236,12 @@ yOffset = yOffset + 84
             row.name:SetText(name or ("Item " .. tostring(itemID)))
             -- Items do not use target amounts/progress bars.
             row.total:SetText(tostring(total))
-            if row.progress then row.progress:Hide() end
-            if row.targetBtn then row.targetBtn:Hide() end
+
+            -- Rows are reused; ensure reagent-only widgets are hidden/reset.
+            if row._qmBar then row._qmBar:Hide() end
+            if row._qmTargetBtn then row._qmTargetBtn:Hide() end
+            row.total:ClearAllPoints()
+            row.total:SetPoint("RIGHT", -16, 0)
 
             row.remove:SetScript("OnClick", function()
                 self:ToggleWatchlistItem(itemID)
@@ -274,10 +297,10 @@ yOffset = yOffset + 84
             if target and target > 0 then
                 if not row._qmBar then
                     row._qmBar = CreateFrame("StatusBar", nil, row, "BackdropTemplate")
-                    row._qmBar:SetPoint("LEFT", row.name, "LEFT", 0, -10)
-                    row._qmBar:SetPoint("RIGHT", row.total, "LEFT", -10, -10)
-                    -- Make the progress bar more visible.
-                    row._qmBar:SetHeight(10)
+                    -- Layout is refined below once the Target button exists.
+                    row._qmBar:SetPoint("LEFT", row.name, "RIGHT", 10, 0)
+                    row._qmBar:SetPoint("RIGHT", row.total, "LEFT", -10, 0)
+                    row._qmBar:SetHeight(12)
                     row._qmBar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
                     row._qmBar:SetMinMaxValues(0, 1)
                     row._qmBar:SetValue(0)
@@ -296,6 +319,12 @@ yOffset = yOffset + 84
                     row._qmBarText:SetText("")
                 end
                 row._qmBar:Show()
+                -- Prefer to span the bar between the name and the Target button so it reads as a "progress column".
+                if row._qmTargetBtn then
+                    row._qmBar:ClearAllPoints()
+                    row._qmBar:SetPoint("LEFT", row.name, "RIGHT", 10, 0)
+                    row._qmBar:SetPoint("RIGHT", row._qmTargetBtn, "LEFT", -10, 0)
+                end
                 row._qmBar:SetMinMaxValues(0, target)
                 row._qmBar:SetValue(math.min(total, target))
                 if row._qmBarText then
@@ -406,6 +435,12 @@ yOffset = yOffset + 84
             row.icon:SetTexture(icon or 134400)
             row.name:SetText(name)
             row.total:SetText(tostring(total))
+
+            -- Rows are reused; ensure reagent-only widgets are hidden/reset.
+            if row._qmBar then row._qmBar:Hide() end
+            if row._qmTargetBtn then row._qmTargetBtn:Hide() end
+            row.total:ClearAllPoints()
+            row.total:SetPoint("RIGHT", -16, 0)
 
             row.remove:SetScript("OnClick", function()
                 self:ToggleWatchlistCurrency(currencyID)

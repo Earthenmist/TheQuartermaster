@@ -63,6 +63,47 @@ local function HasAnyRequiredReagents(recipeID)
     return reagents and next(reagents) ~= nil
 end
 
+local function UpdatePinButtonVisibility()
+    local pf = ProfessionsFrame
+    if not pf or not pf._qmPinBtn then return end
+
+    local btn = pf._qmPinBtn
+    if not pf.IsShown or not pf:IsShown() then
+        btn:Hide()
+        return
+    end
+
+    local recipeID = GetSelectedRecipeID()
+    if not recipeID then
+        btn:Hide()
+        return
+    end
+
+    -- Hide for non-crafting pages (e.g. Fishing journal) or recipes with no reagents.
+    if not HasAnyRequiredReagents(recipeID) then
+        btn:Hide()
+        return
+    end
+
+    btn:Show()
+end
+
+local function EnsurePinTicker()
+    local pf = ProfessionsFrame
+    if not pf or pf._qmPinTicker then return end
+
+    pf._qmPinTicker = C_Timer.NewTicker(0.5, function()
+        if not ProfessionsFrame or not ProfessionsFrame.IsShown or not ProfessionsFrame:IsShown() then
+            if ProfessionsFrame and ProfessionsFrame._qmPinTicker then
+                ProfessionsFrame._qmPinTicker:Cancel()
+                ProfessionsFrame._qmPinTicker = nil
+            end
+            return
+        end
+        UpdatePinButtonVisibility()
+    end)
+end
+
 local function EnsurePopup()
     if StaticPopupDialogs["QM_PIN_RECIPE_REAGENTS"] then return end
 
@@ -156,7 +197,9 @@ local function TryAttachButton()
         anchor = form.Details.Reagents
     end
 
-    local btn = CreatePinButton(pf)
+    -- Parent to the CraftingPage so it stays on top of the schematic and doesn't get
+    -- occluded by the reagent rows.
+    local btn = CreatePinButton(pf.CraftingPage)
     pf._qmPinReagentsButton = btn
 
     btn:ClearAllPoints()
@@ -164,7 +207,8 @@ local function TryAttachButton()
     -- Place it next to the Crafting action buttons so it never overlaps reagent icons.
     local createAll = pf.CraftingPage.CreateAllButton
     if createAll and createAll.GetObjectType and createAll:GetObjectType() == "Button" then
-        btn:SetPoint("RIGHT", createAll, "LEFT", -8, 0)
+        -- Sit clearly to the left of Create All.
+        btn:SetPoint("RIGHT", createAll, "LEFT", -12, 0)
     else
         btn:SetPoint("LEFT", anchor, "LEFT", 10, 70)
     end
@@ -172,13 +216,9 @@ local function TryAttachButton()
     btn:SetFrameStrata("DIALOG")
     btn:SetFrameLevel((createAll and createAll.GetFrameLevel and createAll:GetFrameLevel() or btn:GetFrameLevel()) + 5)
 
-    -- Initial visibility (hide when there are no explicit required reagents).
-    local recipeID = GetSelectedRecipeID()
-    if not recipeID or not HasAnyRequiredReagents(recipeID) then
-        btn:Hide()
-    else
-        btn:Show()
-    end
+    -- Initial/refresh visibility (and keep it updated while the frame is open).
+    UpdatePinButtonVisibility()
+    EnsurePinTicker()
 end
 
 -- Lightweight event driver
@@ -191,15 +231,7 @@ driver:SetScript("OnEvent", function()
         TryAttachButton()
 
         -- Refresh visibility when the selected recipe changes.
-        local pf = _G.ProfessionsFrame
-        local btn = pf and pf._qmPinReagentsButton
-        if btn then
-            local recipeID = GetSelectedRecipeID()
-            if recipeID and HasAnyRequiredReagents(recipeID) then
-                btn:Show()
-            else
-                btn:Hide()
-            end
-        end
+        UpdatePinButtonVisibility()
+        EnsurePinTicker()
     end)
 end)

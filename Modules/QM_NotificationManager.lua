@@ -9,16 +9,19 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14m"
+local CURRENT_VERSION = "1.0.14n"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14m",
+    version = "1.0.14n",
     date = "2026-02-07",
     changes = {
         "Watchlist reagents can now track a **desired amount** with a progress bar (Owned / Target).",
         "Added a **Pin Reagents** button to the Professions recipe page to pin required reagents and automatically add their recipe quantities to desired targets (with optional craft multiplier).",
         "Global Search: when in **Reagents** mode, pinning now pins to **Watchlist → Reagents** (not Items).",
+        "Watchlist: fixed row reuse issues where **Target/Progress UI** could bleed into Items/Currency rows.",
+        "Professions: **Pin Reagents** button now stays visible and updates reliably as you change recipes.",
+        "Items (Slot View): fixed missing **stack counts** for Inventory (bag) items.",
     }
 }
 
