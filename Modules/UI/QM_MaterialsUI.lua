@@ -192,14 +192,16 @@ local PROF_CATEGORIES = {
 -- This list is intentionally short and can be extended later without breaking saved selections.
 local EXPANSION_FILTERS = {
     { key = "all", label = "All" },
-    { key = "Khaz Algar", label = "Khaz Algar" },
-    { key = "Dragon Isles", label = "Dragon Isles" },
+    -- Tooltip tags use zone/region names (e.g. "Khaz Algar Crafting Reagent").
+    -- Keep the *key* as the tag (so filtering works), but display expansion names.
+    { key = "Khaz Algar", label = "The War Within" },
+    { key = "Dragon Isles", label = "Dragonflight" },
     { key = "Shadowlands", label = "Shadowlands" },
-    { key = "Broken Isles", label = "Broken Isles" },
-    { key = "Draenor", label = "Draenor" },
+    { key = "Broken Isles", label = "Legion" },
+    { key = "Draenor", label = "Warlords of Draenor" },
     { key = "Pandaria", label = "Pandaria" },
-    { key = "Northrend", label = "Northrend" },
-    { key = "Outland", label = "Outland" },
+    { key = "Northrend", label = "Wrath of the Lich King" },
+    { key = "Outland", label = "The Burning Crusade" },
     { key = "Classic", label = "Classic" },
 }
 
@@ -527,6 +529,15 @@ function TheQuartermaster:DrawMaterialsTab(parent)
     -- controls (checkboxes + dropdown) get released/hidden when filters change.
     -- Instead, we build the header/controls once and only refresh the results area.
 
+    -- Other tabs may fully clear pooled children on the shared content parent.
+    -- If that happens, our persistent controls become invalid while the cached
+    -- "built" flag remains true, which can make the tab appear blank when
+    -- navigating away and back. Detect this and force a rebuild.
+    if parent._qmMaterialsBuilt and (not parent.controls or not parent.controls.headerCard or not parent.controls.headerCard.GetParent or parent.controls.headerCard:GetParent() ~= parent) then
+        parent._qmMaterialsBuilt = nil
+        parent.controls = nil
+    end
+
     parent.controls = parent.controls or {}
 
     local width = (parent:GetWidth() or 700) - 20
@@ -599,6 +610,7 @@ function TheQuartermaster:DrawMaterialsTab(parent)
         if c.cbAll then c.cbAll:Show() end
         if c.cbGuild then c.cbGuild:Show() end
         if c.categoryDrop then c.categoryDrop:Show() end
+        if c.expansionDrop then c.expansionDrop:Show() end
     end
 
     local controls = parent.controls
