@@ -147,6 +147,8 @@ local function CreateRow(parent, y, width, height)
 
     -- Optional progress bar used for reagent targets.
     row._qmProgress = CreateFrame("StatusBar", nil, row, "BackdropTemplate")
+	-- Ensure the bar sits above the row's backdrop textures.
+	row._qmProgress:SetFrameLevel(row:GetFrameLevel() + 1)
     row._qmProgress:SetHeight(10)
     row._qmProgress:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
     row._qmProgress:SetMinMaxValues(0, 1)
@@ -157,8 +159,10 @@ local function CreateRow(parent, y, width, height)
     row._qmProgress:SetStatusBarColor(0.75, 0.12, 0.12, 0.9)
     row._qmProgress:Hide()
 
-    row._qmProgressText = row._qmProgress:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    row._qmProgressText:SetPoint("CENTER", row._qmProgress, "CENTER", 0, 0)
+	-- Put the % text on the row (not the StatusBar) so it never gets hidden by the fill texture.
+	row._qmProgressText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+	row._qmProgressText:SetPoint("CENTER", row._qmProgress, "CENTER", 0, 0)
+	row._qmProgressText:SetDrawLayer("OVERLAY", 7)
     row._qmProgressText:SetTextColor(1, 1, 1, 0.85)
     row._qmProgressText:SetText("")
     row.remove.text:SetTextColor(1, 1, 1)
@@ -297,11 +301,17 @@ yOffset = yOffset + 84
             if target and target > 0 then
                 if not row._qmBar then
                     row._qmBar = CreateFrame("StatusBar", nil, row, "BackdropTemplate")
+					-- Keep the bar above the row backdrop, but ensure the % text is above the fill.
+					row._qmBar:SetFrameLevel(row:GetFrameLevel() + 1)
                     -- Layout is refined below once the Target button exists.
                     row._qmBar:SetPoint("LEFT", row.name, "RIGHT", 10, 0)
                     row._qmBar:SetPoint("RIGHT", row.total, "LEFT", -10, 0)
                     row._qmBar:SetHeight(12)
                     row._qmBar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
+					local tex = row._qmBar:GetStatusBarTexture()
+					if tex and tex.SetDrawLayer then
+						tex:SetDrawLayer("ARTWORK", 0)
+					end
                     row._qmBar:SetMinMaxValues(0, 1)
                     row._qmBar:SetValue(0)
                     row._qmBar:SetStatusBarColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.90)
@@ -314,9 +324,14 @@ yOffset = yOffset + 84
                     row._qmBar:SetBackdropColor(0, 0, 0, 0.55)
                     row._qmBar:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.85)
 
-                    row._qmBarText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+					row._qmBarText = row._qmBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
                     row._qmBarText:SetPoint("CENTER", row._qmBar, "CENTER", 0, 0)
-                    row._qmBarText:SetText("")
+					row._qmBarText:SetText("")
+					row._qmBarText:SetTextColor(1, 1, 1)
+					if row._qmBarText.SetShadowOffset then
+						row._qmBarText:SetShadowOffset(1, -1)
+						row._qmBarText:SetShadowColor(0, 0, 0, 0.8)
+					end
                 end
                 row._qmBar:Show()
                 -- Prefer to span the bar between the name and the Target button so it reads as a "progress column".
@@ -347,6 +362,13 @@ yOffset = yOffset + 84
                 row._qmTargetBtn.text:SetText("Target")
             end
             row._qmTargetBtn:Show()
+
+            -- Ensure progress bar doesn't run under the Target/Unpin controls
+            if row._qmBar then
+                row._qmBar:ClearAllPoints()
+                row._qmBar:SetPoint("LEFT", row.name, "RIGHT", 8, 0)
+                row._qmBar:SetPoint("RIGHT", row._qmTargetBtn, "LEFT", -10, 0)
+            end
             row._qmTargetBtn:SetScript("OnClick", function()
                 if not StaticPopupDialogs["QM_SET_REAGENT_TARGET"] then
                     StaticPopupDialogs["QM_SET_REAGENT_TARGET"] = {

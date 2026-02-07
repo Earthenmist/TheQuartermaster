@@ -1694,9 +1694,24 @@ end
                 icon:SetAllPoints()
                 icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
+                -- Stack count overlay (Inventory slot view)
+                local countText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                countText:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -2, 2)
+                countText:SetTextColor(1, 1, 1, 0.95)
+                btn.countText = countText
+
                 local item = (bagItems[selected] or {})[slot]
                 if item and item.iconFileID then
                     icon:SetTexture(item.iconFileID)
+
+                    local count = item.stackCount or item.count or item.quantity
+                    if count and count > 1 then
+                        btn.countText:SetText(count)
+                        btn.countText:Show()
+                    else
+                        btn.countText:SetText("")
+                        btn.countText:Hide()
+                    end
 
                     btn:SetScript("OnEnter", function()
                         GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")

@@ -44,12 +44,26 @@ local function GetRequiredReagents(recipeID)
             local qty = slot.quantityRequired or slot.quantity or slot.requiredQuantity or 0
             local reagents = slot.reagents or {}
 
-            -- If multiple reagent choices exist, we don't know which one the player will use.
-            -- We only auto-pin when there is a single, explicit itemID.
-            if qty and qty > 0 and #reagents == 1 and reagents[1] and reagents[1].itemID then
-                local itemID = tonumber(reagents[1].itemID)
-                if itemID then
-                    out[itemID] = (out[itemID] or 0) + qty
+            -- Many schematics list multiple reagent entries for *quality* of the same item.
+            -- We can safely auto-pin if all listed options resolve to a single unique itemID.
+            if qty and qty > 0 and #reagents >= 1 then
+                local uniqueItemID
+                local ambiguous = false
+
+                for _, r in ipairs(reagents) do
+                    local itemID = r and tonumber(r.itemID)
+                    if itemID then
+                        if not uniqueItemID then
+                            uniqueItemID = itemID
+                        elseif uniqueItemID ~= itemID then
+                            ambiguous = true
+                            break
+                        end
+                    end
+                end
+
+                if uniqueItemID and not ambiguous then
+                    out[uniqueItemID] = (out[uniqueItemID] or 0) + qty
                 end
             end
         end
@@ -63,6 +77,48 @@ local function HasAnyRequiredReagents(recipeID)
     return reagents and next(reagents) ~= nil
 end
 
+local function GetCurrentProfessionTitle()
+	local pf = _G.ProfessionsFrame
+	if not pf then return nil end
+
+	-- Prefer the API when available (more reliable than title widgets).
+	if _G.C_TradeSkillUI and _G.C_TradeSkillUI.GetTradeSkillLine then
+		local ok, lineName = pcall(_G.C_TradeSkillUI.GetTradeSkillLine)
+		if ok and type(lineName) == "string" and lineName ~= "" then
+			return lineName
+		end
+	end
+
+	if pf.GetTitleText then
+		local t = pf:GetTitleText()
+		if type(t) == "string" and t ~= "" then return t end
+	end
+	if pf.TitleText and pf.TitleText.GetText then
+		local t = pf.TitleText:GetText()
+		if type(t) == "string" and t ~= "" then return t end
+	end
+
+	-- Final fallback: some builds expose a name directly.
+	if type(pf.professionName) == "string" and pf.professionName ~= "" then
+		return pf.professionName
+	end
+	return nil
+end
+
+local function IsBlockedProfession()
+	local title = GetCurrentProfessionTitle()
+	if not title or title == "" then return false end
+	title = title:lower()
+
+	-- Gathering professions + archaeology should never show the pin button.
+	-- Also catch "Skinning"/"Herbalism" etc in localized strings by checking the internal skill line when possible.
+	if title:find("fishing") or title:find("mining") or title:find("herbalism") or title:find("skinning") or title:find("archaeology") then
+		return true
+	end
+
+	return false
+end
+
 local function UpdatePinButtonVisibility()
     local pf = ProfessionsFrame
     if not pf or not pf._qmPinBtn then return end
@@ -73,13 +129,24 @@ local function UpdatePinButtonVisibility()
         return
     end
 
+    -- Only show on the Crafting page (Journal/other panes shouldn't get this).
+    if not pf.CraftingPage or not pf.CraftingPage.IsShown or not pf.CraftingPage:IsShown() then
+        btn:Hide()
+        return
+    end
+
+    if IsBlockedProfession() then
+        btn:Hide()
+        return
+    end
+
     local recipeID = GetSelectedRecipeID()
     if not recipeID then
         btn:Hide()
         return
     end
 
-    -- Hide for non-crafting pages (e.g. Fishing journal) or recipes with no reagents.
+    -- Hide for recipes with no reagents.
     if not HasAnyRequiredReagents(recipeID) then
         btn:Hide()
         return
@@ -116,17 +183,21 @@ local function EnsurePopup()
         whileDead = true,
         hideOnEscape = true,
         OnShow = function(selfPopup)
-            selfPopup.editBox:SetText("1")
-            selfPopup.editBox:HighlightText()
+			local eb = selfPopup.editBox or selfPopup.EditBox
+			if eb then
+				eb:SetText("1")
+				eb:HighlightText()
+			end
         end,
         OnAccept = function(selfPopup, data)
-            local crafts = tonumber(selfPopup.editBox:GetText() or "") or 1
+			local eb = selfPopup.editBox or selfPopup.EditBox
+			local crafts = tonumber((eb and eb:GetText() or "") or "") or 1
             crafts = math.max(1, math.floor(crafts + 0.5))
 
             if not data or not data.reagents then return end
             for itemID, qty in pairs(data.reagents) do
-                QM:ToggleWatchlistReagent(itemID)
-                QM:AddWatchlistReagentTarget(itemID, qty * crafts)
+                -- Ensure pinned and add the required amount (scaled by craft count) to the desired target.
+                QM:ToggleWatchlistReagent(itemID, { mode = "ensure", targetDelta = (qty * crafts) })
             end
         end,
         EditBoxOnEnterPressed = function(selfPopup)
@@ -171,8 +242,14 @@ local function CreatePinButton(parent)
             return
         end
 
-        EnsurePopup()
-        StaticPopup_Show("QM_PIN_RECIPE_REAGENTS", nil, nil, { reagents = reagents })
+		EnsurePopup()
+		local popup = StaticPopup_Show("QM_PIN_RECIPE_REAGENTS", nil, nil, { reagents = reagents })
+		-- Some UI replacements / error suppressors can prevent the popup from appearing.
+		-- If that happens, fall back to pinning once immediately so the button still works.
+		if not popup then
+			ApplyReagentsToWatchlist(reagents, 1)
+			UIErrorsFrame:AddMessage("Quartermaster: Pinned required reagents (x1).", 0.2, 1, 0.2)
+		end
     end)
 
     return btn
