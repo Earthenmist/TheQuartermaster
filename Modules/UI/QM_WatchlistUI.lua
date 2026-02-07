@@ -9,6 +9,22 @@ local TheQuartermaster = ns.TheQuartermaster
 local COLORS = ns.UI_COLORS
 local CreateCard = ns.UI_CreateCard
 
+-- Treat Trade Goods / Gems / Reagent class items as "Reagents" for Watchlist grouping
+local ITEM_CLASS_TRADEGOODS = Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods or 7
+local ITEM_CLASS_GEM       = Enum and Enum.ItemClass and Enum.ItemClass.Gem or 3
+local ITEM_CLASS_REAGENT   = Enum and Enum.ItemClass and Enum.ItemClass.Reagent or nil
+
+local function IsReagentItemID(itemID)
+    itemID = tonumber(itemID)
+    if not itemID or type(GetItemInfoInstant) ~= "function" then return false end
+    local _, _, _, equipLoc, _, classID = GetItemInfoInstant(itemID)
+    if equipLoc and equipLoc ~= "" then return false end
+    if classID == ITEM_CLASS_TRADEGOODS or classID == ITEM_CLASS_GEM or (ITEM_CLASS_REAGENT and classID == ITEM_CLASS_REAGENT) then
+        return true
+    end
+    return false
+end
+
 local function DrawEmptyState(parent, text, yOffset)
     local msg = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     msg:SetPoint("TOPLEFT", 20, -yOffset)
@@ -88,13 +104,25 @@ titleText:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
 
 local subText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 subText:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -2)
-subText:SetText("Pinned items and currencies (totals across your Warband)")
+subText:SetText("Pinned items, reagents and currencies (totals across your Warband)")
 subText:SetTextColor(0.7, 0.7, 0.7)
 yOffset = yOffset + 84
 
     local wl = (self.db and self.db.profile and self.db.profile.watchlist) or { items = {}, currencies = {}, includeGuildBank = true }
     wl.items = wl.items or {}
     wl.currencies = wl.currencies or {}
+
+    -- Split pinned itemIDs into Items vs Reagents
+    local pinnedItems, pinnedReagents = {}, {}
+    for itemID in pairs(wl.items) do
+        if IsReagentItemID(itemID) then
+            pinnedReagents[#pinnedReagents + 1] = itemID
+        else
+            pinnedItems[#pinnedItems + 1] = itemID
+        end
+    end
+    table.sort(pinnedItems)
+    table.sort(pinnedReagents)
 
     -- Items
     local itemsTitle = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -103,19 +131,57 @@ yOffset = yOffset + 84
     itemsTitle:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
     yOffset = yOffset + 26
 
-    local anyItems = false
-    for itemID in pairs(wl.items) do
-        anyItems = true
-        break
-    end
-    if not anyItems then
+    if #pinnedItems == 0 then
         yOffset = DrawEmptyState(parent, "No pinned items yet. Use Global Search to pin items quickly.", yOffset)
     else
         local rowH = 30
-        local shown = 0
-        for itemID in pairs(wl.items) do
-            shown = shown + 1
-            if shown > 60 then break end
+        for i = 1, math.min(#pinnedItems, 60) do
+            local itemID = pinnedItems[i]
+
+            local total, breakdown = self:CountItemTotals(itemID, wl.includeGuildBank)
+            local name, _, _, _, _, _, _, _, _, icon = GetItemInfo(itemID)
+            local row = CreateRow(parent, yOffset, width, rowH)
+            row.icon:SetTexture(icon or 134400)
+            row.name:SetText(name or ("Item " .. tostring(itemID)))
+            row.total:SetText(tostring(total))
+
+            row.remove:SetScript("OnClick", function()
+                self:ToggleWatchlistItem(itemID)
+            end)
+
+            row:SetScript("OnEnter", function(selfRow)
+                selfRow:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.8)
+                GameTooltip:SetOwner(selfRow, "ANCHOR_RIGHT")
+                if GameTooltip.SetItemByID then
+                    GameTooltip:SetItemByID(itemID)
+                end
+                GameTooltip:AddLine(" ")
+                GameTooltip:AddLine("Totals", 1,1,1)
+                for label, count in pairs(breakdown) do
+                    GameTooltip:AddDoubleLine(label, tostring(count), 0.8,0.8,0.8, 1,1,1)
+                end
+                GameTooltip:Show()
+            end)
+
+            yOffset = yOffset + rowH + 6
+        end
+    end
+
+    yOffset = yOffset + 12
+
+    -- Reagents
+    local reagTitle = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    reagTitle:SetPoint("TOPLEFT", 10, -yOffset)
+    reagTitle:SetText("Reagents")
+    reagTitle:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
+    yOffset = yOffset + 26
+
+    if #pinnedReagents == 0 then
+        yOffset = DrawEmptyState(parent, "No pinned reagents yet. Pin reagents from Materials or Global Search.", yOffset)
+    else
+        local rowH = 30
+        for i = 1, math.min(#pinnedReagents, 60) do
+            local itemID = pinnedReagents[i]
 
             local total, breakdown = self:CountItemTotals(itemID, wl.includeGuildBank)
             local name, _, _, _, _, _, _, _, _, icon = GetItemInfo(itemID)

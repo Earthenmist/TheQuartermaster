@@ -776,54 +776,27 @@ mainFrame.persistentSearchBoxes.global = globalSearch
             end
             
             -- Show appropriate search box
-if mainFrame.currentTab == "items" then
-    mainFrame.persistentSearchBoxes.items:Show()
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-    mainFrame.persistentSearchBoxes.storage:Hide()
-    mainFrame.persistentSearchBoxes.currency:Hide()
-    mainFrame.persistentSearchBoxes.reputations:Hide()
-                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-elseif mainFrame.currentTab == "materials" then
-    mainFrame.persistentSearchBoxes.items:Hide()
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Show() end
-    mainFrame.persistentSearchBoxes.storage:Hide()
-    mainFrame.persistentSearchBoxes.currency:Hide()
-    mainFrame.persistentSearchBoxes.reputations:Hide()
-                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-elseif mainFrame.currentTab == "storage" then
-    mainFrame.persistentSearchBoxes.items:Hide()
-    mainFrame.persistentSearchBoxes.storage:Show()
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-    mainFrame.persistentSearchBoxes.currency:Hide()
-    mainFrame.persistentSearchBoxes.reputations:Hide()
-                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-elseif mainFrame.currentTab == "currency" then
-    mainFrame.persistentSearchBoxes.items:Hide()
-    mainFrame.persistentSearchBoxes.storage:Hide()
-    mainFrame.persistentSearchBoxes.currency:Show()
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-    mainFrame.persistentSearchBoxes.reputations:Hide()
-                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-elseif mainFrame.currentTab == "search" then
-    mainFrame.persistentSearchBoxes.items:Hide()
-    mainFrame.persistentSearchBoxes.storage:Hide()
-    mainFrame.persistentSearchBoxes.currency:Hide()
-    mainFrame.persistentSearchBoxes.reputations:Hide()
-                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Show() end
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-else -- reputations
-    mainFrame.persistentSearchBoxes.items:Hide()
-    mainFrame.persistentSearchBoxes.storage:Hide()
-    mainFrame.persistentSearchBoxes.currency:Hide()
-    mainFrame.persistentSearchBoxes.reputations:Show()
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-end
+            -- (Always hide everything first, then show the relevant one)
+            mainFrame.persistentSearchBoxes.items:Hide()
+            if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
+            mainFrame.persistentSearchBoxes.storage:Hide()
+            mainFrame.persistentSearchBoxes.currency:Hide()
+            mainFrame.persistentSearchBoxes.reputations:Hide()
+            if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
+
+            if mainFrame.currentTab == "items" then
+                mainFrame.persistentSearchBoxes.items:Show()
+            elseif mainFrame.currentTab == "materials" then
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Show() end
+            elseif mainFrame.currentTab == "storage" then
+                mainFrame.persistentSearchBoxes.storage:Show()
+            elseif mainFrame.currentTab == "currency" then
+                mainFrame.persistentSearchBoxes.currency:Show()
+            elseif mainFrame.currentTab == "search" then
+                if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Show() end
+            else -- reputations
+                mainFrame.persistentSearchBoxes.reputations:Show()
+            end
         else
             mainFrame.searchArea:Hide()
             
@@ -861,14 +834,8 @@ end
     elseif mainFrame.currentTab == "items" then
         height = self:DrawItemList(scrollChild)
     elseif mainFrame.currentTab == "materials" then
-    mainFrame.persistentSearchBoxes.items:Hide()
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Show() end
-    mainFrame.persistentSearchBoxes.storage:Hide()
-    mainFrame.persistentSearchBoxes.currency:Hide()
-    mainFrame.persistentSearchBoxes.reputations:Hide()
-                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-elseif mainFrame.currentTab == "storage" then
+        height = self:DrawMaterialsTab(scrollChild)
+    elseif mainFrame.currentTab == "storage" then
         height = self:DrawStorageTab(scrollChild)
     elseif mainFrame.currentTab == "pve" then
         height = self:DrawPvEProgress(scrollChild)

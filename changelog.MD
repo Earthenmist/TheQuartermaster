@@ -1,6 +1,7 @@
-## Version 1.0.14 (2026-02-07)
-- Added Materials (Reagents) view with profession-focused categories and source toggles.
-- Added Reagents mode to Global Search.
+## Version 1.0.14b (2026-02-07)
+- Fixed a rendering issue where the **Materials** tab could appear blank.
+- Restored a dedicated **Reagents** section in **Watchlist**.
+- Materials and Global Search reagent filtering remains strict to avoid non-reagent items showing up.
 
 # TheQuartermaster — Changelog
 

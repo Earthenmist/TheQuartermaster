@@ -9,19 +9,16 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14"
+local CURRENT_VERSION = "1.0.14b"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14",
+    version = "1.0.14b",
     date = "2026-02-07",
     changes = {
-    "Added a new **Materials** tab to view crafting reagents across Reagent Bag, Warband Bank, characters, and (optional) cached Guild Bank.",
-    "Global Search now supports a **Reagents** mode for cleaner material-only searching.",
-    "Materials rows include the same right-click menu as Items/Storage (Pin, Copy Link, Search).",
-        "Added a new **Global Search** screen to instantly find items across your Warband, banks, bags, and optional Guild Bank cache.",
-        "Added a new **Watchlist** screen to pin important items and currencies and view totals across your Warband.",
-        "Search results support quick pin/unpin and tooltip preview.",
+        "Fixed a rendering issue where the **Materials** tab could appear blank.",
+        "Restored a dedicated **Reagents** section in **Watchlist** (alongside Items and Currency).",
+        "Materials and Global Search reagent filtering remains strict to avoid non-reagent items showing up.",
     }
 }
 
