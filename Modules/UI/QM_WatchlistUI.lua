@@ -47,8 +47,15 @@ end
 
 local function IsReagentItemID(itemID)
     itemID = tonumber(itemID)
-    if not itemID or type(GetItemInfoInstant) ~= "function" then return false end
-    local _, _, _, equipLoc, _, classID = GetItemInfoInstant(itemID)
+    if not itemID then return false end
+
+    local getInstant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
+    if type(getInstant) ~= "function" then
+        -- Fall back to tooltip detection only (slow but safe).
+        return QM_HasCraftingReagentLine(itemID)
+    end
+
+    local _, _, _, equipLoc, _, classID = getInstant(itemID)
     if equipLoc and equipLoc ~= "" then return false end
     if classID == ITEM_CLASS_TRADEGOODS or classID == ITEM_CLASS_GEM or (ITEM_CLASS_REAGENT and classID == ITEM_CLASS_REAGENT) then
         return true

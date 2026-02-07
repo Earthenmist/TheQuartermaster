@@ -1,9 +1,11 @@
-## Version 1.0.14g (2026-02-07)
+## Version 1.0.14h (2026-02-07)
 - Improved **Materials** reagent detection using the tooltip **Crafting Reagent** label to avoid false positives.
 - Pinned crafting reagents now correctly appear under **Watchlist → Reagents**.
 - Added an **Expansion** filter dropdown to Materials (derived from tooltip tags like **Khaz Algar Crafting Reagent**).
 - Updated expansion names in the Materials filter (e.g. **The War Within**, **Dragonflight**, **Legion**).
 - Fixed an issue where **Materials** could appear blank after visiting other tabs and returning.
+- Fixed **Materials** totals double-counting the current character's **Reagent Bag** when **All Characters** was enabled.
+- Fixed Watchlist reagent detection on modern builds by using **C_Item.GetItemInfoInstant** when available.
 
 # TheQuartermaster — Changelog
 

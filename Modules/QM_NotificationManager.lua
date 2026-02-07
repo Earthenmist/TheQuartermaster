@@ -9,11 +9,11 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14g"
+local CURRENT_VERSION = "1.0.14h"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14g",
+    version = "1.0.14h",
     date = "2026-02-07",
     changes = {
         "Improved **Materials** reagent detection using the tooltip **Crafting Reagent** label to avoid false positives.",

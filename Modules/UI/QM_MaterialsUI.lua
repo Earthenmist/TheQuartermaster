@@ -315,13 +315,30 @@ local function CollectMaterials(self, opts)
     end
 
     -- All Characters (bags + personal bank)
+    -- NOTE: The Materials tab has an explicit "Reagent Bag" source for the *current character*.
+    -- When both "Reagent Bag" and "All Characters" are enabled, we must avoid double-counting
+    -- the current character's reagent bag as part of "Bags".
     if includeAllChars and db.global and db.global.characters then
         for charKey, charData in pairs(db.global.characters) do
             if type(charData) == "table" then
                 if charData.inventory and charData.inventory.items then
-                    IterateContainerItems(charData.inventory.items, function(item)
-                        AddItemToTotals(totals, item, tonumber(item.stackCount or 1) or 1, "Bags", charKey)
-                    end)
+                    -- If possible, use bagIDs so we can exclude bagID 5 (reagent bag) for the current character.
+                    if charKey == playerKey and includeReagentBag and charData.inventory.bagIDs then
+                        for bagIndex, bagID in ipairs(charData.inventory.bagIDs) do
+                            if bagID ~= 5 then
+                                local bagSlots = charData.inventory.items[bagIndex]
+                                if type(bagSlots) == "table" then
+                                    for _, item in pairs(bagSlots) do
+                                        AddItemToTotals(totals, item, tonumber(item.stackCount or 1) or 1, "Bags", charKey)
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        IterateContainerItems(charData.inventory.items, function(item)
+                            AddItemToTotals(totals, item, tonumber(item.stackCount or 1) or 1, "Bags", charKey)
+                        end)
+                    end
                 end
                 if charData.personalBank and charData.personalBank.items then
                     IterateContainerItems(charData.personalBank.items, function(item)
