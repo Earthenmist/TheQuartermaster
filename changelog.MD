@@ -1,7 +1,6 @@
-## Version 1.0.14b (2026-02-07)
-- Fixed a rendering issue where the **Materials** tab could appear blank.
-- Restored a dedicated **Reagents** section in **Watchlist**.
-- Materials and Global Search reagent filtering remains strict to avoid non-reagent items showing up.
+## Version 1.0.14c (2026-02-07)
+- Fixed an issue where the **Materials** header/controls could disappear after changing filters.
+- Materials now keeps the header card visible and refreshes only the results list when filters change.
 
 # TheQuartermaster — Changelog
 

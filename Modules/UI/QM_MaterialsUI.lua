@@ -410,20 +410,61 @@ local function EnsureControls(self, parent)
 end
 
 function TheQuartermaster:DrawMaterialsTab(parent)
-    ReleaseAllPooledChildren(parent)
-    parent.controls = parent.controls -- keep
+    -- NOTE:
+    -- We must NOT release all pooled children on the parent, otherwise the persistent
+    -- controls (checkboxes + dropdown) get released/hidden when filters change.
+    -- Instead, we build the header/controls once and only refresh the results area.
+
+    parent.controls = parent.controls or {}
 
     local width = (parent:GetWidth() or 700) - 20
-    local yOffset = 20
 
-    -- Header card
-    local card = CreateCard(parent, width, 88, "Materials", "Crafting reagents across your Warband, banks, and caches", "Interface\\Icons\\inv_misc_herb_19")
-    card:SetPoint("TOPLEFT", 10, -yOffset)
-    yOffset = yOffset + 100
+    -- One-time build
+    if not parent._qmMaterialsBuilt then
+        parent._qmMaterialsBuilt = true
 
-    -- Controls
-    EnsureControls(self, parent)
-    yOffset = yOffset + 72
+        -- Header card
+        local card = CreateCard(parent, width, 88, "Materials", "Crafting reagents across your Warband, banks, and caches", "Interface\\Icons\\inv_misc_herb_19")
+        card:SetPoint("TOPLEFT", 10, -20)
+        card:Show()
+        parent.controls.headerCard = card
+
+        -- Controls bar (checkboxes + dropdown)
+        local controls = EnsureControls(self, parent)
+        controls.sourceBar:ClearAllPoints()
+        controls.sourceBar:SetPoint("TOPLEFT", card, "BOTTOMLEFT", 0, -10)
+        controls.sourceBar:SetPoint("TOPRIGHT", card, "BOTTOMRIGHT", 0, -10)
+        controls.sourceBar:Show()
+
+        -- Results title
+        local title = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOPLEFT", controls.sourceBar, "BOTTOMLEFT", 0, -10)
+        title:SetText("Results")
+        title:SetTextColor(1, 1, 1)
+        parent.controls.resultsTitle = title
+
+        -- Results container (we only clear this on refresh)
+        local results = CreateFrame("Frame", nil, parent)
+        results:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
+        results:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -10, 0)
+        results:SetHeight(1)
+        parent.controls.resultsContainer = results
+    else
+        -- Header width can change with resizing; keep it in sync.
+        if parent.controls.headerCard and parent.controls.headerCard.SetWidth then
+            parent.controls.headerCard:SetWidth(width)
+        end
+    end
+
+    local controls = parent.controls
+    local resultsParent = controls.resultsContainer
+    if not resultsParent then
+        -- Safety fallback (shouldn't happen)
+        resultsParent = parent
+    end
+
+    -- Clear only the results area
+    ReleaseAllPooledChildren(resultsParent)
 
     local searchText = tostring(ns.materialsSearchText or ""):lower()
     local catKey = ns.materialsCategory or "all"
@@ -452,22 +493,21 @@ function TheQuartermaster:DrawMaterialsTab(parent)
         return (a.name or "") < (b.name or "")
     end)
 
-    local title = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", 10, -yOffset)
-    title:SetText("Results")
-    title:SetTextColor(1, 1, 1)
-    yOffset = yOffset + 26
+    local yOffset = 0
 
     if #filtered == 0 then
-        yOffset = DrawEmptyState(parent, "No crafting materials found for your current filters.", yOffset)
-        parent:SetHeight(yOffset + 20)
-        return yOffset
+        yOffset = DrawEmptyState(resultsParent, "No crafting materials found for your current filters.", 0)
+        resultsParent:SetHeight(yOffset + 10)
+
+        local total = 20 + 88 + 10 + 52 + 10 + 20 + 6 + yOffset + 30
+        parent:SetHeight(total)
+        return total
     end
 
     local rowH = 30
     for i=1, math.min(#filtered, 200) do
         local it = filtered[i]
-        local row = CreateRow(parent, yOffset, width, rowH)
+        local row = CreateRow(resultsParent, yOffset, width, rowH)
 
         row.icon:SetTexture(it.iconFileID or 134400)
         row.name:SetText(it.name or ("Item " .. tostring(it.itemID)))
@@ -556,6 +596,10 @@ function TheQuartermaster:DrawMaterialsTab(parent)
         yOffset = yOffset + rowH + 6
     end
 
-    parent:SetHeight(yOffset + 20)
-    return yOffset
+    resultsParent:SetHeight(yOffset + 10)
+
+    -- Total content height: header (20+88) + spacing + controls (52) + spacing + title + spacing + results
+    local total = 20 + 88 + 10 + 52 + 10 + 20 + 6 + yOffset + 30
+    parent:SetHeight(total)
+    return total
 end
