@@ -67,6 +67,34 @@ local function IsReagentItemID(itemID)
     if classID == ITEM_CLASS_TRADEGOODS or classID == ITEM_CLASS_GEM or (ITEM_CLASS_REAGENT and classID == ITEM_CLASS_REAGENT) then
         return true
     end
+
+    -- Fallback: if item info is available, use the item subType as a secondary signal.
+    -- This helps in cases where classID is quirky but the item is clearly a crafting mat.
+    if C_Item and C_Item.GetItemInfo then
+        local name, link, quality, itemLevel, reqLevel, className, subClassName, maxStack, equipSlot = C_Item.GetItemInfo(itemID)
+        if equipSlot and equipSlot ~= "" then return false end
+        if subClassName then
+            local known = {
+                ["Cloth"] = true,
+                ["Leather"] = true,
+                ["Metal & Stone"] = true,
+                ["Herb"] = true,
+                ["Elemental"] = true,
+                ["Cooking"] = true,
+                ["Enchanting"] = true,
+                ["Inscription"] = true,
+                ["Jewelcrafting"] = true,
+                ["Parts"] = true,
+                ["Gems"] = true,
+                ["Optional Reagents"] = true,
+                ["Finishing Reagents"] = true,
+                ["Reagent"] = true,
+            }
+            if known[subClassName] then
+                return true
+            end
+        end
+    end
     return false
 end
 

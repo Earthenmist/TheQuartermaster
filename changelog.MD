@@ -1,6 +1,7 @@
-## Version 1.0.14i (2026-02-07)
+## Version 1.0.14j (2026-02-07)
 - Fixed Watchlist grouping so pinned crafting reagents reliably appear under **Watchlist → Reagents** (tooltip-tag based).
 - Fixed the **Materials** tab sometimes going blank after visiting other tabs by rebuilding the Materials UI safely on redraw.
+- Improved Materials profession categorisation by inferring the primary profession from tooltip wording (e.g. cauldron reagents show under **Alchemy** when appropriate).
 
 # TheQuartermaster — Changelog
 

@@ -9,15 +9,16 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14i"
+local CURRENT_VERSION = "1.0.14j"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14i",
+    version = "1.0.14j",
     date = "2026-02-07",
     changes = {
         "Fixed Watchlist grouping so pinned crafting reagents reliably appear under **Watchlist → Reagents** (tooltip-tag based).",
         "Fixed the **Materials** tab sometimes going blank after visiting other tabs by rebuilding the Materials UI safely on redraw.",
+        "Improved Materials profession categorisation by inferring the primary profession from tooltip wording (e.g. cauldron reagents show under **Alchemy** when appropriate).",
     }
 }
 

@@ -114,6 +114,50 @@ local function QM_HasCraftingReagentLine(itemID)
     return QM_GetCraftingReagentLabel(itemID) ~= nil
 end
 
+-- Some reagents are ambiguous (multi-profession). As a best-effort, infer a primary
+-- profession from tooltip wording (e.g. "alchemy"), with a sensible priority.
+local PROF_KEYWORDS = {
+    { key = "alchemy",        patterns = { "alchemy" } },
+    { key = "enchanting",     patterns = { "enchant" } },
+    { key = "engineering",    patterns = { "engineering", "engineer" } },
+    { key = "inscription",    patterns = { "inscription", "scribe" } },
+    { key = "jewelcrafting",  patterns = { "jewelcraft", "jewel" } },
+    { key = "leatherworking", patterns = { "leatherworking", "skinning" } },
+    { key = "tailoring",      patterns = { "tailoring" } },
+    { key = "blacksmithing",  patterns = { "blacksmith" } },
+    { key = "cooking",        patterns = { "cooking" } },
+}
+
+local function QM_GetPrimaryProfessionFromTooltip(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return nil end
+
+    QM_EnsureMaterialsTooltip()
+    QM_MaterialsScanTooltip:ClearLines()
+
+    local ok = pcall(function()
+        QM_MaterialsScanTooltip:SetHyperlink("item:" .. itemID)
+    end)
+    if not ok then return nil end
+
+    local numLines = QM_MaterialsScanTooltip:NumLines() or 0
+    for i = 2, numLines do
+        local left = _G["QM_MaterialsScanTooltipTextLeft" .. i]
+        local text = left and left:GetText()
+        if text and text ~= "" then
+            local lower = text:lower()
+            for _, def in ipairs(PROF_KEYWORDS) do
+                for _, pat in ipairs(def.patterns) do
+                    if lower:find(pat, 1, true) then
+                        return def.key
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
 -- Map itemSubType to a "best fit" profession category.
 local SUBTYPE_TO_PROF = {
     ["Cloth"] = "tailoring",
@@ -207,6 +251,16 @@ local EXPANSION_FILTERS = {
 
 local function GetProfessionCategoryForItem(item)
     if not item then return "all" end
+
+    -- If tooltip wording clearly implies a profession (e.g. "alchemy"), prefer that.
+    -- This fixes cases like cauldron reagents where subType can be misleading.
+    if item.itemID and QM_HasCraftingReagentLine(item.itemID) then
+        local inferred = QM_GetPrimaryProfessionFromTooltip(item.itemID)
+        if inferred then
+            return inferred
+        end
+    end
+
     local sub = item.itemSubType
     if IsUniversalReagentSubtype(sub) then
         return "all"
