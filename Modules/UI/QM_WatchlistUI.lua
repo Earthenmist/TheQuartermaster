@@ -49,6 +49,13 @@ local function IsReagentItemID(itemID)
     itemID = tonumber(itemID)
     if not itemID then return false end
 
+    -- Strong signal: many crafting reagents include a tooltip line like
+    -- "Dragon Isles Crafting Reagent" / "Khaz Algar Crafting Reagent".
+    -- If we see it, treat as a reagent regardless of classID quirks.
+    if QM_HasCraftingReagentLine(itemID) then
+        return true
+    end
+
     local getInstant = (C_Item and C_Item.GetItemInfoInstant) or GetItemInfoInstant
     if type(getInstant) ~= "function" then
         -- Fall back to tooltip detection only (slow but safe).
@@ -60,8 +67,7 @@ local function IsReagentItemID(itemID)
     if classID == ITEM_CLASS_TRADEGOODS or classID == ITEM_CLASS_GEM or (ITEM_CLASS_REAGENT and classID == ITEM_CLASS_REAGENT) then
         return true
     end
-    -- Fallback: the tooltip often includes the expansion tag + "Crafting Reagent".
-    return QM_HasCraftingReagentLine(itemID)
+    return false
 end
 
 local function DrawEmptyState(parent, text, yOffset)

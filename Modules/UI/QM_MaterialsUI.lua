@@ -541,104 +541,62 @@ local function EnsureControls(self, parent)
 end
 
 function TheQuartermaster:DrawMaterialsTab(parent)
-    -- NOTE:
-    -- We must NOT release all pooled children on the parent, otherwise the persistent
-    -- controls (checkboxes + dropdown) get released/hidden when filters change.
-    -- Instead, we build the header/controls once and only refresh the results area.
+    -- This tab lives inside the same scrollChild as all other tabs.
+    -- Other views (Items/Storage) may aggressively release pooled children.
+    -- PopulateContent() also hides all children on every refresh.
+    --
+    -- To avoid "blank" states and missing controls after tab switches, we rebuild
+    -- the Materials UI on each draw. State (filters/search/toggles) lives in `ns.*`
+    -- so rebuilds are stable and cheap.
 
-    -- Other tabs may fully clear pooled children on the shared content parent.
-    -- If that happens, our persistent controls become invalid while the cached
-    -- "built" flag remains true, which can make the tab appear blank when
-    -- navigating away and back. Detect this and force a rebuild.
-    if parent._qmMaterialsBuilt and (not parent.controls or not parent.controls.headerCard or not parent.controls.headerCard.GetParent or parent.controls.headerCard:GetParent() ~= parent) then
-        parent._qmMaterialsBuilt = nil
-        parent.controls = nil
-    end
-
-    parent.controls = parent.controls or {}
+    ReleaseAllPooledChildren(parent)
+    parent.controls = {}
+    parent._qmMaterialsBuilt = true
 
     local width = (parent:GetWidth() or 700) - 20
 
-    -- One-time build
-    if not parent._qmMaterialsBuilt then
-        parent._qmMaterialsBuilt = true
+    -- Header card
+    local card = CreateCard(parent, 70)
+    card:SetPoint("TOPLEFT", 10, -20)
+    card:SetPoint("TOPRIGHT", -10, -20)
 
-        -- Header card (match the addon style used by Items/Storage)
-        local card = CreateCard(parent, 70)
-        card:SetPoint("TOPLEFT", 10, -20)
-        card:SetPoint("TOPRIGHT", -10, -20)
+    local titleIcon = card:CreateTexture(nil, "ARTWORK")
+    titleIcon:SetSize(40, 40)
+    titleIcon:SetPoint("LEFT", 15, 0)
+    titleIcon:SetTexture("Interface\\Icons\\inv_misc_herb_19")
 
-        local titleIcon = card:CreateTexture(nil, "ARTWORK")
-        titleIcon:SetSize(40, 40)
-        titleIcon:SetPoint("LEFT", 15, 0)
-        titleIcon:SetTexture("Interface\\Icons\\inv_misc_herb_19")
+    local titleText = card:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    titleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, 5)
+    local r, g, b = COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]
+    local hex = string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
+    titleText:SetText("|cff" .. hex .. "Materials" .. "|r")
 
-        local titleText = card:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        titleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, 5)
-        local r, g, b = COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]
-        local hex = string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
-        titleText:SetText("|cff" .. hex .. "Materials" .. "|r")
+    local subtitleText = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)
+    subtitleText:SetTextColor(0.6, 0.6, 0.6)
+    subtitleText:SetText("Crafting reagents across your Warband, banks, and caches")
 
-        local subtitleText = card:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        subtitleText:SetPoint("LEFT", titleIcon, "RIGHT", 12, -12)
-        subtitleText:SetTextColor(0.6, 0.6, 0.6)
-        subtitleText:SetText("Crafting reagents across your Warband, banks, and caches")
+    parent.controls.headerCard = card
 
-        card:Show()
-        parent.controls.headerCard = card
+    -- Controls bar (checkboxes + dropdown)
+    local controls = EnsureControls(self, parent)
+    controls.sourceBar:ClearAllPoints()
+    controls.sourceBar:SetPoint("TOPLEFT", card, "BOTTOMLEFT", 0, -10)
+    controls.sourceBar:SetPoint("TOPRIGHT", card, "BOTTOMRIGHT", 0, -10)
 
-        -- Controls bar (checkboxes + dropdown)
-        local controls = EnsureControls(self, parent)
-        controls.sourceBar:ClearAllPoints()
-        controls.sourceBar:SetPoint("TOPLEFT", card, "BOTTOMLEFT", 0, -10)
-        controls.sourceBar:SetPoint("TOPRIGHT", card, "BOTTOMRIGHT", 0, -10)
-        controls.sourceBar:Show()
+    -- Results title
+    local title = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", controls.sourceBar, "BOTTOMLEFT", 0, -10)
+    title:SetText("Results")
+    title:SetTextColor(1, 1, 1)
+    parent.controls.resultsTitle = title
 
-        -- Results title
-        local title = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-        title:SetPoint("TOPLEFT", controls.sourceBar, "BOTTOMLEFT", 0, -10)
-        title:SetText("Results")
-        title:SetTextColor(1, 1, 1)
-        parent.controls.resultsTitle = title
-
-        -- Results container (we only clear this on refresh)
-        local results = CreateFrame("Frame", nil, parent)
-        results:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
-        results:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -10, 0)
-        results:SetHeight(1)
-        parent.controls.resultsContainer = results
-    else
-        -- Header width can change with resizing; keep it in sync.
-        if parent.controls.headerCard and parent.controls.headerCard.SetWidth then
-            parent.controls.headerCard:SetWidth(width)
-        end
-
-        -- IMPORTANT: PopulateContent() hides all children on every refresh.
-        -- Our Materials tab keeps persistent controls, so we must re-show them
-        -- each time this tab is drawn.
-        if parent.controls.headerCard then parent.controls.headerCard:Show() end
-        if parent.controls.resultsTitle then parent.controls.resultsTitle:Show() end
-        if parent.controls.resultsContainer then parent.controls.resultsContainer:Show() end
-
-        local c = parent.controls
-        if c.sourceBar then c.sourceBar:Show() end
-        if c.cbReagent then c.cbReagent:Show() end
-        if c.cbWarband then c.cbWarband:Show() end
-        if c.cbAll then c.cbAll:Show() end
-        if c.cbGuild then c.cbGuild:Show() end
-        if c.categoryDrop then c.categoryDrop:Show() end
-        if c.expansionDrop then c.expansionDrop:Show() end
-    end
-
-    local controls = parent.controls
-    local resultsParent = controls.resultsContainer
-    if not resultsParent then
-        -- Safety fallback (shouldn't happen)
-        resultsParent = parent
-    end
-
-    -- Clear only the results area
-    ReleaseAllPooledChildren(resultsParent)
+    -- Results container
+    local resultsParent = CreateFrame("Frame", nil, parent)
+    resultsParent:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
+    resultsParent:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -10, 0)
+    resultsParent:SetHeight(1)
+    parent.controls.resultsContainer = resultsParent
 
     local searchText = tostring(ns.materialsSearchText or ""):lower()
     local catKey = ns.materialsCategory or "all"
