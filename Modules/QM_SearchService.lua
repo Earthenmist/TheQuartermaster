@@ -11,15 +11,76 @@ local function SafeLower(s)
     return tostring(s):lower()
 end
 
+-- Lightweight tooltip scan to detect the "<Expansion> Crafting Reagent" line.
+-- We use this for Watchlist migration and classification when item class/subtype is unreliable.
+local QM_SearchServiceScanTooltip
+local function QM_EnsureSearchServiceTooltip()
+    if QM_SearchServiceScanTooltip then return end
+    QM_SearchServiceScanTooltip = CreateFrame("GameTooltip", "QM_SearchServiceScanTooltip", UIParent, "GameTooltipTemplate")
+    QM_SearchServiceScanTooltip:SetOwner(UIParent, "ANCHOR_NONE")
+end
+
+local function QM_HasCraftingReagentLine(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return false end
+    QM_EnsureSearchServiceTooltip()
+    QM_SearchServiceScanTooltip:ClearLines()
+    local ok = pcall(function()
+        QM_SearchServiceScanTooltip:SetHyperlink("item:" .. itemID)
+    end)
+    if not ok then return false end
+
+    local numLines = QM_SearchServiceScanTooltip:NumLines() or 0
+    for i = 2, numLines do
+        local left = _G["QM_SearchServiceScanTooltipTextLeft" .. i]
+        local text = left and left:GetText()
+        if text and text:find("Crafting Reagent", 1, true) then
+            return true
+        end
+    end
+    return false
+end
+
 local function GetProfileWatchlist(self)
     if not self.db or not self.db.profile then return nil end
     if not self.db.profile.watchlist then
-        self.db.profile.watchlist = { items = {}, currencies = {}, includeGuildBank = true }
+        self.db.profile.watchlist = { items = {}, reagents = {}, currencies = {}, includeGuildBank = true }
     end
     self.db.profile.watchlist.items = self.db.profile.watchlist.items or {}
+    self.db.profile.watchlist.reagents = self.db.profile.watchlist.reagents or {}
     self.db.profile.watchlist.currencies = self.db.profile.watchlist.currencies or {}
     if self.db.profile.watchlist.includeGuildBank == nil then
         self.db.profile.watchlist.includeGuildBank = true
+    end
+
+    -- Migration: if any pinned items look like reagents, move them into the reagent list.
+    -- This removes reliance on per-frame reagent detection and fixes "pinned reagents show under Items".
+    if self.db.profile.watchlist.items then
+        local movedAny = false
+        for itemID in pairs(self.db.profile.watchlist.items) do
+            if type(itemID) == "number" then
+                local isReagent = QM_HasCraftingReagentLine(itemID)
+                if not isReagent and C_Item and C_Item.GetItemInfoInstant then
+                    local _, _, _, equipLoc, _, classID = C_Item.GetItemInfoInstant(itemID)
+                    if not (equipLoc and equipLoc ~= "") then
+                        local TRADE = Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods
+                        local GEM   = Enum and Enum.ItemClass and Enum.ItemClass.Gem
+                        if classID == TRADE or classID == GEM then
+                            isReagent = true
+                        end
+                    end
+                end
+
+                if isReagent then
+                    self.db.profile.watchlist.reagents[itemID] = self.db.profile.watchlist.reagents[itemID] or {}
+                    self.db.profile.watchlist.items[itemID] = nil
+                    movedAny = true
+                end
+            end
+        end
+        if movedAny then
+            -- no-op; kept for readability
+        end
     end
     return self.db.profile.watchlist
 end
@@ -27,6 +88,12 @@ end
 function TheQuartermaster:IsWatchlistedItem(itemID)
     local wl = GetProfileWatchlist(self)
     return wl and wl.items and wl.items[tonumber(itemID)] == true
+end
+
+function TheQuartermaster:IsWatchlistedReagent(itemID)
+    local wl = GetProfileWatchlist(self)
+    itemID = tonumber(itemID)
+    return wl and wl.reagents and wl.reagents[itemID] ~= nil
 end
 
 function TheQuartermaster:IsWatchlistedCurrency(currencyID)
@@ -38,9 +105,75 @@ function TheQuartermaster:ToggleWatchlistItem(itemID)
     local wl = GetProfileWatchlist(self)
     itemID = tonumber(itemID)
     if not wl or not itemID then return end
+
+    -- Ensure this item isn't also tracked as a reagent
+    if wl.reagents and wl.reagents[itemID] then
+        wl.reagents[itemID] = nil
+    end
     wl.items[itemID] = not wl.items[itemID]
     if wl.items[itemID] == false then wl.items[itemID] = nil end
     if self.RefreshUI then self:RefreshUI() end
+end
+
+-- Reagent watchlist entries can store a desired target count.
+-- opts.mode: "toggle" (default) or "ensure" to always keep pinned.
+-- opts.targetDelta: number to add to current target (accumulative)
+-- opts.targetSet: number to set target explicitly (absolute)
+function TheQuartermaster:ToggleWatchlistReagent(itemID, opts)
+    opts = opts or {}
+    local wl = GetProfileWatchlist(self)
+    itemID = tonumber(itemID)
+    if not wl or not itemID then return end
+    wl.reagents = wl.reagents or {}
+
+    -- Remove from generic items list if present
+    if wl.items and wl.items[itemID] then
+        wl.items[itemID] = nil
+    end
+
+    local entry = wl.reagents[itemID]
+    local shouldToggle = (opts.mode ~= "ensure")
+
+    if shouldToggle then
+        if entry then
+            wl.reagents[itemID] = nil
+            if self.RefreshUI then self:RefreshUI() end
+            return
+        else
+            entry = {}
+            wl.reagents[itemID] = entry
+        end
+    else
+        if not entry then
+            entry = {}
+            wl.reagents[itemID] = entry
+        end
+    end
+
+    if type(opts.targetSet) == "number" then
+        entry.target = math.max(0, math.floor(opts.targetSet + 0.5))
+    elseif type(opts.targetDelta) == "number" then
+        local cur = tonumber(entry.target) or 0
+        entry.target = math.max(0, math.floor(cur + opts.targetDelta + 0.5))
+    end
+
+    if self.RefreshUI then self:RefreshUI() end
+end
+
+function TheQuartermaster:GetWatchlistReagentTarget(itemID)
+    local wl = GetProfileWatchlist(self)
+    itemID = tonumber(itemID)
+    if not wl or not wl.reagents or not itemID then return nil end
+    local entry = wl.reagents[itemID]
+    return entry and entry.target
+end
+
+function TheQuartermaster:SetWatchlistReagentTarget(itemID, target)
+    itemID = tonumber(itemID)
+    target = tonumber(target)
+    if not itemID then return end
+    if not target or target < 0 then target = 0 end
+    self:ToggleWatchlistReagent(itemID, { mode = "ensure", targetSet = target })
 end
 
 function TheQuartermaster:ToggleWatchlistCurrency(currencyID)

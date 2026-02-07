@@ -9,16 +9,16 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14j"
+local CURRENT_VERSION = "1.0.14k"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14j",
+    version = "1.0.14k",
     date = "2026-02-07",
     changes = {
-        "Fixed Watchlist grouping so pinned crafting reagents reliably appear under **Watchlist → Reagents** (tooltip-tag based).",
-        "Fixed the **Materials** tab sometimes going blank after visiting other tabs by rebuilding the Materials UI safely on redraw.",
-        "Improved Materials profession categorisation by inferring the primary profession from tooltip wording (e.g. cauldron reagents show under **Alchemy** when appropriate).",
+        "Watchlist reagents can now track a **desired amount** with a progress bar (Owned / Target).",
+        "Added a **Pin Reagents** button to the Professions recipe page to pin required reagents and automatically add their recipe quantities to desired targets (with optional craft multiplier).",
+        "Global Search: when in **Reagents** mode, pinning now pins to **Watchlist → Reagents** (not Items).",
     }
 }
 

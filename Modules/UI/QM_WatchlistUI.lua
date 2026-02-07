@@ -181,18 +181,17 @@ subText:SetText("Pinned items, reagents and currencies (totals across your Warba
 subText:SetTextColor(0.7, 0.7, 0.7)
 yOffset = yOffset + 84
 
-    local wl = (self.db and self.db.profile and self.db.profile.watchlist) or { items = {}, currencies = {}, includeGuildBank = true }
+    local wl = (self.db and self.db.profile and self.db.profile.watchlist) or { items = {}, reagents = {}, currencies = {}, includeGuildBank = true }
     wl.items = wl.items or {}
+    wl.reagents = wl.reagents or {}
     wl.currencies = wl.currencies or {}
 
-    -- Split pinned itemIDs into Items vs Reagents
     local pinnedItems, pinnedReagents = {}, {}
     for itemID in pairs(wl.items) do
-        if IsReagentItemID(itemID) then
-            pinnedReagents[#pinnedReagents + 1] = itemID
-        else
-            pinnedItems[#pinnedItems + 1] = itemID
-        end
+        pinnedItems[#pinnedItems + 1] = itemID
+    end
+    for itemID in pairs(wl.reagents) do
+        pinnedReagents[#pinnedReagents + 1] = itemID
     end
     table.sort(pinnedItems)
     table.sort(pinnedReagents)
@@ -216,10 +215,60 @@ yOffset = yOffset + 84
             local row = CreateRow(parent, yOffset, width, rowH)
             row.icon:SetTexture(icon or 134400)
             row.name:SetText(name or ("Item " .. tostring(itemID)))
-            row.total:SetText(tostring(total))
+            local target = self:GetWatchlistReagentTarget(itemID)
+            if target and target > 0 then
+                row.total:SetText(string.format("%d/%d", total, target))
+            else
+                row.total:SetText(tostring(total))
+            end
+
+            -- Progress bar (only when a target is set)
+            if not row.progress then
+                row.progress = CreateFrame("StatusBar", nil, row)
+                row.progress:SetSize(160, 8)
+                row.progress:SetPoint("RIGHT", row.total, "LEFT", -8, 0)
+                row.progress:SetStatusBarTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
+                row.progress.bg = row.progress:CreateTexture(nil, "BACKGROUND")
+                row.progress.bg:SetAllPoints(true)
+                row.progress.bg:SetColorTexture(0, 0, 0, 0.35)
+            end
+            if target and target > 0 then
+                row.progress:Show()
+                row.progress:SetMinMaxValues(0, target)
+                row.progress:SetValue(math.min(total, target))
+            else
+                row.progress:Hide()
+            end
+
+            if not row.targetBtn then
+                row.targetBtn = CreateFrame("Button", nil, row, "BackdropTemplate")
+                row.targetBtn:SetSize(52, 22)
+                row.targetBtn:SetPoint("RIGHT", row.remove, "LEFT", -6, 0)
+                row.targetBtn:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
+                row.targetBtn:SetBackdropColor(0, 0, 0, 0.20)
+                row.targetBtn.text = row.targetBtn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                row.targetBtn.text:SetPoint("CENTER")
+                row.targetBtn.text:SetText("Target")
+                row.targetBtn:SetScript("OnEnter", function(btn)
+                    GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
+                    GameTooltip:AddLine("Set desired amount", 1, 1, 1)
+                    GameTooltip:AddLine("Used for progress bars on Watchlist.", 0.7, 0.7, 0.7)
+                    GameTooltip:Show()
+                end)
+                row.targetBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+            end
+
+            row.targetBtn:SetScript("OnClick", function()
+                if self.OpenSetReagentTargetPopup then
+                    self:OpenSetReagentTargetPopup(itemID)
+                else
+                    -- fallback
+                    self:SetWatchlistReagentTarget(itemID, 0)
+                end
+            end)
 
             row.remove:SetScript("OnClick", function()
-                self:ToggleWatchlistItem(itemID)
+                self:ToggleWatchlistReagent(itemID)
             end)
 
             row:SetScript("OnEnter", function(selfRow)
@@ -257,14 +306,83 @@ yOffset = yOffset + 84
             local itemID = pinnedReagents[i]
 
             local total, breakdown = self:CountItemTotals(itemID, wl.includeGuildBank)
+            local target = self:GetWatchlistReagentTarget(itemID)
             local name, _, _, _, _, _, _, _, _, icon = GetItemInfo(itemID)
             local row = CreateRow(parent, yOffset, width, rowH)
             row.icon:SetTexture(icon or 134400)
             row.name:SetText(name or ("Item " .. tostring(itemID)))
-            row.total:SetText(tostring(total))
+            if target and target > 0 then
+                row.total:SetText(string.format("%d/%d", total, target))
+            else
+                row.total:SetText(tostring(total))
+            end
+
+            -- Progress bar (only when target is set)
+            if target and target > 0 then
+                if not row._qmBar then
+                    row._qmBar = CreateFrame("StatusBar", nil, row, "BackdropTemplate")
+                    row._qmBar:SetPoint("LEFT", row.name, "LEFT", 0, -10)
+                    row._qmBar:SetPoint("RIGHT", row.total, "LEFT", -10, -10)
+                    row._qmBar:SetHeight(6)
+                    row._qmBar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
+                    row._qmBar:SetMinMaxValues(0, 1)
+                    row._qmBar:SetValue(0)
+                    row._qmBar:SetStatusBarColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.65)
+                    row._qmBar:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
+                    row._qmBar:SetBackdropColor(0, 0, 0, 0.35)
+                end
+                row._qmBar:Show()
+                row._qmBar:SetMinMaxValues(0, target)
+                row._qmBar:SetValue(math.min(total, target))
+            elseif row._qmBar then
+                row._qmBar:Hide()
+            end
+
+            -- Target button
+            if not row._qmTargetBtn then
+                row._qmTargetBtn = CreateFrame("Button", nil, row, "BackdropTemplate")
+                row._qmTargetBtn:SetSize(56, 20)
+                row._qmTargetBtn:SetPoint("RIGHT", row.remove, "LEFT", -6, 0)
+                row._qmTargetBtn:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
+                row._qmTargetBtn:SetBackdropColor(0, 0, 0, 0.20)
+                row._qmTargetBtn.text = row._qmTargetBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                row._qmTargetBtn.text:SetPoint("CENTER")
+                row._qmTargetBtn.text:SetText("Target")
+            end
+            row._qmTargetBtn:Show()
+            row._qmTargetBtn:SetScript("OnClick", function()
+                if not StaticPopupDialogs["QM_SET_REAGENT_TARGET"] then
+                    StaticPopupDialogs["QM_SET_REAGENT_TARGET"] = {
+                        text = "Set desired amount",
+                        button1 = OKAY,
+                        button2 = CANCEL,
+                        hasEditBox = true,
+                        maxLetters = 8,
+                        whileDead = true,
+                        hideOnEscape = true,
+                        OnShow = function(selfPopup, data)
+                            local cur = TheQuartermaster:GetWatchlistReagentTarget(data.itemID) or 0
+                            selfPopup.editBox:SetText(tostring(cur))
+                            selfPopup.editBox:HighlightText()
+                        end,
+                        OnAccept = function(selfPopup, data)
+                            local val = tonumber(selfPopup.editBox:GetText() or "")
+                            if not val then val = 0 end
+                            TheQuartermaster:SetWatchlistReagentTarget(data.itemID, math.max(0, math.floor(val + 0.5)))
+                        end,
+                        EditBoxOnEnterPressed = function(selfPopup)
+                            local parentPopup = selfPopup:GetParent()
+                            if parentPopup and parentPopup.button1 and parentPopup.button1:IsEnabled() then
+                                parentPopup.button1:Click()
+                            end
+                        end,
+                    }
+                end
+                StaticPopup_Show("QM_SET_REAGENT_TARGET", nil, nil, { itemID = itemID })
+            end)
 
             row.remove:SetScript("OnClick", function()
-                self:ToggleWatchlistItem(itemID)
+                self:ToggleWatchlistReagent(itemID)
             end)
 
             row:SetScript("OnEnter", function(selfRow)

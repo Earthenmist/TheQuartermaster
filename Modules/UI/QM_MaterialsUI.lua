@@ -719,7 +719,7 @@ function TheQuartermaster:DrawMaterialsTab(parent)
         row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
 
         row.pin:SetScript("OnClick", function()
-            if itemID then self:ToggleWatchlistItem(itemID) end
+            if itemID then self:ToggleWatchlistReagent(itemID) end
             self:PopulateContent()
         end)
 
@@ -733,7 +733,7 @@ function TheQuartermaster:DrawMaterialsTab(parent)
                     {
                         text = pinnedNow and "Unpin from Watchlist" or "Pin to Watchlist",
                         func = function()
-                            self:ToggleWatchlistItem(itemID)
+                            self:ToggleWatchlistReagent(itemID)
                             self:PopulateContent()
                         end,
                     },

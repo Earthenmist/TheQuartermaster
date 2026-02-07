@@ -298,14 +298,19 @@ local searchText = ns.globalSearchText or ""
                 row.count:SetText(tostring(item and (item.stackCount or item.count or 1) or 1))
 
                 local itemID = item and item.itemID
-                row.kind = "item"
+                row.kind = (mode == "reagents") and "reagent" or "item"
                 row.itemID = itemID
                 row.currencyID = nil
-                local pinned = itemID and self:IsWatchlistedItem(itemID)
+                local pinned = itemID and ((mode == "reagents") and self:IsWatchlistedReagent(itemID) or self:IsWatchlistedItem(itemID))
                 row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
 
                 row.pin:SetScript("OnClick", function()
-                    if itemID then self:ToggleWatchlistItem(itemID) end
+                    if not itemID then return end
+                    if mode == "reagents" then
+                        self:ToggleWatchlistReagent(itemID)
+                    else
+                        self:ToggleWatchlistItem(itemID)
+                    end
                 end)
 
                 row:SetScript("OnEnter", function(selfRow)
