@@ -9,11 +9,11 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14d"
+local CURRENT_VERSION = "1.0.14e"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14d",
+    version = "1.0.14e",
     date = "2026-02-07",
     changes = {
         "Fixed a rendering issue where the **Materials** tab could appear blank.",

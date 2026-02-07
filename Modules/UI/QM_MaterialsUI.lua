@@ -378,7 +378,8 @@ local function EnsureControls(self, parent)
 
         -- Category dropdown (profession focused)
         local drop = CreateFrame("Frame", "QM_MaterialsCategoryDropDown", bar, "UIDropDownMenuTemplate")
-        drop:SetPoint("TOPLEFT", 0, -30)
+        -- Small padding so the dropdown doesn't feel glued to the checkboxes.
+        drop:SetPoint("TOPLEFT", 0, -34)
         UIDropDownMenu_SetWidth(drop, 180)
         c.categoryDrop = drop
 
@@ -472,6 +473,21 @@ function TheQuartermaster:DrawMaterialsTab(parent)
         if parent.controls.headerCard and parent.controls.headerCard.SetWidth then
             parent.controls.headerCard:SetWidth(width)
         end
+
+        -- IMPORTANT: PopulateContent() hides all children on every refresh.
+        -- Our Materials tab keeps persistent controls, so we must re-show them
+        -- each time this tab is drawn.
+        if parent.controls.headerCard then parent.controls.headerCard:Show() end
+        if parent.controls.resultsTitle then parent.controls.resultsTitle:Show() end
+        if parent.controls.resultsContainer then parent.controls.resultsContainer:Show() end
+
+        local c = parent.controls
+        if c.sourceBar then c.sourceBar:Show() end
+        if c.cbReagent then c.cbReagent:Show() end
+        if c.cbWarband then c.cbWarband:Show() end
+        if c.cbAll then c.cbAll:Show() end
+        if c.cbGuild then c.cbGuild:Show() end
+        if c.categoryDrop then c.categoryDrop:Show() end
     end
 
     local controls = parent.controls
