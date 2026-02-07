@@ -362,11 +362,15 @@ yOffset = yOffset + 84
                         hideOnEscape = true,
                         OnShow = function(selfPopup, data)
                             local cur = TheQuartermaster:GetWatchlistReagentTarget(data.itemID) or 0
-                            selfPopup.editBox:SetText(tostring(cur))
-                            selfPopup.editBox:HighlightText()
+                            local eb = selfPopup.editBox or selfPopup.EditBox
+                            if eb then
+                                eb:SetText(tostring(cur))
+                                eb:HighlightText()
+                            end
                         end,
                         OnAccept = function(selfPopup, data)
-                            local val = tonumber(selfPopup.editBox:GetText() or "")
+                            local eb = selfPopup.editBox or selfPopup.EditBox
+                            local val = tonumber((eb and eb:GetText()) or "")
                             if not val then val = 0 end
                             TheQuartermaster:SetWatchlistReagentTarget(data.itemID, math.max(0, math.floor(val + 0.5)))
                         end,

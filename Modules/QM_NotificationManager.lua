@@ -9,11 +9,11 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14k"
+local CURRENT_VERSION = "1.0.14l"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14k",
+    version = "1.0.14l",
     date = "2026-02-07",
     changes = {
         "Watchlist reagents can now track a **desired amount** with a progress bar (Owned / Target).",
