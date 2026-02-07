@@ -16,9 +16,12 @@ local CHANGELOG = {
     version = "1.0.14",
     date = "2026-02-07",
     changes = {
-        "Added a new **Materials** screen to browse crafting reagents with totals across Reagent Bag, Warband Bank, all characters, and optional cached Guild Bank.",
-        "Global Search now includes a **Reagents** mode alongside All, Items and Currency.",
-        "Watchlist now explicitly supports **reagents** (pin from Global Search or Materials).",
+    "Added a new **Materials** tab to view crafting reagents across Reagent Bag, Warband Bank, characters, and (optional) cached Guild Bank.",
+    "Global Search now supports a **Reagents** mode for cleaner material-only searching.",
+    "Materials rows include the same right-click menu as Items/Storage (Pin, Copy Link, Search).",
+        "Added a new **Global Search** screen to instantly find items across your Warband, banks, bags, and optional Guild Bank cache.",
+        "Added a new **Watchlist** screen to pin important items and currencies and view totals across your Warband.",
+        "Search results support quick pin/unpin and tooltip preview.",
     }
 }
 

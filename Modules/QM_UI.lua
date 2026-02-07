@@ -407,8 +407,8 @@ f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tab
 -- Separator (theme color) between primary sections and utility tabs
 local sep = CreateFrame("Frame", nil, nav, "BackdropTemplate")
 sep:SetHeight(3)
-sep:SetPoint("TOPLEFT", nav, "TOPLEFT", 10, -(10 + tabSpacing * 9) - 4)
-sep:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -10, -(10 + tabSpacing * 9) - 4)
+sep:SetPoint("TOPLEFT", nav, "TOPLEFT", 10, -(10 + tabSpacing * 10) - 4)
+sep:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -10, -(10 + tabSpacing * 10) - 4)
 sep:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
 local accent = COLORS.accent
 sep:SetBackdropColor(accent[1], accent[2], accent[3], 0.9)
@@ -687,6 +687,24 @@ function TheQuartermaster:PopulateContent()
                 itemsSearch:Hide()
                 mainFrame.persistentSearchBoxes.items = itemsSearch
 
+                -- Materials search box (responsive width)
+                local materialsSearch, materialsClear = CreateSearchBox(
+                    mainFrame.searchArea,
+                    10,
+                    "Search materials...",
+                    function(searchText)
+                        ns.materialsSearchText = searchText
+                        self:PopulateContent()
+                    end,
+                    0.4
+                )
+                materialsSearch:ClearAllPoints()
+                materialsSearch:SetPoint("TOPLEFT", 10, -8)
+                materialsSearch:SetPoint("TOPRIGHT", -10, -8)
+                materialsSearch:Hide()
+                mainFrame.persistentSearchBoxes.materials = materialsSearch
+
+                
                 -- Storage search box (responsive width)
                 local storageSearch, storageClear = CreateSearchBox(
                     mainFrame.searchArea,
@@ -703,23 +721,6 @@ function TheQuartermaster:PopulateContent()
                 storageSearch:SetPoint("TOPRIGHT", -10, -8)  -- Responsive
                 storageSearch:Hide()
                 mainFrame.persistentSearchBoxes.storage = storageSearch
-
-                -- Materials search box (responsive width)
-                local materialsSearch, materialsClear = CreateSearchBox(
-                    mainFrame.searchArea,
-                    10,
-                    "Search materials...",
-                    function(searchText)
-                        ns.materialsSearchText = searchText or ""
-                        self:PopulateContent()
-                    end,
-                    0.4
-                )
-                materialsSearch:ClearAllPoints()
-                materialsSearch:SetPoint("TOPLEFT", 10, -8)
-                materialsSearch:SetPoint("TOPRIGHT", -10, -8)
-                materialsSearch:Hide()
-                mainFrame.persistentSearchBoxes.materials = materialsSearch
                 
                 -- Currency search box (responsive width)
                 local currencySearch, currencyClear = CreateSearchBox(
@@ -781,6 +782,7 @@ if mainFrame.currentTab == "items" then
     mainFrame.persistentSearchBoxes.storage:Hide()
     mainFrame.persistentSearchBoxes.currency:Hide()
     mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
 elseif mainFrame.currentTab == "materials" then
     mainFrame.persistentSearchBoxes.items:Hide()
@@ -788,34 +790,38 @@ elseif mainFrame.currentTab == "materials" then
     mainFrame.persistentSearchBoxes.storage:Hide()
     mainFrame.persistentSearchBoxes.currency:Hide()
     mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
 elseif mainFrame.currentTab == "storage" then
     mainFrame.persistentSearchBoxes.items:Hide()
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     mainFrame.persistentSearchBoxes.storage:Show()
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     mainFrame.persistentSearchBoxes.currency:Hide()
     mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
 elseif mainFrame.currentTab == "currency" then
     mainFrame.persistentSearchBoxes.items:Hide()
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     mainFrame.persistentSearchBoxes.storage:Hide()
     mainFrame.persistentSearchBoxes.currency:Show()
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
 elseif mainFrame.currentTab == "search" then
     mainFrame.persistentSearchBoxes.items:Hide()
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     mainFrame.persistentSearchBoxes.storage:Hide()
     mainFrame.persistentSearchBoxes.currency:Hide()
     mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Show() end
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
 else -- reputations
     mainFrame.persistentSearchBoxes.items:Hide()
-    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     mainFrame.persistentSearchBoxes.storage:Hide()
     mainFrame.persistentSearchBoxes.currency:Hide()
     mainFrame.persistentSearchBoxes.reputations:Show()
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
     if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
 end
         else
@@ -829,10 +835,10 @@ end
             -- Hide all search boxes
             if mainFrame.persistentSearchBoxes then
                 mainFrame.persistentSearchBoxes.items:Hide()
-                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
                 mainFrame.persistentSearchBoxes.storage:Hide()
                 mainFrame.persistentSearchBoxes.currency:Hide()
                 mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
                 if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
             end
         end
@@ -855,8 +861,14 @@ end
     elseif mainFrame.currentTab == "items" then
         height = self:DrawItemList(scrollChild)
     elseif mainFrame.currentTab == "materials" then
-        height = self:DrawMaterialsTab(scrollChild)
-    elseif mainFrame.currentTab == "storage" then
+    mainFrame.persistentSearchBoxes.items:Hide()
+    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Show() end
+    mainFrame.persistentSearchBoxes.storage:Hide()
+    mainFrame.persistentSearchBoxes.currency:Hide()
+    mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
+    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
+elseif mainFrame.currentTab == "storage" then
         height = self:DrawStorageTab(scrollChild)
     elseif mainFrame.currentTab == "pve" then
         height = self:DrawPvEProgress(scrollChild)

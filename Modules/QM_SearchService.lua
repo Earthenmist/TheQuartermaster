@@ -11,26 +11,6 @@ local function SafeLower(s)
     return tostring(s):lower()
 end
 
--- Heuristic: determine whether a cached item should be treated as a crafting material / reagent
-local function IsReagentLikeItem(item)
-    if not item then return false end
-    -- Prefer explicit classID (Trade Goods)
-    if tonumber(item.classID) == 7 then
-        return true
-    end
-    -- Fallback to itemType strings (best-effort; localized in-game, but cached values are usually localized too)
-    local t = SafeLower(item.itemType)
-    if t:find("trade") or t:find("reagent") then
-        return true
-    end
-    -- Common reagent subtypes (best-effort)
-    local st = SafeLower(item.itemSubType)
-    if st:find("herb") or st:find("cloth") or st:find("leather") or st:find("metal") or st:find("stone") or st:find("enchant") or st:find("element") or st:find("parts") or st:find("reagent") then
-        return true
-    end
-    return false
-end
-
 local function GetProfileWatchlist(self)
     if not self.db or not self.db.profile then return nil end
     if not self.db.profile.watchlist then
@@ -171,6 +151,35 @@ function TheQuartermaster:CountCurrencyTotals(currencyID)
     return total, breakdown
 end
 
+
+-- Strict reagent check for filtering (prevents gear/non-mats from showing in Materials/Reagents modes)
+local ITEM_CLASS_TRADEGOODS = Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods or 7
+local ITEM_CLASS_GEM       = Enum and Enum.ItemClass and Enum.ItemClass.Gem or 3
+local ITEM_CLASS_REAGENT   = Enum and Enum.ItemClass and Enum.ItemClass.Reagent or nil
+
+local function QM_IsReagentItemID(item)
+    if not item or not item.itemID then return false end
+
+    -- Exclude equippables
+    if item.equipLoc and item.equipLoc ~= "" then return false end
+
+    local classID = item.classID
+    if not classID and C_Item and C_Item.GetItemInfoInstant then
+        local _, _, _, equipLoc, _, cID = C_Item.GetItemInfoInstant(item.itemID)
+        if equipLoc and equipLoc ~= "" then return false end
+        classID = cID
+    end
+
+    if not classID then
+        return false
+    end
+
+    if classID == ITEM_CLASS_TRADEGOODS or classID == ITEM_CLASS_GEM or classID == ITEM_CLASS_REAGENT then
+        return true
+    end
+    return false
+end
+
 function TheQuartermaster:PerformGlobalSearch(searchText, mode, includeGuildBank)
     local text = tostring(searchText or ""):gsub("^%s+", ""):gsub("%s+$", "")
     if text == "" then
@@ -199,14 +208,13 @@ function TheQuartermaster:PerformGlobalSearch(searchText, mode, includeGuildBank
         if mode == "reagents" then
             local filtered = {}
             for _, r in ipairs(itemResults) do
-                if r and r.item and IsReagentLikeItem(r.item) then
+                if r and r.item and QM_IsReagentItemID(r.item) then
                     table.insert(filtered, r)
                 end
             end
-            out.items = filtered
-        else
-            out.items = itemResults
+            itemResults = filtered
         end
+        out.items = itemResults
     end
 
     if mode == "all" or mode == "currency" then

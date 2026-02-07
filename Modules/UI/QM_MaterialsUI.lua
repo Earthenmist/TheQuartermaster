@@ -1,16 +1,10 @@
 --[[
-    The Quartermaster - Materials / Reagents UI
-
-    Aggregates reagent-like items across:
-      - Reagent Bag (current character)
-      - Warband Bank
-      - All Characters (bags + personal banks)
-      - Guild Bank (cached, optional)
-
-    Design goals:
-      - Clean totals + actionable breakdown
-      - Fast filtering (text + category)
-      - First-class Watchlist integration (pin star)
+    The Quartermaster - Materials (Reagents) View
+    v1.0.14
+    Notes:
+      - Profession-focused category filter (no noisy subtypes).
+      - Right-click row menu matches Items/Storage style.
+      - Reagent detection is strict to avoid gear/non-mats.
 ]]
 
 local ADDON_NAME, ns = ...
@@ -18,42 +12,268 @@ local TheQuartermaster = ns.TheQuartermaster
 
 local COLORS = ns.UI_COLORS
 local CreateCard = ns.UI_CreateCard
+local ReleaseAllPooledChildren = ns.UI_ReleaseAllPooledChildren
 
-local function SafeLower(s)
-    if not s then return "" end
-    return tostring(s):lower()
+-- Context menu utility (works on modern + classic dropdown APIs)
+local QM_OpenRowMenu_DROPDOWN
+local function QM_OpenRowMenu(menu, anchor)
+    if not menu or #menu == 0 then return end
+
+    -- Modern menu API
+    if MenuUtil and MenuUtil.CreateContextMenu then
+        MenuUtil.CreateContextMenu(anchor or UIParent, function(_, rootDescription)
+            for _, entry in ipairs(menu) do
+                rootDescription:CreateButton(entry.text, entry.func)
+            end
+        end)
+        return
+    end
+
+    -- Legacy dropdown API fallback
+    if not QM_OpenRowMenu_DROPDOWN then
+        QM_OpenRowMenu_DROPDOWN = CreateFrame("Frame", "QM_MaterialsContextMenuDrop", UIParent, "UIDropDownMenuTemplate")
+    end
+
+    if UIDropDownMenu_Initialize and ToggleDropDownMenu and UIDropDownMenu_CreateInfo then
+        UIDropDownMenu_Initialize(QM_OpenRowMenu_DROPDOWN, function(self, level)
+            local info = UIDropDownMenu_CreateInfo()
+            for _, entry in ipairs(menu) do
+                info.text = entry.text
+                info.func = entry.func
+                info.notCheckable = true
+                UIDropDownMenu_AddButton(info, level)
+            end
+        end, "MENU")
+        ToggleDropDownMenu(1, nil, QM_OpenRowMenu_DROPDOWN, "cursor", 0, 0)
+    end
 end
 
-local function DrawEmptyState(parent, text, yOffset)
-    local msg = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    msg:SetPoint("TOPLEFT", 20, -yOffset)
-    msg:SetTextColor(0.7, 0.7, 0.7)
-    msg:SetText(text)
-    return yOffset + 30
+local function QM_CopyItemLinkToChat(itemLink)
+    if not itemLink then return end
+    if ChatFrame_OpenChat then
+        ChatFrame_OpenChat(itemLink)
+    else
+        local editBox = ChatEdit_GetActiveWindow and ChatEdit_GetActiveWindow()
+        if editBox then
+            editBox:Insert(itemLink)
+        end
+    end
 end
 
--- Conservative "reagent-like" filter based on cached fields.
--- We treat Trade Goods (classID 7) as primary, but also allow explicit Reagent itemType.
-local function IsReagentLike(item)
-    if not item then return false end
+-- ============================================================================
+-- Reagent detection & profession categories
+-- ============================================================================
 
-    -- If we scanned from the reagent bag, it's safe to treat it as a reagent.
-    if item.__fromReagentBag then return true end
+local ITEM_CLASS_TRADEGOODS = Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods or 7
+local ITEM_CLASS_GEM       = Enum and Enum.ItemClass and Enum.ItemClass.Gem or 3
+local ITEM_CLASS_REAGENT   = Enum and Enum.ItemClass and Enum.ItemClass.Reagent or nil
 
-    local classID = tonumber(item.classID)
-    if classID == 7 then return true end -- Trade Goods
+local function IsStrictReagent(item)
+    if not item or not item.itemID then return false end
 
-    local t = SafeLower(item.itemType)
-    if t:find("trade") then return true end
-    if t:find("reagent") then return true end
+    -- If the scanner cached classID/equipLoc, use it to quickly exclude gear.
+    if item.equipLoc and item.equipLoc ~= "" then return false end
+    if item.classID and (item.classID ~= ITEM_CLASS_TRADEGOODS and item.classID ~= ITEM_CLASS_GEM and item.classID ~= ITEM_CLASS_REAGENT) then
+        return false
+    end
 
-    -- Some older mats report as "Miscellaneous" but still have trade-good subtypes.
-    local st = SafeLower(item.itemSubType)
-    if st:find("cloth") or st:find("herb") or st:find("leather") or st:find("metal") or st:find("stone") then return true end
-    if st:find("enchant") or st:find("elemental") or st:find("parts") then return true end
+    -- Fallback: use instant info if classID missing.
+    if (not item.classID) and C_Item and C_Item.GetItemInfoInstant then
+        local _, _, _, equipLoc, icon, classID, subclassID = C_Item.GetItemInfoInstant(item.itemID)
+        if equipLoc and equipLoc ~= "" then return false end
+        if classID and (classID ~= ITEM_CLASS_TRADEGOODS and classID ~= ITEM_CLASS_GEM and classID ~= ITEM_CLASS_REAGENT) then
+            return false
+        end
+    end
 
-    return false
+    -- If we got here, it's likely a mat/gem/reagent item.
+    return true
 end
+
+-- Profession-focused categories (kept intentionally small & relevant)
+local PROF_CATEGORIES = {
+    { key = "all", label = "All" },
+    { key = "alchemy", label = "Alchemy" },
+    { key = "blacksmithing", label = "Blacksmithing" },
+    { key = "cooking", label = "Cooking" },
+    { key = "enchanting", label = "Enchanting" },
+    { key = "engineering", label = "Engineering" },
+    { key = "inscription", label = "Inscription" },
+    { key = "jewelcrafting", label = "Jewelcrafting" },
+    { key = "leatherworking", label = "Leatherworking" },
+    { key = "tailoring", label = "Tailoring" },
+}
+
+-- Map itemSubType (and a couple of common itemType strings) to a "best fit" profession category.
+-- This is a heuristic, but it's stable and avoids noisy categories.
+local SUBTYPE_TO_PROF = {
+    ["Cloth"] = "tailoring",
+    ["Leather"] = "leatherworking",
+    ["Metal & Stone"] = "blacksmithing",
+    ["Herb"] = "alchemy",
+    ["Elemental"] = "alchemy",
+    ["Cooking"] = "cooking",
+    ["Enchanting"] = "enchanting",
+    ["Inscription"] = "inscription",
+    ["Jewelcrafting"] = "jewelcrafting",
+    ["Parts"] = "engineering",
+    ["Gems"] = "jewelcrafting",
+}
+
+-- Optional/Finishing reagents are used in multiple professions; show them for all filters.
+local function IsUniversalReagentSubtype(subType)
+    if not subType then return false end
+    return subType == "Optional Reagents" or subType == "Finishing Reagents" or subType == "Reagent"
+end
+
+local function GetProfessionCategoryForItem(item)
+    if not item then return "all" end
+    local sub = item.itemSubType
+    if IsUniversalReagentSubtype(sub) then
+        return "all"
+    end
+    if sub and SUBTYPE_TO_PROF[sub] then
+        return SUBTYPE_TO_PROF[sub]
+    end
+
+    -- Gems may not always have subtypes populated; infer from class.
+    if item.classID == ITEM_CLASS_GEM then
+        return "jewelcrafting"
+    end
+
+    return "all"
+end
+
+-- ============================================================================
+-- Aggregation
+-- ============================================================================
+
+local function AddItemToTotals(totals, item, amount, source, perChar)
+    if not item or not item.itemID or not amount or amount <= 0 then return end
+    if not IsStrictReagent(item) then return end
+
+    local id = tonumber(item.itemID)
+    totals[id] = totals[id] or {
+        itemID = id,
+        name = item.name,
+        itemLink = item.itemLink,
+        iconFileID = item.iconFileID,
+        itemSubType = item.itemSubType,
+        classID = item.classID,
+        total = 0,
+        sources = {},
+        characters = {},
+    }
+
+    local t = totals[id]
+    t.total = (t.total or 0) + amount
+    t.itemSubType = t.itemSubType or item.itemSubType
+    t.iconFileID = t.iconFileID or item.iconFileID
+    t.name = t.name or item.name
+    t.itemLink = t.itemLink or item.itemLink
+    t.classID = t.classID or item.classID
+
+    if source then
+        t.sources[source] = (t.sources[source] or 0) + amount
+    end
+    if perChar then
+        t.characters[perChar] = (t.characters[perChar] or 0) + amount
+    end
+end
+
+local function IterateContainerItems(itemsTable, callback)
+    if type(itemsTable) ~= "table" then return end
+    for bagIndex, bagSlots in pairs(itemsTable) do
+        if type(bagSlots) == "table" then
+            for _, item in pairs(bagSlots) do
+                if item and item.itemID then
+                    callback(item)
+                end
+            end
+        end
+    end
+end
+
+local function CollectMaterials(self, opts)
+    local db = self.db
+    if not db then return {} end
+
+    local totals = {}
+
+    local includeReagentBag = opts.includeReagentBag
+    local includeWarband = opts.includeWarband
+    local includeAllChars = opts.includeAllChars
+    local includeGuild = opts.includeGuild
+
+    local playerKey = UnitName("player") .. "-" .. GetRealmName()
+
+    -- Reagent Bag (current char) is bagID 5 in your inventory mapping (bagIndex varies).
+    if includeReagentBag and db.char and db.char.inventory and db.char.inventory.items and db.char.inventory.bagIDs then
+        for bagIndex, bagID in ipairs(db.char.inventory.bagIDs) do
+            if bagID == 5 then
+                local bagSlots = db.char.inventory.items[bagIndex] or {}
+                for _, item in pairs(bagSlots) do
+                    AddItemToTotals(totals, item, tonumber(item.stackCount or 1) or 1, "Reagent Bag", playerKey)
+                end
+            end
+        end
+    end
+
+    -- Warband Bank
+    if includeWarband and db.global and db.global.warbandBank and db.global.warbandBank.items then
+        for tabIndex, tab in pairs(db.global.warbandBank.items) do
+            if type(tab) == "table" then
+                for _, item in pairs(tab) do
+                    AddItemToTotals(totals, item, tonumber(item.stackCount or 1) or 1, "Warband Bank", "Warband")
+                end
+            end
+        end
+    end
+
+    -- All Characters (bags + personal bank)
+    if includeAllChars and db.global and db.global.characters then
+        for charKey, charData in pairs(db.global.characters) do
+            if type(charData) == "table" then
+                if charData.inventory and charData.inventory.items then
+                    IterateContainerItems(charData.inventory.items, function(item)
+                        AddItemToTotals(totals, item, tonumber(item.stackCount or 1) or 1, "Bags", charKey)
+                    end)
+                end
+                if charData.personalBank and charData.personalBank.items then
+                    IterateContainerItems(charData.personalBank.items, function(item)
+                        AddItemToTotals(totals, item, tonumber(item.stackCount or 1) or 1, "Bank", charKey)
+                    end)
+                end
+            end
+        end
+    end
+
+    -- Guild Bank (cached)
+    if includeGuild and db.global and db.global.guildBank then
+        for guildName, guildData in pairs(db.global.guildBank) do
+            if type(guildData) == "table" and guildData.tabs then
+                for tabIndex, tabData in pairs(guildData.tabs) do
+                    if tabData and tabData.items then
+                        for _, item in pairs(tabData.items) do
+                            AddItemToTotals(totals, item, tonumber(item.stackCount or 1) or 1, "Guild Bank", guildName)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Convert to array
+    local out = {}
+    for _, v in pairs(totals) do
+        table.insert(out, v)
+    end
+    return out
+end
+
+-- ============================================================================
+-- UI
+-- ============================================================================
 
 local function CreateRow(parent, y, width, height)
     local row = CreateFrame("Button", nil, parent, "BackdropTemplate")
@@ -78,9 +298,9 @@ local function CreateRow(parent, y, width, height)
     row.name:SetTextColor(1, 1, 1)
 
     row.meta = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    row.meta:SetPoint("RIGHT", -72, 0)
+    row.meta:SetPoint("RIGHT", -60, 0)
     row.meta:SetJustifyH("RIGHT")
-    row.meta:SetTextColor(0.75, 0.75, 0.75)
+    row.meta:SetTextColor(0.8, 0.8, 0.8)
 
     row.count = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     row.count:SetPoint("RIGHT", -12, 0)
@@ -98,383 +318,239 @@ local function CreateRow(parent, y, width, height)
     row.pin.icon:SetTexture("Interface\\Common\\FavoritesIcon")
     row.pin.icon:SetAlpha(0.9)
 
-    row.pin:SetScript("OnEnter", function(btn)
-        GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
-        local text = btn.isPinned and "Unpin from Watchlist" or "Pin to Watchlist"
-        GameTooltip:AddLine(text, 1, 1, 1)
-        GameTooltip:AddLine("Click to toggle.", 0.7, 0.7, 0.7)
-        GameTooltip:Show()
-    end)
-    row.pin:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
-
-    row:SetScript("OnEnter", function(self)
-        self:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.8)
-    end)
-    row:SetScript("OnLeave", function(self)
-        self:SetBackdropBorderColor(0.15, 0.15, 0.18, 0.5)
-        GameTooltip:Hide()
-    end)
-
     return row
 end
 
-local function FormatCount(n)
-    n = tonumber(n) or 0
-    if n >= 1000000 then
-        return string.format("%.1fm", n / 1000000)
-    elseif n >= 10000 then
-        return string.format("%.1fk", n / 1000)
-    end
-    return tostring(n)
+local function DrawEmptyState(parent, text, yOffset)
+    local msg = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    msg:SetPoint("TOPLEFT", 20, -yOffset)
+    msg:SetTextColor(0.7, 0.7, 0.7)
+    msg:SetText(text)
+    return yOffset + 30
 end
 
--- Build aggregation of reagent-like items.
-local function BuildMaterialsIndex(self, opts)
-    local items = {} -- [itemID] = { itemID, name, icon, itemType, itemSubType, total, breakdown = { [label]=count }, sampleLink }
+local function EnsureControls(self, parent)
+    parent.controls = parent.controls or {}
+    local c = parent.controls
 
-    local function Add(item, count, label)
-        if not item or not item.itemID then return end
-        if not count or count <= 0 then return end
+    if not c.sourceBar then
+        local bar = CreateFrame("Frame", nil, parent)
+        bar:SetPoint("TOPLEFT", 10, -120)
+        bar:SetPoint("TOPRIGHT", -10, -120)
+        bar:SetHeight(52)
+        c.sourceBar = bar
 
-        if not IsReagentLike(item) then return end
-
-        local itemID = tonumber(item.itemID)
-        if not itemID then return end
-
-        local entry = items[itemID]
-        if not entry then
-            entry = {
-                itemID = itemID,
-                name = item.name,
-                icon = item.iconFileID,
-                itemType = item.itemType,
-                itemSubType = item.itemSubType,
-                total = 0,
-                breakdown = {},
-                sampleLink = item.itemLink,
-            }
-            items[itemID] = entry
-        end
-
-        entry.total = (entry.total or 0) + count
-        entry.breakdown[label] = (entry.breakdown[label] or 0) + count
-
-        -- Backfill metadata if this entry was created from sparse cache.
-        if not entry.name or entry.name == "" then entry.name = item.name end
-        if not entry.icon or entry.icon == 0 then entry.icon = item.iconFileID end
-        if (not entry.itemType or entry.itemType == "") and item.itemType then entry.itemType = item.itemType end
-        if (not entry.itemSubType or entry.itemSubType == "") and item.itemSubType then entry.itemSubType = item.itemSubType end
-        if not entry.sampleLink and item.itemLink then entry.sampleLink = item.itemLink end
-    end
-
-    -- 1) Reagent bag (current character)
-    if opts.includeReagentBag and self.db and self.db.char and self.db.char.inventory and self.db.char.inventory.items then
-        local inv = self.db.char.inventory
-        local bagIDs = inv.bagIDs or {}
-        for bagIndex, bagData in pairs(inv.items) do
-            local bagID = bagIDs[bagIndex]
-            if bagID == 5 then
-                for _, item in pairs(bagData) do
-                    if item and item.itemID then
-                        item.__fromReagentBag = true
-                        Add(item, item.stackCount or 1, "Reagent Bag")
-                        item.__fromReagentBag = nil
-                    end
-                end
-            end
-        end
-    end
-
-    -- 2) Warband bank
-    if opts.includeWarbandBank and self.db and self.db.global and self.db.global.warbandBank and self.db.global.warbandBank.items then
-        for _, tabData in pairs(self.db.global.warbandBank.items) do
-            for _, item in pairs(tabData) do
-                if item and item.itemID then
-                    Add(item, item.stackCount or item.count or 1, "Warband Bank")
-                end
-            end
-        end
-    end
-
-    -- 3) All characters (bags + personal banks)
-    if opts.includeAllCharacters and self.db and self.db.global and self.db.global.characters then
-        for _, charData in pairs(self.db.global.characters) do
-            local charLabel = (charData.name or "Unknown") .. "-" .. (charData.realm or "Unknown")
-
-            -- Bags
-            if charData.inventory and charData.inventory.items then
-                for _, bagData in pairs(charData.inventory.items) do
-                    for _, item in pairs(bagData) do
-                        if item and item.itemID then
-                            Add(item, item.stackCount or 1, charLabel .. " • Bags")
-                        end
-                    end
-                end
-            end
-
-            -- Personal bank
-            if charData.personalBank then
-                for _, bagData in pairs(charData.personalBank) do
-                    for _, item in pairs(bagData) do
-                        if item and item.itemID then
-                            Add(item, item.stackCount or 1, charLabel .. " • Bank")
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    -- 4) Guild bank (cached)
-    if opts.includeGuildBank and self.db and self.db.global and self.db.global.guildBank then
-        for guildName, guildData in pairs(self.db.global.guildBank) do
-            if guildData and guildData.tabs then
-                for tabIndex, tab in pairs(guildData.tabs) do
-                    if tab and tab.items then
-                        for _, item in pairs(tab.items) do
-                            if item and item.itemID then
-                                Add(item, item.count or item.stackCount or 1, "Guild Bank • " .. guildName .. " • Tab " .. tostring(tabIndex))
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    local list = {}
-    for _, entry in pairs(items) do
-        table.insert(list, entry)
-    end
-
-    table.sort(list, function(a, b)
-        local an = SafeLower(a.name)
-        local bn = SafeLower(b.name)
-        if an == bn then
-            return (a.total or 0) > (b.total or 0)
-        end
-        return an < bn
-    end)
-
-    return list
-end
-
-local function GetDistinctSubTypes(list)
-    local set = {}
-    local out = {}
-    for _, e in ipairs(list or {}) do
-        local st = e.itemSubType
-        if st and st ~= "" and not set[st] then
-            set[st] = true
-            table.insert(out, st)
-        end
-    end
-    table.sort(out)
-    return out
-end
-
-function TheQuartermaster:DrawMaterialsTab(parent)
-    local yOffset = 8
-    local width = parent:GetWidth() - 20
-
-    -- Defaults
-    if ns.materialsIncludeReagentBag == nil then ns.materialsIncludeReagentBag = true end
-    if ns.materialsIncludeWarband == nil then ns.materialsIncludeWarband = true end
-    if ns.materialsIncludeAllChars == nil then ns.materialsIncludeAllChars = true end
-    if ns.materialsIncludeGuild == nil then
-        local wl = self.db and self.db.profile and self.db.profile.watchlist
-        ns.materialsIncludeGuild = (wl and wl.includeGuildBank ~= false) or true
-    end
-    ns.materialsSubTypeFilter = ns.materialsSubTypeFilter or "All"
-
-    -- Header
-    local header = CreateCard(parent, 72)
-    header:SetWidth(width)
-    header:SetPoint("TOPLEFT", 10, -yOffset)
-
-    local icon = header:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(36, 36)
-    icon:SetPoint("LEFT", 16, 0)
-    icon:SetTexture("Interface\\Icons\\INV_Misc_Organ_06")
-
-    local title = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title:SetPoint("TOPLEFT", icon, "TOPRIGHT", 12, -2)
-    title:SetText("Materials")
-    title:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
-
-    local subtitle = header:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
-    subtitle:SetText("Crafting reagents across your Warband, banks, and caches")
-    subtitle:SetTextColor(0.65, 0.65, 0.65)
-
-    yOffset = yOffset + 86
-
-    -- Controls
-    local controls = CreateCard(parent, 78)
-    controls:SetWidth(width)
-    controls:SetPoint("TOPLEFT", 10, -yOffset)
-
-    if not controls.built then
-        controls.built = true
-
-        local function MakeCheck(label, x, y, initial, onChange)
-            local cb = CreateFrame("CheckButton", nil, controls, "UICheckButtonTemplate")
-            cb:SetPoint("TOPLEFT", x, -y)
+        local function MakeCB(label, x)
+            local cb = CreateFrame("CheckButton", nil, bar, "UICheckButtonTemplate")
+            cb:SetPoint("TOPLEFT", x, -6)
             cb.text = cb:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
             cb.text:SetPoint("LEFT", cb, "RIGHT", 6, 0)
             cb.text:SetText(label)
-            cb:SetChecked(initial)
-            cb:SetScript("OnClick", function(selfBtn)
-                onChange(selfBtn:GetChecked())
-                TheQuartermaster:PopulateContent()
-            end)
             return cb
         end
 
-        controls.cbReagentBag = MakeCheck("Reagent Bag", 10, 18, ns.materialsIncludeReagentBag, function(v) ns.materialsIncludeReagentBag = v end)
-        controls.cbWarband = MakeCheck("Warband Bank", 140, 18, ns.materialsIncludeWarband, function(v) ns.materialsIncludeWarband = v end)
-        controls.cbAllChars = MakeCheck("All Characters", 280, 18, ns.materialsIncludeAllChars, function(v) ns.materialsIncludeAllChars = v end)
-        controls.cbGuild = MakeCheck("Guild Bank (cached)", 430, 18, ns.materialsIncludeGuild, function(v)
-            ns.materialsIncludeGuild = v
-            if TheQuartermaster.db and TheQuartermaster.db.profile and TheQuartermaster.db.profile.watchlist then
-                TheQuartermaster.db.profile.watchlist.includeGuildBank = v
-            end
-        end)
+        c.cbReagent = MakeCB("Reagent Bag", 0)
+        c.cbWarband = MakeCB("Warband Bank", 140)
+        c.cbAll = MakeCB("All Characters", 300)
+        c.cbGuild = MakeCB("Guild Bank (cached)", 470)
 
-        -- Category dropdown
-        local drop = CreateFrame("Frame", nil, controls, "UIDropDownMenuTemplate")
-        drop:SetPoint("TOPLEFT", 6, -46)
-        UIDropDownMenu_SetWidth(drop, 210)
-        UIDropDownMenu_SetText(drop, "Category: All")
-        controls.categoryDrop = drop
+        -- Defaults
+        if ns.materialsSources == nil then
+            ns.materialsSources = { reagent=true, warband=true, all=true, guild=true }
+        end
 
-        local function SetSubType(value)
-            ns.materialsSubTypeFilter = value or "All"
-            if ns.materialsSubTypeFilter == "All" then
-                UIDropDownMenu_SetText(drop, "Category: All")
-            else
-                UIDropDownMenu_SetText(drop, "Category: " .. ns.materialsSubTypeFilter)
-            end
+        c.cbReagent:SetChecked(ns.materialsSources.reagent)
+        c.cbWarband:SetChecked(ns.materialsSources.warband)
+        c.cbAll:SetChecked(ns.materialsSources.all)
+        c.cbGuild:SetChecked(ns.materialsSources.guild)
+
+        local function OnSourceChanged()
+            ns.materialsSources.reagent = c.cbReagent:GetChecked()
+            ns.materialsSources.warband = c.cbWarband:GetChecked()
+            ns.materialsSources.all = c.cbAll:GetChecked()
+            ns.materialsSources.guild = c.cbGuild:GetChecked()
+            TheQuartermaster:PopulateContent()
+        end
+        c.cbReagent:SetScript("OnClick", OnSourceChanged)
+        c.cbWarband:SetScript("OnClick", OnSourceChanged)
+        c.cbAll:SetScript("OnClick", OnSourceChanged)
+        c.cbGuild:SetScript("OnClick", OnSourceChanged)
+
+        -- Category dropdown (profession focused)
+        local drop = CreateFrame("Frame", "QM_MaterialsCategoryDropDown", bar, "UIDropDownMenuTemplate")
+        drop:SetPoint("TOPLEFT", 0, -30)
+        UIDropDownMenu_SetWidth(drop, 180)
+        c.categoryDrop = drop
+
+        local function SetCat(key, label)
+            ns.materialsCategory = key
+            UIDropDownMenu_SetText(drop, "Category: " .. (label or "All"))
             TheQuartermaster:PopulateContent()
         end
 
-        controls.SetSubType = SetSubType
-    end
+        UIDropDownMenu_Initialize(drop, function(frame, level)
+            local info = UIDropDownMenu_CreateInfo()
+            for _, cat in ipairs(PROF_CATEGORIES) do
+                info.text = cat.label
+                info.func = function() SetCat(cat.key, cat.label) end
+                info.notCheckable = true
+                UIDropDownMenu_AddButton(info)
+            end
+        end)
 
-    -- Update checkbox states on refresh
-    controls.cbReagentBag:SetChecked(ns.materialsIncludeReagentBag)
-    controls.cbWarband:SetChecked(ns.materialsIncludeWarband)
-    controls.cbAllChars:SetChecked(ns.materialsIncludeAllChars)
-    controls.cbGuild:SetChecked(ns.materialsIncludeGuild)
-
-    yOffset = yOffset + 88
-
-    local searchText = SafeLower(ns.materialsSearchText or "")
-
-    local opts = {
-        includeReagentBag = ns.materialsIncludeReagentBag,
-        includeWarbandBank = ns.materialsIncludeWarband,
-        includeAllCharacters = ns.materialsIncludeAllChars,
-        includeGuildBank = ns.materialsIncludeGuild,
-    }
-
-    local list = BuildMaterialsIndex(self, opts)
-
-    -- Build subtype list and init dropdown each draw
-    local subTypes = GetDistinctSubTypes(list)
-    UIDropDownMenu_Initialize(controls.categoryDrop, function()
-        local info = UIDropDownMenu_CreateInfo()
-        info.text = "All"
-        info.func = function() controls.SetSubType("All") end
-        UIDropDownMenu_AddButton(info)
-
-        for _, st in ipairs(subTypes) do
-            info = UIDropDownMenu_CreateInfo()
-            info.text = st
-            info.func = function() controls.SetSubType(st) end
-            UIDropDownMenu_AddButton(info)
+        if not ns.materialsCategory then ns.materialsCategory = "all" end
+        local label = "All"
+        for _, cat in ipairs(PROF_CATEGORIES) do
+            if cat.key == ns.materialsCategory then label = cat.label end
         end
-    end)
-
-    if ns.materialsSubTypeFilter == "All" then
-        UIDropDownMenu_SetText(controls.categoryDrop, "Category: All")
-    else
-        UIDropDownMenu_SetText(controls.categoryDrop, "Category: " .. tostring(ns.materialsSubTypeFilter))
+        UIDropDownMenu_SetText(drop, "Category: " .. label)
     end
 
-    -- Apply filters
+    return c
+end
+
+function TheQuartermaster:DrawMaterialsTab(parent)
+    ReleaseAllPooledChildren(parent)
+    parent.controls = parent.controls -- keep
+
+    local width = (parent:GetWidth() or 700) - 20
+    local yOffset = 20
+
+    -- Header card
+    local card = CreateCard(parent, width, 88, "Materials", "Crafting reagents across your Warband, banks, and caches", "Interface\\Icons\\inv_misc_herb_19")
+    card:SetPoint("TOPLEFT", 10, -yOffset)
+    yOffset = yOffset + 100
+
+    -- Controls
+    EnsureControls(self, parent)
+    yOffset = yOffset + 72
+
+    local searchText = tostring(ns.materialsSearchText or ""):lower()
+    local catKey = ns.materialsCategory or "all"
+    local sources = ns.materialsSources or { reagent=true, warband=true, all=true, guild=true }
+
+    local data = CollectMaterials(self, {
+        includeReagentBag = sources.reagent,
+        includeWarband = sources.warband,
+        includeAllChars = sources.all,
+        includeGuild = sources.guild,
+    })
+
+    -- Apply filters (profession category + text search)
     local filtered = {}
-    for _, e in ipairs(list) do
-        local name = SafeLower(e.name)
-        if (searchText == "" or name:find(searchText, 1, true)) then
-            if ns.materialsSubTypeFilter == "All" or (e.itemSubType and e.itemSubType == ns.materialsSubTypeFilter) then
-                table.insert(filtered, e)
+    for _, it in ipairs(data) do
+        local prof = GetProfessionCategoryForItem(it)
+        local okCat = (catKey == "all") or (prof == catKey) or (prof == "all" and IsUniversalReagentSubtype(it.itemSubType))
+        if okCat then
+            if searchText == "" or (it.name and it.name:lower():find(searchText, 1, true)) then
+                table.insert(filtered, it)
             end
         end
     end
 
-    if #filtered == 0 then
-        if (ns.materialsSearchText or "") == "" then
-            return DrawEmptyState(parent, "No materials found in the selected sources.", yOffset)
-        end
-        return DrawEmptyState(parent, "No materials match your search.", yOffset)
-    end
+    table.sort(filtered, function(a,b)
+        return (a.name or "") < (b.name or "")
+    end)
 
-    -- Results
-    local title2 = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    title2:SetPoint("TOPLEFT", 10, -yOffset)
-    title2:SetText("Results")
-    title2:SetTextColor(1, 1, 1)
+    local title = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 10, -yOffset)
+    title:SetText("Results")
+    title:SetTextColor(1, 1, 1)
     yOffset = yOffset + 26
 
+    if #filtered == 0 then
+        yOffset = DrawEmptyState(parent, "No crafting materials found for your current filters.", yOffset)
+        parent:SetHeight(yOffset + 20)
+        return yOffset
+    end
+
     local rowH = 30
-    for i = 1, math.min(#filtered, 120) do
-        local e = filtered[i]
+    for i=1, math.min(#filtered, 200) do
+        local it = filtered[i]
         local row = CreateRow(parent, yOffset, width, rowH)
 
-        row.icon:SetTexture(e.icon or 134400)
-        row.name:SetText(e.name or ("Item " .. tostring(e.itemID)))
-        row.meta:SetText(e.itemSubType or e.itemType or "")
-        row.count:SetText(FormatCount(e.total or 0))
+        row.icon:SetTexture(it.iconFileID or 134400)
+        row.name:SetText(it.name or ("Item " .. tostring(it.itemID)))
+        -- show a clean profession label (not raw subtype noise)
+        local profKey = GetProfessionCategoryForItem(it)
+        local profLabel = "Reagent"
+        for _, c in ipairs(PROF_CATEGORIES) do
+            if c.key == profKey and c.key ~= "all" then profLabel = c.label end
+        end
+        row.meta:SetText(profLabel)
+        row.count:SetText(tostring(it.total or 0))
 
-        -- Watchlist pin
-        local pinned = self:IsWatchlistedItem(e.itemID)
-        row.pin.isPinned = pinned
+        local itemID = it.itemID
+        local pinned = itemID and self:IsWatchlistedItem(itemID)
         row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
+
         row.pin:SetScript("OnClick", function()
-            self:ToggleWatchlistItem(e.itemID)
+            if itemID then self:ToggleWatchlistItem(itemID) end
+            self:PopulateContent()
+        end)
+
+        row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        row:SetScript("OnMouseUp", function(_, button)
+            if not itemID then return end
+
+            if button == "RightButton" then
+                local pinnedNow = self:IsWatchlistedItem(itemID)
+                local menu = {
+                    {
+                        text = pinnedNow and "Unpin from Watchlist" or "Pin to Watchlist",
+                        func = function()
+                            self:ToggleWatchlistItem(itemID)
+                            self:PopulateContent()
+                        end,
+                    },
+                    {
+                        text = "Copy Item Link",
+                        func = function()
+                            local link = it.itemLink or select(2, GetItemInfo(itemID))
+                            QM_CopyItemLinkToChat(link)
+                        end,
+                    },
+                    {
+                        text = "Search this item",
+                        func = function()
+                            ns.globalSearchText = it.name or (GetItemInfo(itemID) or "")
+                            -- open global search tab
+                            if self.UI and self.UI.mainFrame then
+                                self.UI.mainFrame.currentTab = "search"
+                            end
+                            self:PopulateContent()
+                        end,
+                    },
+                }
+                QM_OpenRowMenu(menu, row)
+                return
+            end
+
+            if button == "LeftButton" and IsShiftKeyDown() then
+                local link = it.itemLink or select(2, GetItemInfo(itemID))
+                if link then ChatEdit_InsertLink(link) end
+            end
         end)
 
         row:SetScript("OnEnter", function(selfRow)
             selfRow:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.8)
-            GameTooltip:SetOwner(selfRow, "ANCHOR_RIGHT")
-            if e.sampleLink then
-                GameTooltip:SetHyperlink(e.sampleLink)
-            elseif GameTooltip.SetItemByID then
-                GameTooltip:SetItemByID(e.itemID)
+            if itemID then
+                GameTooltip:SetOwner(selfRow, "ANCHOR_RIGHT")
+                GameTooltip:SetHyperlink(it.itemLink or select(2, GetItemInfo(itemID)) or ("item:"..itemID))
+                GameTooltip:AddLine(" ")
+                GameTooltip:AddLine("|cffffffffTotals|r", 1,1,1)
+                GameTooltip:AddLine("Total: " .. tostring(it.total or 0), 0.8,0.8,0.8)
+                if it.sources then
+                    for src, amt in pairs(it.sources) do
+                        GameTooltip:AddLine(src .. ": " .. tostring(amt), 0.8,0.8,0.8)
+                    end
+                end
+                GameTooltip:Show()
             end
-            GameTooltip:AddLine(" ")
-            GameTooltip:AddLine("Totals", 1, 1, 1)
-
-            -- Sort breakdown to show biggest contributors first
-            local pairsList = {}
-            for label, count in pairs(e.breakdown or {}) do
-                table.insert(pairsList, { label = label, count = count })
-            end
-            table.sort(pairsList, function(a, b) return (a.count or 0) > (b.count or 0) end)
-
-            local maxLines = 12
-            for idx = 1, math.min(#pairsList, maxLines) do
-                local p = pairsList[idx]
-                GameTooltip:AddDoubleLine(p.label, tostring(p.count), 0.8, 0.8, 0.8, 1, 1, 1)
-            end
-            if #pairsList > maxLines then
-                GameTooltip:AddLine("...")
-            end
-
-            GameTooltip:Show()
+        end)
+        row:SetScript("OnLeave", function(selfRow)
+            selfRow:SetBackdropBorderColor(0.15, 0.15, 0.18, 0.5)
+            GameTooltip:Hide()
         end)
 
         yOffset = yOffset + rowH + 6

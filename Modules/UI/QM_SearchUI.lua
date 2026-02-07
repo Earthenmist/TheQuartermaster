@@ -275,7 +275,7 @@ local searchText = ns.globalSearchText or ""
 
     local results = self:PerformGlobalSearch(searchText, mode, includeGuild)
 
-    -- Items / Reagents results
+    -- Items results
     if mode == "all" or mode == "items" or mode == "reagents" then
         local items = results.items or {}
         local title = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -285,7 +285,7 @@ local searchText = ns.globalSearchText or ""
         yOffset = yOffset + 26
 
         if #items == 0 then
-            yOffset = DrawEmptyState(parent, (mode == "reagents") and "No reagent matches found." or "No item matches found.", yOffset)
+            yOffset = DrawEmptyState(parent, "No item matches found.", yOffset)
         else
             local rowH = 30
             for i=1, math.min(#items, 60) do

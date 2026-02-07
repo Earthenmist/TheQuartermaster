@@ -58,8 +58,8 @@ Modules\UI\QM_CharactersUI.lua
 Modules\UI\ExperienceUI.lua
 Modules\UI\GuildUI.lua
 Modules\UI\QM_CurrencyUI.lua
-Modules\UI\QM_MaterialsUI.lua
 Modules\UI\QM_ItemsUI.lua
+Modules\UI\QM_MaterialsUI.lua
 Modules\UI\QM_StorageUI.lua
 Modules\UI\QM_PvEUI.lua
 Modules\UI\QM_ReputationUI.lua
