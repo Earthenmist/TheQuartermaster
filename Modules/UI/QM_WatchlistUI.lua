@@ -215,60 +215,13 @@ yOffset = yOffset + 84
             local row = CreateRow(parent, yOffset, width, rowH)
             row.icon:SetTexture(icon or 134400)
             row.name:SetText(name or ("Item " .. tostring(itemID)))
-            local target = self:GetWatchlistReagentTarget(itemID)
-            if target and target > 0 then
-                row.total:SetText(string.format("%d/%d", total, target))
-            else
-                row.total:SetText(tostring(total))
-            end
-
-            -- Progress bar (only when a target is set)
-            if not row.progress then
-                row.progress = CreateFrame("StatusBar", nil, row)
-                row.progress:SetSize(160, 8)
-                row.progress:SetPoint("RIGHT", row.total, "LEFT", -8, 0)
-                row.progress:SetStatusBarTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
-                row.progress.bg = row.progress:CreateTexture(nil, "BACKGROUND")
-                row.progress.bg:SetAllPoints(true)
-                row.progress.bg:SetColorTexture(0, 0, 0, 0.35)
-            end
-            if target and target > 0 then
-                row.progress:Show()
-                row.progress:SetMinMaxValues(0, target)
-                row.progress:SetValue(math.min(total, target))
-            else
-                row.progress:Hide()
-            end
-
-            if not row.targetBtn then
-                row.targetBtn = CreateFrame("Button", nil, row, "BackdropTemplate")
-                row.targetBtn:SetSize(52, 22)
-                row.targetBtn:SetPoint("RIGHT", row.remove, "LEFT", -6, 0)
-                row.targetBtn:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
-                row.targetBtn:SetBackdropColor(0, 0, 0, 0.20)
-                row.targetBtn.text = row.targetBtn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-                row.targetBtn.text:SetPoint("CENTER")
-                row.targetBtn.text:SetText("Target")
-                row.targetBtn:SetScript("OnEnter", function(btn)
-                    GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
-                    GameTooltip:AddLine("Set desired amount", 1, 1, 1)
-                    GameTooltip:AddLine("Used for progress bars on Watchlist.", 0.7, 0.7, 0.7)
-                    GameTooltip:Show()
-                end)
-                row.targetBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
-            end
-
-            row.targetBtn:SetScript("OnClick", function()
-                if self.OpenSetReagentTargetPopup then
-                    self:OpenSetReagentTargetPopup(itemID)
-                else
-                    -- fallback
-                    self:SetWatchlistReagentTarget(itemID, 0)
-                end
-            end)
+            -- Items do not use target amounts/progress bars.
+            row.total:SetText(tostring(total))
+            if row.progress then row.progress:Hide() end
+            if row.targetBtn then row.targetBtn:Hide() end
 
             row.remove:SetScript("OnClick", function()
-                self:ToggleWatchlistReagent(itemID)
+                self:ToggleWatchlistItem(itemID)
             end)
 
             row:SetScript("OnEnter", function(selfRow)
@@ -323,19 +276,34 @@ yOffset = yOffset + 84
                     row._qmBar = CreateFrame("StatusBar", nil, row, "BackdropTemplate")
                     row._qmBar:SetPoint("LEFT", row.name, "LEFT", 0, -10)
                     row._qmBar:SetPoint("RIGHT", row.total, "LEFT", -10, -10)
-                    row._qmBar:SetHeight(6)
+                    -- Make the progress bar more visible.
+                    row._qmBar:SetHeight(10)
                     row._qmBar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
                     row._qmBar:SetMinMaxValues(0, 1)
                     row._qmBar:SetValue(0)
-                    row._qmBar:SetStatusBarColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.65)
-                    row._qmBar:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
-                    row._qmBar:SetBackdropColor(0, 0, 0, 0.35)
+                    row._qmBar:SetStatusBarColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.90)
+                    row._qmBar:SetBackdrop({
+                        bgFile = "Interface\\BUTTONS\\WHITE8X8",
+                        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+                        edgeSize = 12,
+                        insets = { left = 2, right = 2, top = 2, bottom = 2 },
+                    })
+                    row._qmBar:SetBackdropColor(0, 0, 0, 0.55)
+                    row._qmBar:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.85)
+
+                    row._qmBarText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+                    row._qmBarText:SetPoint("CENTER", row._qmBar, "CENTER", 0, 0)
+                    row._qmBarText:SetText("")
                 end
                 row._qmBar:Show()
                 row._qmBar:SetMinMaxValues(0, target)
                 row._qmBar:SetValue(math.min(total, target))
+                if row._qmBarText then
+                    row._qmBarText:SetText(string.format("%d%%", math.floor((math.min(total, target) / math.max(1, target)) * 100 + 0.5)))
+                end
             elseif row._qmBar then
                 row._qmBar:Hide()
+                if row._qmBarText then row._qmBarText:SetText("") end
             end
 
             -- Target button

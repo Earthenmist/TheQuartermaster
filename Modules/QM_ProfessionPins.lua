@@ -58,6 +58,11 @@ local function GetRequiredReagents(recipeID)
     return out
 end
 
+local function HasAnyRequiredReagents(recipeID)
+    local reagents = GetRequiredReagents(recipeID)
+    return reagents and next(reagents) ~= nil
+end
+
 local function EnsurePopup()
     if StaticPopupDialogs["QM_PIN_RECIPE_REAGENTS"] then return end
 
@@ -155,7 +160,25 @@ local function TryAttachButton()
     pf._qmPinReagentsButton = btn
 
     btn:ClearAllPoints()
-    btn:SetPoint("LEFT", anchor, "LEFT", 10, 70)
+
+    -- Place it next to the Crafting action buttons so it never overlaps reagent icons.
+    local createAll = pf.CraftingPage.CreateAllButton
+    if createAll and createAll.GetObjectType and createAll:GetObjectType() == "Button" then
+        btn:SetPoint("RIGHT", createAll, "LEFT", -8, 0)
+    else
+        btn:SetPoint("LEFT", anchor, "LEFT", 10, 70)
+    end
+
+    btn:SetFrameStrata("DIALOG")
+    btn:SetFrameLevel((createAll and createAll.GetFrameLevel and createAll:GetFrameLevel() or btn:GetFrameLevel()) + 5)
+
+    -- Initial visibility (hide when there are no explicit required reagents).
+    local recipeID = GetSelectedRecipeID()
+    if not recipeID or not HasAnyRequiredReagents(recipeID) then
+        btn:Hide()
+    else
+        btn:Show()
+    end
 end
 
 -- Lightweight event driver
@@ -164,5 +187,19 @@ driver:RegisterEvent("PLAYER_LOGIN")
 driver:RegisterEvent("TRADE_SKILL_SHOW")
 driver:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
 driver:SetScript("OnEvent", function()
-    C_Timer.After(0.2, TryAttachButton)
+    C_Timer.After(0.2, function()
+        TryAttachButton()
+
+        -- Refresh visibility when the selected recipe changes.
+        local pf = _G.ProfessionsFrame
+        local btn = pf and pf._qmPinReagentsButton
+        if btn then
+            local recipeID = GetSelectedRecipeID()
+            if recipeID and HasAnyRequiredReagents(recipeID) then
+                btn:Show()
+            else
+                btn:Hide()
+            end
+        end
+    end)
 end)
