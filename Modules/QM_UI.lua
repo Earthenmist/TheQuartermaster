@@ -59,6 +59,48 @@ local currentTab = "stats" -- Default to Characters tab
 local currentItemsSubTab = "inventory" -- Default to Inventory
 local expandedGroups = {} -- Persisted expand/collapse state for item groups
 
+-- ------------------------------------------------------------
+-- Search focus preservation
+-- Many panels rebuild their content frequently (filters, pin changes, refresh timers).
+-- Without explicitly restoring keyboard focus, EditBoxes can lose focus while typing.
+-- ------------------------------------------------------------
+function TheQuartermaster:CaptureSearchFocus()
+    local focus = GetCurrentKeyBoardFocus and GetCurrentKeyBoardFocus() or nil
+    if not focus or not focus.GetObjectType then
+        self._qmSearchFocus = nil
+        return
+    end
+
+    if focus:GetObjectType() ~= "EditBox" then
+        self._qmSearchFocus = nil
+        return
+    end
+
+    local cursor = 0
+    if focus.GetCursorPosition then
+        cursor = focus:GetCursorPosition() or 0
+    end
+
+    self._qmSearchFocus = {
+        editBox = focus,
+        cursor = cursor,
+    }
+end
+
+function TheQuartermaster:RestoreSearchFocus()
+    local info = self._qmSearchFocus
+    if not info or not info.editBox then return end
+
+    local eb = info.editBox
+    if not eb.IsShown or not eb:IsShown() then return end
+    if eb.SetFocus then
+        eb:SetFocus()
+        if eb.SetCursorPosition then
+            eb:SetCursorPosition(info.cursor or 0)
+        end
+    end
+end
+
 -- Search text state (exposed to namespace for sub-modules to access directly)
 ns.itemsSearchText = ""
 ns.storageSearchText = ""
@@ -398,22 +440,23 @@ f.tabButtons["chars"] = CreateTabButton(nav, "Characters", "chars", 10 + tabSpac
 f.tabButtons["exp"] = CreateTabButton(nav, "Experience", "exp", 10 + tabSpacing * 2)
 f.tabButtons["guild"] = CreateTabButton(nav, "Guilds", "guild", 10 + tabSpacing * 3)
 f.tabButtons["items"] = CreateTabButton(nav, "Items", "items", 10 + tabSpacing * 4)
-f.tabButtons["storage"] = CreateTabButton(nav, "Storage", "storage", 10 + tabSpacing * 5)
-f.tabButtons["pve"] = CreateTabButton(nav, "PvE", "pve", 10 + tabSpacing * 6)
-f.tabButtons["reputations"] = CreateTabButton(nav, "Reputations", "reputations", 10 + tabSpacing * 7)
-f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tabSpacing * 8)
+f.tabButtons["materials"] = CreateTabButton(nav, "Materials", "materials", 10 + tabSpacing * 5)
+f.tabButtons["storage"] = CreateTabButton(nav, "Storage", "storage", 10 + tabSpacing * 6)
+f.tabButtons["pve"] = CreateTabButton(nav, "PvE", "pve", 10 + tabSpacing * 7)
+f.tabButtons["reputations"] = CreateTabButton(nav, "Reputations", "reputations", 10 + tabSpacing * 8)
+f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tabSpacing * 9)
 
 -- Separator (theme color) between primary sections and utility tabs
 local sep = CreateFrame("Frame", nil, nav, "BackdropTemplate")
 sep:SetHeight(3)
-sep:SetPoint("TOPLEFT", nav, "TOPLEFT", 10, -(10 + tabSpacing * 9) - 4)
-sep:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -10, -(10 + tabSpacing * 9) - 4)
+sep:SetPoint("TOPLEFT", nav, "TOPLEFT", 10, -(10 + tabSpacing * 10) - 4)
+sep:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -10, -(10 + tabSpacing * 10) - 4)
 sep:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
 local accent = COLORS.accent
 sep:SetBackdropColor(accent[1], accent[2], accent[3], 0.9)
 
-f.tabButtons["search"] = CreateTabButton(nav, "Search", "search", 10 + tabSpacing * 9 + 20)
-f.tabButtons["watchlist"] = CreateTabButton(nav, "Watchlist", "watchlist", 10 + tabSpacing * 10 + 20)
+f.tabButtons["search"] = CreateTabButton(nav, "Search", "search", 10 + tabSpacing * 10 + 20)
+f.tabButtons["watchlist"] = CreateTabButton(nav, "Watchlist", "watchlist", 10 + tabSpacing * 11 + 20)
 -- Sidebar actions (Information + Settings) - match nav button style, anchored to bottom
 local infoNav = CreateTabButton(nav, L["INFORMATION"] or "Information", "info_action", 10) -- yOffset ignored after re-anchor
 local settingsNav = CreateTabButton(nav, L["SETTINGS"] or "Settings", "settings_action", 10) -- yOffset ignored after re-anchor
@@ -652,7 +695,7 @@ function TheQuartermaster:PopulateContent()
     end
     
     -- Show/hide searchArea and create persistent search boxes
-    local isSearchTab = (mainFrame.currentTab == "items" or mainFrame.currentTab == "storage" or mainFrame.currentTab == "currency" or mainFrame.currentTab == "reputations" or mainFrame.currentTab == "search")
+    local isSearchTab = (mainFrame.currentTab == "items" or mainFrame.currentTab == "materials" or mainFrame.currentTab == "storage" or mainFrame.currentTab == "currency" or mainFrame.currentTab == "reputations" or mainFrame.currentTab == "search")
     
     if mainFrame.searchArea then
         if isSearchTab then
@@ -676,7 +719,7 @@ function TheQuartermaster:PopulateContent()
                     "Search items...",
                     function(searchText)
                         ns.itemsSearchText = searchText
-                        self:PopulateContent()
+                        self:RefreshUI()
                     end,
                     0.4
                 )
@@ -685,6 +728,24 @@ function TheQuartermaster:PopulateContent()
                 itemsSearch:SetPoint("TOPRIGHT", -10, -8)  -- Responsive
                 itemsSearch:Hide()
                 mainFrame.persistentSearchBoxes.items = itemsSearch
+
+                -- Materials search box (responsive width)
+                local materialsSearch, materialsClear = CreateSearchBox(
+                    mainFrame.searchArea,
+                    10,
+                    "Search materials...",
+                    function(searchText)
+                        ns.materialsSearchText = searchText
+                        self:RefreshUI()
+                    end,
+                    0.4
+                )
+                materialsSearch:ClearAllPoints()
+                materialsSearch:SetPoint("TOPLEFT", 10, -8)
+                materialsSearch:SetPoint("TOPRIGHT", -10, -8)
+                materialsSearch:Hide()
+                mainFrame.persistentSearchBoxes.materials = materialsSearch
+
                 
                 -- Storage search box (responsive width)
                 local storageSearch, storageClear = CreateSearchBox(
@@ -693,7 +754,7 @@ function TheQuartermaster:PopulateContent()
                     "Search storage...",
                     function(searchText)
                         ns.storageSearchText = searchText
-                        self:PopulateContent()
+                        self:RefreshUI()
                     end,
                     0.4
                 )
@@ -710,7 +771,7 @@ function TheQuartermaster:PopulateContent()
                     "Search currencies...",
                     function(searchText)
                         ns.currencySearchText = searchText
-                        self:PopulateContent()
+                        self:RefreshUI()
                     end,
                     0.4
                 )
@@ -727,7 +788,7 @@ function TheQuartermaster:PopulateContent()
                     "Search reputations...",
                     function(searchText)
                         ns.reputationSearchText = searchText
-                        self:PopulateContent()
+                        self:RefreshUI()
                     end,
                     0.4
                 )
@@ -744,7 +805,7 @@ local globalSearch, globalClear = CreateSearchBox(
     "Search items or currency...",
     function(searchText)
         ns.globalSearchText = searchText or ""
-        self:PopulateContent()
+        self:RefreshUI()
     end,
     0.4
 )
@@ -757,38 +818,35 @@ mainFrame.persistentSearchBoxes.global = globalSearch
             end
             
             -- Show appropriate search box
-if mainFrame.currentTab == "items" then
-    mainFrame.persistentSearchBoxes.items:Show()
-    mainFrame.persistentSearchBoxes.storage:Hide()
-    mainFrame.persistentSearchBoxes.currency:Hide()
-    mainFrame.persistentSearchBoxes.reputations:Hide()
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-elseif mainFrame.currentTab == "storage" then
-    mainFrame.persistentSearchBoxes.items:Hide()
-    mainFrame.persistentSearchBoxes.storage:Show()
-    mainFrame.persistentSearchBoxes.currency:Hide()
-    mainFrame.persistentSearchBoxes.reputations:Hide()
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-elseif mainFrame.currentTab == "currency" then
-    mainFrame.persistentSearchBoxes.items:Hide()
-    mainFrame.persistentSearchBoxes.storage:Hide()
-    mainFrame.persistentSearchBoxes.currency:Show()
-    mainFrame.persistentSearchBoxes.reputations:Hide()
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-elseif mainFrame.currentTab == "search" then
-    mainFrame.persistentSearchBoxes.items:Hide()
-    mainFrame.persistentSearchBoxes.storage:Hide()
-    mainFrame.persistentSearchBoxes.currency:Hide()
-    mainFrame.persistentSearchBoxes.reputations:Hide()
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Show() end
-else -- reputations
-    mainFrame.persistentSearchBoxes.items:Hide()
-    mainFrame.persistentSearchBoxes.storage:Hide()
-    mainFrame.persistentSearchBoxes.currency:Hide()
-    mainFrame.persistentSearchBoxes.reputations:Show()
-    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-end
+            if mainFrame._lastSearchTab ~= mainFrame.currentTab then
+                -- (Always hide everything first, then show the relevant one)
+                mainFrame.persistentSearchBoxes.items:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
+                mainFrame.persistentSearchBoxes.storage:Hide()
+                mainFrame.persistentSearchBoxes.currency:Hide()
+                mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
+    
+                if mainFrame.currentTab == "items" then
+                    mainFrame.persistentSearchBoxes.items:Show()
+                elseif mainFrame.currentTab == "materials" then
+                    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Show() end
+                elseif mainFrame.currentTab == "storage" then
+                    mainFrame.persistentSearchBoxes.storage:Show()
+                elseif mainFrame.currentTab == "currency" then
+                    mainFrame.persistentSearchBoxes.currency:Show()
+                elseif mainFrame.currentTab == "search" then
+                    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Show() end
+                else -- reputations
+                    mainFrame.persistentSearchBoxes.reputations:Show()
+                end
+                mainFrame._lastSearchTab = mainFrame.currentTab
+            end
         else
+            if mainFrame._lastSearchTab then
+                for _, box in pairs(mainFrame.persistentSearchBoxes) do box:Hide() end
+                mainFrame._lastSearchTab = nil
+            end
             mainFrame.searchArea:Hide()
             
             -- Reposition scroll at top
@@ -802,6 +860,7 @@ end
                 mainFrame.persistentSearchBoxes.storage:Hide()
                 mainFrame.persistentSearchBoxes.currency:Hide()
                 mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
                 if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
             end
         end
@@ -823,6 +882,8 @@ end
         height = self:DrawWatchlist(scrollChild)
     elseif mainFrame.currentTab == "items" then
         height = self:DrawItemList(scrollChild)
+    elseif mainFrame.currentTab == "materials" then
+        height = self:DrawMaterialsTab(scrollChild)
     elseif mainFrame.currentTab == "storage" then
         height = self:DrawStorageTab(scrollChild)
     elseif mainFrame.currentTab == "pve" then
@@ -1088,6 +1149,10 @@ local lastRefreshTime = 0
 local REFRESH_THROTTLE = 0.03 -- Ultra-fast refresh (30ms minimum between updates)
 
 function TheQuartermaster:RefreshUI()
+	-- Preserve search focus through refreshes so typing doesn't fall through to the game.
+	if self.CaptureSearchFocus then
+		self:CaptureSearchFocus()
+	end
     -- Throttle rapid refresh calls
     local now = GetTime()
     if (now - lastRefreshTime) < REFRESH_THROTTLE then
@@ -1106,6 +1171,33 @@ function TheQuartermaster:RefreshUI()
     if mainFrame and mainFrame:IsShown() then
         self:PopulateContent()
         self:SyncBankTab()
+
+        -- Focus restoration for search boxes: certain module refreshes rebuild frames and can drop focus.
+        -- SharedWidgets sets TheQuartermaster.UI._restoreSearchFocus and activeSearchBox while typing.
+	        local ui = self.UI
+	        local nowTime = GetTime and GetTime() or nil
+	        local focusSticky = false
+	        if ui and nowTime and ui._restoreSearchFocusUntil and nowTime < ui._restoreSearchFocusUntil then
+	            focusSticky = true
+	        end
+	        if ui and (ui._restoreSearchFocus or focusSticky) and ui.activeSearchBox and ui.activeSearchBox.IsShown and ui.activeSearchBox:IsShown() then
+            local eb = self.UI.activeSearchBox
+            -- Only restore if the user isn't currently focusing another edit box.
+            local currentFocus = GetFocus()
+            if not currentFocus or currentFocus == eb then
+                eb:SetFocus()
+                if eb.GetText then
+                    local t = eb:GetText() or ""
+                    if eb.SetCursorPosition then
+                        eb:SetCursorPosition(#t)
+                    end
+                end
+            end
+	            ui._restoreSearchFocus = nil
+	            if ui._restoreSearchFocusUntil and nowTime and nowTime >= ui._restoreSearchFocusUntil then
+	                ui._restoreSearchFocusUntil = nil
+	            end
+        end
     end
 end
 

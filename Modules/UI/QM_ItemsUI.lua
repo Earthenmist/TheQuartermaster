@@ -434,7 +434,9 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
 
         if item then
             icon:SetTexture(item.iconFileID or item.icon or item.texture or 134400)
-            local count = tonumber(item.stackCount) or 1
+            -- Different caches may store stack size under different keys.
+            -- Inventory (bags) in particular can be `count` rather than `stackCount`.
+            local count = tonumber(item.stackCount or item.count or item.quantity) or 1
             countText:SetText(count > 1 and tostring(count) or "")
         else
             icon:SetTexture(nil)
@@ -648,7 +650,8 @@ local function DrawWarbandBankSlotView(self, parent, yOffset, width, itemsSearch
         local item = itemsForTab and itemsForTab[slotID] or nil
         if item and item.iconFileID then
             icon:SetTexture(item.iconFileID)
-            local count = tonumber(item.stackCount) or 1
+            -- Different caches may store stack size under different keys.
+            local count = tonumber(item.stackCount or item.count or item.quantity) or 1
             countText:SetText(count > 1 and tostring(count) or "")
 
             local match = MatchesSearch(item, itemsSearchText)
@@ -1691,9 +1694,24 @@ end
                 icon:SetAllPoints()
                 icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
+                -- Stack count overlay (Inventory slot view)
+                local countText = btn:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                countText:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -2, 2)
+                countText:SetTextColor(1, 1, 1, 0.95)
+                btn.countText = countText
+
                 local item = (bagItems[selected] or {})[slot]
                 if item and item.iconFileID then
                     icon:SetTexture(item.iconFileID)
+
+                    local count = item.stackCount or item.count or item.quantity
+                    if count and count > 1 then
+                        btn.countText:SetText(count)
+                        btn.countText:Show()
+                    else
+                        btn.countText:SetText("")
+                        btn.countText:Hide()
+                    end
 
                     btn:SetScript("OnEnter", function()
                         GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")

@@ -999,11 +999,23 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
         -- Throttle callback - refresh after delay (live search)
         throttleTimer = C_Timer.NewTimer(delay, function()
             if onTextChanged then
+                -- Request focus restoration after the UI refreshes.
+                if TheQuartermaster and TheQuartermaster.UI then
+                    -- Keep focus sticky for a short grace period so background refreshes
+                    -- (bags/events) don't steal focus while the user is typing.
+                    TheQuartermaster.UI._restoreSearchFocus = true
+                    TheQuartermaster.UI._restoreSearchFocusUntil = (GetTime() or 0) + 1.5
+                end
                 onTextChanged(newSearchText)
             end
             throttleTimer = nil
         end)
     end)
+
+    -- Expose the most recently created search box so the UI can restore focus after refresh.
+    if TheQuartermaster and TheQuartermaster.UI then
+        TheQuartermaster.UI.activeSearchBox = searchBox
+    end
     
     -- Escape to clear
     searchBox:SetScript("OnEscapePressed", function(self)
@@ -1020,6 +1032,10 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
     searchBox:SetScript("OnEditFocusGained", function(self)
         local accentColor = COLORS.accent
         searchFrame:SetBackdropBorderColor(accentColor[1], accentColor[2], accentColor[3], 1)
+        -- Track the most recently focused search box so refreshes can restore focus reliably.
+        if TheQuartermaster and TheQuartermaster.UI then
+            TheQuartermaster.UI.activeSearchBox = self
+        end
     end)
     
     searchBox:SetScript("OnEditFocusLost", function(self)

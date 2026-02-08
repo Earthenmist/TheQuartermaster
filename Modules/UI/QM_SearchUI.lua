@@ -231,6 +231,8 @@ if not controls.modeDrop then
         UIDropDownMenu_AddButton(info)
         info.text, info.func = "Items", function() SetMode("items", "Items") end
         UIDropDownMenu_AddButton(info)
+        info.text, info.func = "Reagents", function() SetMode("reagents", "Reagents") end
+        UIDropDownMenu_AddButton(info)
         info.text, info.func = "Currency", function() SetMode("currency", "Currency") end
         UIDropDownMenu_AddButton(info)
     end)
@@ -259,6 +261,7 @@ controls.guildCheck:SetChecked(includeGuild)
 
 -- Fix dropdown label on refresh
 if mode == "items" then UIDropDownMenu_SetText(controls.modeDrop, "Items")
+elseif mode == "reagents" then UIDropDownMenu_SetText(controls.modeDrop, "Reagents")
 elseif mode == "currency" then UIDropDownMenu_SetText(controls.modeDrop, "Currency")
 else UIDropDownMenu_SetText(controls.modeDrop, "All") end
 
@@ -273,11 +276,11 @@ local searchText = ns.globalSearchText or ""
     local results = self:PerformGlobalSearch(searchText, mode, includeGuild)
 
     -- Items results
-    if mode == "all" or mode == "items" then
+    if mode == "all" or mode == "items" or mode == "reagents" then
         local items = results.items or {}
         local title = parent:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
         title:SetPoint("TOPLEFT", 10, -yOffset)
-        title:SetText("Items")
+        title:SetText(mode == "reagents" and "Reagents" or "Items")
         title:SetTextColor(1, 1, 1)
         yOffset = yOffset + 26
 
@@ -295,15 +298,28 @@ local searchText = ns.globalSearchText or ""
                 row.count:SetText(tostring(item and (item.stackCount or item.count or 1) or 1))
 
                 local itemID = item and item.itemID
-                row.kind = "item"
+                row.kind = (mode == "reagents") and "reagent" or "item"
                 row.itemID = itemID
                 row.currencyID = nil
-                local pinned = itemID and self:IsWatchlistedItem(itemID)
-                row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
+                local pinned = itemID and ((mode == "reagents") and self:IsWatchlistedReagent(itemID) or self:IsWatchlistedItem(itemID))
+                if pinned then
+                    row.pin.icon:SetVertexColor(1, 0.2, 0.2) -- red when pinned
+                else
+                    row.pin.icon:SetVertexColor(1, 0.82, 0) -- yellow when not pinned
+                end
 
-                row.pin:SetScript("OnClick", function()
-                    if itemID then self:ToggleWatchlistItem(itemID) end
-                end)
+				row.pin:SetScript("OnClick", function()
+					if not itemID then return end
+					if mode == "reagents" then
+						self:ToggleWatchlistReagent(itemID)
+						local nowPinned = self:IsWatchlistedReagent(itemID)
+						row.pin.icon:SetVertexColor(nowPinned and 1 or 1, nowPinned and 0.2 or 0.82, nowPinned and 0.2 or 0, 1)
+					else
+						self:ToggleWatchlistItem(itemID)
+						local nowPinned = self:IsWatchlistedItem(itemID)
+						row.pin.icon:SetVertexColor(nowPinned and 1 or 1, nowPinned and 0.2 or 0.82, nowPinned and 0.2 or 0, 1)
+					end
+				end)
 
                 row:SetScript("OnEnter", function(selfRow)
                     selfRow:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.8)
@@ -348,11 +364,22 @@ local searchText = ns.globalSearchText or ""
                 row.count:SetText(tostring(c.quantity or c.count or 0))
 
                 local pinned = currencyID and self:IsWatchlistedCurrency(currencyID)
-                row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
+                if pinned then
+                    row.pin.icon:SetVertexColor(1, 0.2, 0.2) -- red when pinned
+                else
+                    row.pin.icon:SetVertexColor(1, 0.82, 0) -- yellow when not pinned
+                end
 
-                row.pin:SetScript("OnClick", function()
-                    if currencyID then self:ToggleWatchlistCurrency(currencyID) end
-                end)
+				row.pin:SetScript("OnClick", function()
+					if not currencyID then return end
+					self:ToggleWatchlistCurrency(currencyID)
+					local nowPinned = self:IsWatchlistedCurrency(currencyID)
+					if nowPinned then
+						row.pin.icon:SetVertexColor(1, 0.2, 0.2)
+					else
+						row.pin.icon:SetVertexColor(1, 0.82, 0)
+					end
+				end)
 
                 row:SetScript("OnEnter", function(selfRow)
                     selfRow:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.8)

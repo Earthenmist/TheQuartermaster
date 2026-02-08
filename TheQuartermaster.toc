@@ -2,7 +2,7 @@
 ## Title: The Quartermaster
 ## Notes: Account-Wide Inventory, Warband & Character Overview for World of Warcraft (Midnight-Ready)
 ## Author: Lanni Alonsus
-## Version: 1.0.13
+## Version: 1.0.14
 ## IconTexture: Interface\AddOns\TheQuartermaster\Media\icon
 ## SavedVariables: TheQuartermasterDB
 ## OptionalDeps: Ace3
@@ -37,6 +37,7 @@ Modules\QM_APIWrapper.lua
 Modules\QM_ErrorHandler.lua
 Modules\QM_DataService.lua
 Modules\QM_SearchService.lua
+Modules\QM_ProfessionPins.lua
 Modules\QM_CacheManager.lua
 Modules\QM_EventManager.lua
 Modules\QM_DatabaseOptimizer.lua
@@ -59,6 +60,7 @@ Modules\UI\ExperienceUI.lua
 Modules\UI\GuildUI.lua
 Modules\UI\QM_CurrencyUI.lua
 Modules\UI\QM_ItemsUI.lua
+Modules\UI\QM_MaterialsUI.lua
 Modules\UI\QM_StorageUI.lua
 Modules\UI\QM_PvEUI.lua
 Modules\UI\QM_ReputationUI.lua
