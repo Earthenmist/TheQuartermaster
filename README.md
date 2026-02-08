@@ -1,13 +1,6 @@
-# TheQuartermaster
+# The Quartermaster
 
-## What's New in 1.0.14
-- **Watchlist**: pin Items/Reagents/Currencies with Warband totals.
-- **Reagent Targets**: set desired amounts and track progress.
-- **Professions Pin Reagents**: one-click pinning of missing reagents to Watchlist targets.
-- **Auctionator Export**: generate an importable shopping list from your Watchlist reagents.
-- **Materials improvements**: better browsing, source toggles, and item quality colours.
-
-**TheQuartermaster** is a comprehensive Warband-aware inventory, currency, profession, and character overview addon for World of Warcraft, designed for the *Midnight* / *The War Within* era.
+**The Quartermaster** is a comprehensive Warband-aware inventory, currency, profession, and character overview addon for World of Warcraft, designed for the *Midnight* / *The War Within* era.
 
 It provides a unified dashboard to track your entire account’s progression, storage, and collectables across all characters — while staying visually aligned with Blizzard’s modern UI style.
 
