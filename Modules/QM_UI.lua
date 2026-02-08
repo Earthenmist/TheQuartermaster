@@ -59,6 +59,48 @@ local currentTab = "stats" -- Default to Characters tab
 local currentItemsSubTab = "inventory" -- Default to Inventory
 local expandedGroups = {} -- Persisted expand/collapse state for item groups
 
+-- ------------------------------------------------------------
+-- Search focus preservation
+-- Many panels rebuild their content frequently (filters, pin changes, refresh timers).
+-- Without explicitly restoring keyboard focus, EditBoxes can lose focus while typing.
+-- ------------------------------------------------------------
+function TheQuartermaster:CaptureSearchFocus()
+    local focus = GetCurrentKeyBoardFocus and GetCurrentKeyBoardFocus() or nil
+    if not focus or not focus.GetObjectType then
+        self._qmSearchFocus = nil
+        return
+    end
+
+    if focus:GetObjectType() ~= "EditBox" then
+        self._qmSearchFocus = nil
+        return
+    end
+
+    local cursor = 0
+    if focus.GetCursorPosition then
+        cursor = focus:GetCursorPosition() or 0
+    end
+
+    self._qmSearchFocus = {
+        editBox = focus,
+        cursor = cursor,
+    }
+end
+
+function TheQuartermaster:RestoreSearchFocus()
+    local info = self._qmSearchFocus
+    if not info or not info.editBox then return end
+
+    local eb = info.editBox
+    if not eb.IsShown or not eb:IsShown() then return end
+    if eb.SetFocus then
+        eb:SetFocus()
+        if eb.SetCursorPosition then
+            eb:SetCursorPosition(info.cursor or 0)
+        end
+    end
+end
+
 -- Search text state (exposed to namespace for sub-modules to access directly)
 ns.itemsSearchText = ""
 ns.storageSearchText = ""
@@ -677,7 +719,7 @@ function TheQuartermaster:PopulateContent()
                     "Search items...",
                     function(searchText)
                         ns.itemsSearchText = searchText
-                        self:PopulateContent()
+                        self:RefreshUI()
                     end,
                     0.4
                 )
@@ -694,7 +736,7 @@ function TheQuartermaster:PopulateContent()
                     "Search materials...",
                     function(searchText)
                         ns.materialsSearchText = searchText
-                        self:PopulateContent()
+                        self:RefreshUI()
                     end,
                     0.4
                 )
@@ -712,7 +754,7 @@ function TheQuartermaster:PopulateContent()
                     "Search storage...",
                     function(searchText)
                         ns.storageSearchText = searchText
-                        self:PopulateContent()
+                        self:RefreshUI()
                     end,
                     0.4
                 )
@@ -729,7 +771,7 @@ function TheQuartermaster:PopulateContent()
                     "Search currencies...",
                     function(searchText)
                         ns.currencySearchText = searchText
-                        self:PopulateContent()
+                        self:RefreshUI()
                     end,
                     0.4
                 )
@@ -746,7 +788,7 @@ function TheQuartermaster:PopulateContent()
                     "Search reputations...",
                     function(searchText)
                         ns.reputationSearchText = searchText
-                        self:PopulateContent()
+                        self:RefreshUI()
                     end,
                     0.4
                 )
@@ -763,7 +805,7 @@ local globalSearch, globalClear = CreateSearchBox(
     "Search items or currency...",
     function(searchText)
         ns.globalSearchText = searchText or ""
-        self:PopulateContent()
+        self:RefreshUI()
     end,
     0.4
 )
@@ -776,28 +818,35 @@ mainFrame.persistentSearchBoxes.global = globalSearch
             end
             
             -- Show appropriate search box
-            -- (Always hide everything first, then show the relevant one)
-            mainFrame.persistentSearchBoxes.items:Hide()
-            if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
-            mainFrame.persistentSearchBoxes.storage:Hide()
-            mainFrame.persistentSearchBoxes.currency:Hide()
-            mainFrame.persistentSearchBoxes.reputations:Hide()
-            if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
-
-            if mainFrame.currentTab == "items" then
-                mainFrame.persistentSearchBoxes.items:Show()
-            elseif mainFrame.currentTab == "materials" then
-                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Show() end
-            elseif mainFrame.currentTab == "storage" then
-                mainFrame.persistentSearchBoxes.storage:Show()
-            elseif mainFrame.currentTab == "currency" then
-                mainFrame.persistentSearchBoxes.currency:Show()
-            elseif mainFrame.currentTab == "search" then
-                if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Show() end
-            else -- reputations
-                mainFrame.persistentSearchBoxes.reputations:Show()
+            if mainFrame._lastSearchTab ~= mainFrame.currentTab then
+                -- (Always hide everything first, then show the relevant one)
+                mainFrame.persistentSearchBoxes.items:Hide()
+                if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Hide() end
+                mainFrame.persistentSearchBoxes.storage:Hide()
+                mainFrame.persistentSearchBoxes.currency:Hide()
+                mainFrame.persistentSearchBoxes.reputations:Hide()
+                if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Hide() end
+    
+                if mainFrame.currentTab == "items" then
+                    mainFrame.persistentSearchBoxes.items:Show()
+                elseif mainFrame.currentTab == "materials" then
+                    if mainFrame.persistentSearchBoxes.materials then mainFrame.persistentSearchBoxes.materials:Show() end
+                elseif mainFrame.currentTab == "storage" then
+                    mainFrame.persistentSearchBoxes.storage:Show()
+                elseif mainFrame.currentTab == "currency" then
+                    mainFrame.persistentSearchBoxes.currency:Show()
+                elseif mainFrame.currentTab == "search" then
+                    if mainFrame.persistentSearchBoxes.global then mainFrame.persistentSearchBoxes.global:Show() end
+                else -- reputations
+                    mainFrame.persistentSearchBoxes.reputations:Show()
+                end
+                mainFrame._lastSearchTab = mainFrame.currentTab
             end
         else
+            if mainFrame._lastSearchTab then
+                for _, box in pairs(mainFrame.persistentSearchBoxes) do box:Hide() end
+                mainFrame._lastSearchTab = nil
+            end
             mainFrame.searchArea:Hide()
             
             -- Reposition scroll at top
@@ -1100,6 +1149,10 @@ local lastRefreshTime = 0
 local REFRESH_THROTTLE = 0.03 -- Ultra-fast refresh (30ms minimum between updates)
 
 function TheQuartermaster:RefreshUI()
+	-- Preserve search focus through refreshes so typing doesn't fall through to the game.
+	if self.CaptureSearchFocus then
+		self:CaptureSearchFocus()
+	end
     -- Throttle rapid refresh calls
     local now = GetTime()
     if (now - lastRefreshTime) < REFRESH_THROTTLE then
@@ -1121,7 +1174,13 @@ function TheQuartermaster:RefreshUI()
 
         -- Focus restoration for search boxes: certain module refreshes rebuild frames and can drop focus.
         -- SharedWidgets sets TheQuartermaster.UI._restoreSearchFocus and activeSearchBox while typing.
-        if self.UI and self.UI._restoreSearchFocus and self.UI.activeSearchBox and self.UI.activeSearchBox.IsShown and self.UI.activeSearchBox:IsShown() then
+	        local ui = self.UI
+	        local nowTime = GetTime and GetTime() or nil
+	        local focusSticky = false
+	        if ui and nowTime and ui._restoreSearchFocusUntil and nowTime < ui._restoreSearchFocusUntil then
+	            focusSticky = true
+	        end
+	        if ui and (ui._restoreSearchFocus or focusSticky) and ui.activeSearchBox and ui.activeSearchBox.IsShown and ui.activeSearchBox:IsShown() then
             local eb = self.UI.activeSearchBox
             -- Only restore if the user isn't currently focusing another edit box.
             local currentFocus = GetFocus()
@@ -1134,7 +1193,10 @@ function TheQuartermaster:RefreshUI()
                     end
                 end
             end
-            self.UI._restoreSearchFocus = nil
+	            ui._restoreSearchFocus = nil
+	            if ui._restoreSearchFocusUntil and nowTime and nowTime >= ui._restoreSearchFocusUntil then
+	                ui._restoreSearchFocusUntil = nil
+	            end
         end
     end
 end

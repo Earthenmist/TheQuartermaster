@@ -13,6 +13,8 @@
 local ADDON_NAME, ns = ...
 local QM = ns and ns.TheQuartermaster
 if not QM then return end
+local DEBUG_PINS = false -- set true for temporary debugging
+local function dprint(msg) if DEBUG_PINS then print("|cff00ff88[QM]|r "..msg) end end
 
 local function GetSelectedRecipeID()
     if C_TradeSkillUI and C_TradeSkillUI.GetSelectedRecipeID then
@@ -188,55 +190,55 @@ local function IsBlockedProfession()
     return false
 end
 
+-- Return required reagents as an array of { itemID, quantity } for UI/popup usage.
+local function GetReagentsForRecipe(recipeID)
+    local map = GetRequiredReagents(recipeID)
+    local out = {}
+    if not map then return out end
+    for itemID, qty in pairs(map) do
+        table.insert(out, { itemID = itemID, quantity = qty })
+    end
+    table.sort(out, function(a,b) return (a.itemID or 0) < (b.itemID or 0) end)
+    return out
+end
+
 local function UpdatePinButtonVisibility()
     local pf = ProfessionsFrame
-    if not pf or not pf._qmPinBtn then return end
+    if not pf or not pf._qmPinReagentsButton then return end
 
-    local btn = pf._qmPinBtn
+    local btn = pf._qmPinReagentsButton
     if not pf.IsShown or not pf:IsShown() then
         btn:Hide()
         return
     end
 
-    -- Only show on the Crafting page (Journal/other panes shouldn't get this).
-    if not pf.CraftingPage or not pf.CraftingPage.IsShown or not pf.CraftingPage:IsShown() then
-        btn:Hide()
-        return
-    end
-
-    -- Only show when the recipe schematic form is actually visible.
-    -- Journal-style panes (Fishing, etc.) can still have CraftingPage shown but no schematic.
-    if not pf.CraftingPage.SchematicForm or not pf.CraftingPage.SchematicForm.IsShown or not pf.CraftingPage.SchematicForm:IsShown() then
-        btn:Hide()
-        return
-    end
-
-    -- Only show when the recipe schematic is actually visible (gathering professions & journal-like panes won't have it).
-    local form = pf.CraftingPage.SchematicForm
-    if not form or not form.IsShown or not form:IsShown() then
-        btn:Hide()
-        return
-    end
-
-    -- If Create/Forge controls aren't visible, we're not on a craftable recipe view.
-    if not pf.CraftingPage.CreateAllButton or not pf.CraftingPage.CreateAllButton.IsShown or not pf.CraftingPage.CreateAllButton:IsShown() then
-        btn:Hide()
-        return
-    end
-
+    -- Blocked professions (gathering & Archaeology) should never show the button.
+    -- Use our internal resolver (based on trade skill line/title) rather than any
+    -- external helper that may not exist on some builds.
     if IsBlockedProfession() then
+        dprint("VisCheck: blocked -> hide")
         btn:Hide()
         return
     end
 
     local recipeID = GetSelectedRecipeID()
+
+    -- Avoid spamming chat: only print when the selected recipe changes.
+    if pf._qmLastVisRecipeID ~= recipeID then
+        pf._qmLastVisRecipeID = recipeID
+        dprint("VisCheck: recipeID="..tostring(recipeID))
+    end
     if not recipeID then
         btn:Hide()
         return
     end
 
-    -- Hide for recipes with no reagents.
-    if not HasAnyRequiredReagents(recipeID) then
+    local reagents = GetReagentsForRecipe(recipeID)
+    if pf._qmLastVisReagentCount ~= (reagents and #reagents or 0) then
+        pf._qmLastVisReagentCount = (reagents and #reagents or 0)
+        dprint("VisCheck: reagentCount="..tostring(pf._qmLastVisReagentCount))
+    end
+    if not reagents or #reagents == 0 then
         btn:Hide()
         return
     end
@@ -261,60 +263,51 @@ local function EnsurePinTicker()
 end
 
 local function EnsurePopup()
-    local dialogs = _G.StaticPopupDialogs
-    if not dialogs then
-        return
+    -- StaticPopupDialogs lives in Blizzard_StaticPopup. If it's not loaded yet, load it.
+    if not _G.StaticPopupDialogs then
+        if _G.UIParentLoadAddOn then
+            pcall(_G.UIParentLoadAddOn, "Blizzard_StaticPopup")
+        end
     end
+
+    local dialogs = _G.StaticPopupDialogs
+    if not dialogs then return end
     if dialogs["QM_PIN_RECIPE_REAGENTS"] then return end
 
     dialogs["QM_PIN_RECIPE_REAGENTS"] = {
-        text = "Pin required reagents\n\nHow many crafts?",
-        button1 = OKAY,
+        text = [[Pin required reagents to Watchlist
+
+Adds the recipe's required reagent quantities to your desired amounts.
+If a reagent is already pinned, its desired amount will be increased.]],
+        button1 = ACCEPT,
         button2 = CANCEL,
-        hasEditBox = true,
-        maxLetters = 6,
+        timeout = 0,
         whileDead = true,
         hideOnEscape = true,
-        OnShow = function(selfPopup)
-			local eb = selfPopup.editBox or selfPopup.EditBox
-			if eb then
-				eb:SetText("1")
-				eb:HighlightText()
-			end
-        end,
+        preferredIndex = 3,
         OnAccept = function(selfPopup, data)
-			local eb = selfPopup.editBox or selfPopup.EditBox
-			local crafts = tonumber((eb and eb:GetText() or "") or "") or 1
-            crafts = math.max(1, math.floor(crafts + 0.5))
+            data = data or selfPopup.data
+            if not data then return end
 
-            print("|cffff5555[QM]|r Pin Reagents OnAccept. crafts=" .. tostring(crafts))
-            if not data or not data.reagents then
-                print("|cffff5555[QM]|r Pin Reagents OnAccept: missing data/reagents")
-                return
-            end
-	            local wl = (TheQuartermaster and TheQuartermaster.db and TheQuartermaster.db.profile and TheQuartermaster.db.profile.watchlist) or nil
-	            local reagentTbl = wl and wl.reagents or nil
-	            if not reagentTbl then
-	                print("|cffff5555[QM]|r Pin Reagents OnAccept: watchlist table missing")
-	                return
+	        local reagents = data.reagents
+	        if not reagents or #reagents == 0 then return end
+
+	        -- Apply: +requiredQty to Watchlist reagent targets (and ensure they are pinned)
+	        -- IMPORTANT: Never "toggle" here. A recipe can reference the same item multiple times (quality/optional slots)
+	        -- and a toggle would cancel itself out. We aggregate and use ensure+targetDelta.
+	        local totals = {}
+	        for _, r in ipairs(reagents) do
+	            local itemID = r.itemID
+	            local qty = tonumber(r.quantity) or 0
+	            if itemID and qty > 0 then
+	                totals[itemID] = (totals[itemID] or 0) + qty
 	            end
-	            for itemID, qty in pairs(data.reagents) do
-	                local delta = (qty * crafts)
-	                local existing = (reagentTbl[itemID] and reagentTbl[itemID].desired) or 0
-	                local newDesired = math.max(0, existing) + math.max(0, delta)
-	                print("|cffff5555[QM]|r  - itemID=" .. tostring(itemID) .. " qty=" .. tostring(qty) .. " crafts=" .. tostring(crafts) .. " add=" .. tostring(delta) .. " desired " .. tostring(existing) .. "->" .. tostring(newDesired))
-	                QM:ToggleWatchlistReagent(itemID, true, newDesired)
+	        end
+	        for itemID, qty in pairs(totals) do
+	            if TheQuartermaster and TheQuartermaster.ToggleWatchlistReagent then
+	                TheQuartermaster:ToggleWatchlistReagent(itemID, { mode = "ensure", targetDelta = qty })
 	            end
-	            -- If the Watchlist UI is open, refresh it immediately.
-	            if TheQuartermaster and TheQuartermaster.UI and TheQuartermaster.UI.WatchlistUI and TheQuartermaster.UI.WatchlistUI.PopulateContent then
-	                TheQuartermaster.UI.WatchlistUI:PopulateContent()
-	            end
-        end,
-        EditBoxOnEnterPressed = function(selfPopup)
-            local parentPopup = selfPopup:GetParent()
-            if parentPopup and parentPopup.button1 and parentPopup.button1:IsEnabled() then
-                parentPopup.button1:Click()
-            end
+	        end
         end,
     }
 end
@@ -347,33 +340,26 @@ local function CreatePinButton(parent)
     end)
 
     btn:SetScript("OnClick", function()
-        local recipeID = GetSelectedRecipeID()
-        print("|cffff5555[QM]|r Pin Reagents clicked. recipeID=" .. tostring(recipeID))
-        if not recipeID then
-            print("|cffff5555[QM]|r Pin Reagents: no selected recipe ID (nothing to pin).")
-            return
-        end
+    local recipeID = GetSelectedRecipeID()
+    if not recipeID then
+        QMPrint("Pin Reagents: no selected recipe (nothing to pin).")
+        return
+    end
 
-        local reagents = GetRequiredReagents(recipeID)
-        local count = 0
-        for _ in pairs(reagents) do count = count + 1 end
-        print("|cffff5555[QM]|r Pin Reagents: reagents found=" .. tostring(count))
+    local reagents = GetReagentsForRecipe(recipeID)
+    if not reagents or #reagents == 0 then
+        QMPrint("Pin Reagents: recipe has no reagents (nothing to pin).")
+        return
+    end
 
-        if count == 0 then
-            UIErrorsFrame:AddMessage("Quartermaster: No explicit required reagents to pin for this recipe.", 1, 0.1, 0.1)
-            return
-        end
+    EnsurePopup()
+    if not _G.StaticPopupDialogs or not _G.StaticPopupDialogs["QM_PIN_RECIPE_REAGENTS"] then
+        QMPrint("Pin Reagents: popup not available (StaticPopupDialogs not ready).")
+        return
+    end
 
-		-- Ensure our popup dialog exists before showing it.
-		EnsurePopup()
-		local dialog = StaticPopup_Show("QM_PIN_RECIPE_REAGENTS")
-        print("|cffff5555[QM]|r Pin Reagents: StaticPopup_Show returned=" .. tostring(dialog))
-        if dialog then
-            dialog.data = dialog.data or {}
-            dialog.data.reagents = reagents
-            dialog.data.recipeID = recipeID
-        end
-    end)
+    StaticPopup_Show("QM_PIN_RECIPE_REAGENTS", nil, nil, { recipeID = recipeID, reagents = reagents })
+end)
 
     return btn
 end
@@ -461,14 +447,50 @@ end
 -- Lightweight event driver
 local driver = CreateFrame("Frame")
 driver:RegisterEvent("PLAYER_LOGIN")
+driver:RegisterEvent("ADDON_LOADED")
 driver:RegisterEvent("TRADE_SKILL_SHOW")
+driver:RegisterEvent("TRADE_SKILL_CLOSE")
 driver:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
-driver:SetScript("OnEvent", function()
-    C_Timer.After(0.2, function()
-        TryAttachButton()
+driver:RegisterEvent("TRADE_SKILL_DATA_SOURCE_CHANGED")
+    -- There is no reliable public event for "recipe selected" across all builds.
+    -- Instead we poll selection/visibility state with a lightweight ticker (see EnsurePinTicker).
 
-        -- Refresh visibility when the selected recipe changes.
-        UpdatePinButtonVisibility()
-        EnsurePinTicker()
+local attachTicker
+
+local function StartAttachTicker()
+    if attachTicker then return end
+    attachTicker = C_Timer.NewTicker(1, function()
+        -- Keep trying to attach while Professions is open or until attached.
+        if not TryAttachButton() then
+            -- no-op
+        end
+	    if ProfessionsFrame and ProfessionsFrame._qmPinReagentsButton then
+	        UpdatePinButtonVisibility()
+	    end
+	    if ProfessionsFrame and ProfessionsFrame._qmPinReagentsButton and ProfessionsFrame:IsShown() then
+            -- keep running
+        end
     end)
+end
+
+driver:SetScript("OnEvent", function(_, event, arg1)
+    if event == "PLAYER_LOGIN" then
+        -- Register popup dialog as soon as StaticPopup is available.
+        EnsurePopup()
+        StartAttachTicker()
+        return
+    end
+
+    if event == "ADDON_LOADED" then
+        if arg1 == "Blizzard_Professions" or arg1 == "Blizzard_StaticPopup" then
+            EnsurePopup()
+            TryAttachButton()
+            UpdatePinButtonVisibility()
+        end
+        return
+    end
+
+    -- Any profession UI churn: attempt attach + visibility refresh
+    TryAttachButton()
+    UpdatePinButtonVisibility()
 end)

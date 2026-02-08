@@ -1001,7 +1001,10 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
             if onTextChanged then
                 -- Request focus restoration after the UI refreshes.
                 if TheQuartermaster and TheQuartermaster.UI then
+                    -- Keep focus sticky for a short grace period so background refreshes
+                    -- (bags/events) don't steal focus while the user is typing.
                     TheQuartermaster.UI._restoreSearchFocus = true
+                    TheQuartermaster.UI._restoreSearchFocusUntil = (GetTime() or 0) + 1.5
                 end
                 onTextChanged(newSearchText)
             end
@@ -1029,6 +1032,10 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
     searchBox:SetScript("OnEditFocusGained", function(self)
         local accentColor = COLORS.accent
         searchFrame:SetBackdropBorderColor(accentColor[1], accentColor[2], accentColor[3], 1)
+        -- Track the most recently focused search box so refreshes can restore focus reliably.
+        if TheQuartermaster and TheQuartermaster.UI then
+            TheQuartermaster.UI.activeSearchBox = self
+        end
     end)
     
     searchBox:SetScript("OnEditFocusLost", function(self)

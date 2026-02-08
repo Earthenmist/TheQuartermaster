@@ -42,52 +42,51 @@ local function QM_HasCraftingReagentLine(itemID)
 end
 
 local function GetProfileWatchlist(self)
-    if not self.db or not self.db.profile then return nil end
-    if not self.db.profile.watchlist then
-        self.db.profile.watchlist = { items = {}, reagents = {}, currencies = {}, includeGuildBank = true }
-    end
-    self.db.profile.watchlist.items = self.db.profile.watchlist.items or {}
-    self.db.profile.watchlist.reagents = self.db.profile.watchlist.reagents or {}
-    self.db.profile.watchlist.currencies = self.db.profile.watchlist.currencies or {}
-    if self.db.profile.watchlist.includeGuildBank == nil then
-        self.db.profile.watchlist.includeGuildBank = true
-    end
+    self.db.profile.watchlist = self.db.profile.watchlist or {}
+    local wl = self.db.profile.watchlist
 
-    -- Migration: if any pinned items look like reagents, move them into the reagent list.
-    -- This removes reliance on per-frame reagent detection and fixes "pinned reagents show under Items".
-    if self.db.profile.watchlist.items then
-        local movedAny = false
-        for itemID in pairs(self.db.profile.watchlist.items) do
-            if type(itemID) == "number" then
-                local isReagent = QM_HasCraftingReagentLine(itemID)
-                if not isReagent and C_Item and C_Item.GetItemInfoInstant then
-                    local _, _, _, equipLoc, _, classID = C_Item.GetItemInfoInstant(itemID)
-                    if not (equipLoc and equipLoc ~= "") then
-                        local TRADE = Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods
-                        local GEM   = Enum and Enum.ItemClass and Enum.ItemClass.Gem
-                        if classID == TRADE or classID == GEM then
-                            isReagent = true
-                        end
-                    end
-                end
+    wl.items = wl.items or {}
+    wl.reagents = wl.reagents or {}
+    wl.currencies = wl.currencies or {}
 
-                if isReagent then
-                    self.db.profile.watchlist.reagents[itemID] = self.db.profile.watchlist.reagents[itemID] or {}
-                    self.db.profile.watchlist.items[itemID] = nil
-                    movedAny = true
-                end
-            end
-        end
-        if movedAny then
-            -- no-op; kept for readability
+    -- Normalize legacy formats:
+    -- items/currencies were historically stored as boolean true
+    for itemID, entry in pairs(wl.items) do
+        if entry == true then
+            wl.items[itemID] = { pinned = true, itemType = "item" }
+        elseif type(entry) == "table" then
+            entry.itemType = entry.itemType or "item"
+            if entry.pinned == nil then entry.pinned = true end
         end
     end
-    return self.db.profile.watchlist
+
+    for currencyID, entry in pairs(wl.currencies) do
+        if entry == true then
+            wl.currencies[currencyID] = { pinned = true, itemType = "currency" }
+        elseif type(entry) == "table" then
+            entry.itemType = entry.itemType or "currency"
+            if entry.pinned == nil then entry.pinned = true end
+        end
+    end
+
+    -- Migrate any crafting reagents that were pinned as items into the reagents bucket,
+    -- preserving the full entry table (including pinned state).
+    for itemID, entry in pairs(wl.items) do
+        if type(entry) == "table" and HasCraftingReagentLine(itemID) then
+            entry.itemType = "reagent"
+            wl.reagents[itemID] = wl.reagents[itemID] or entry
+            wl.items[itemID] = nil
+        end
+    end
+
+    return wl
 end
 
 function TheQuartermaster:IsWatchlistedItem(itemID)
     local wl = GetProfileWatchlist(self)
-    return wl and wl.items and wl.items[tonumber(itemID)] == true
+    local entry = wl.items[itemID]
+    if entry == true then return true end
+    return type(entry) == "table" and entry.pinned == true
 end
 
 function TheQuartermaster:IsWatchlistedReagent(itemID)
@@ -98,21 +97,28 @@ end
 
 function TheQuartermaster:IsWatchlistedCurrency(currencyID)
     local wl = GetProfileWatchlist(self)
-    return wl and wl.currencies and wl.currencies[tonumber(currencyID)] == true
+    local entry = wl.currencies[currencyID]
+    if entry == true then return true end
+    return type(entry) == "table" and entry.pinned == true
 end
 
 function TheQuartermaster:ToggleWatchlistItem(itemID)
     local wl = GetProfileWatchlist(self)
-    itemID = tonumber(itemID)
-    if not wl or not itemID then return end
 
-    -- Ensure this item isn't also tracked as a reagent
-    if wl.reagents and wl.reagents[itemID] then
+    if wl.items[itemID] then
+        wl.items[itemID] = nil
+    else
+        wl.items[itemID] = { pinned = true, itemType = "item" }
+    end
+
+    -- Ensure it isn't duplicated as a reagent
+    if wl.reagents[itemID] then
         wl.reagents[itemID] = nil
     end
-    wl.items[itemID] = not wl.items[itemID]
-    if wl.items[itemID] == false then wl.items[itemID] = nil end
-    if self.RefreshUI then self:RefreshUI() end
+
+    if self.RefreshUI then
+        self:RefreshUI()
+    end
 end
 
 -- Reagent watchlist entries can store a desired target count.
@@ -178,11 +184,16 @@ end
 
 function TheQuartermaster:ToggleWatchlistCurrency(currencyID)
     local wl = GetProfileWatchlist(self)
-    currencyID = tonumber(currencyID)
-    if not wl or not currencyID then return end
-    wl.currencies[currencyID] = not wl.currencies[currencyID]
-    if wl.currencies[currencyID] == false then wl.currencies[currencyID] = nil end
-    if self.RefreshUI then self:RefreshUI() end
+
+    if wl.currencies[currencyID] then
+        wl.currencies[currencyID] = nil
+    else
+        wl.currencies[currencyID] = { pinned = true, itemType = "currency" }
+    end
+
+    if self.RefreshUI then
+        self:RefreshUI()
+    end
 end
 
 -- Counts item occurrences across cache (bags, personal bank, warband bank, optional guild bank)

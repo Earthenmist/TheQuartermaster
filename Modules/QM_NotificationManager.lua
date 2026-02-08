@@ -9,17 +9,15 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14q"
+local CURRENT_VERSION = "1.0.14aa"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14q",
+    version = "1.0.14aa",
     date = "2026-02-07",
     changes = {
-        "Watchlist reagents can now track a **desired amount** with a progress bar (Owned / Target).",
-        "Added a **Pin Reagents** button to the Professions recipe page to pin required reagents and automatically add their recipe quantities to desired targets (with optional craft multiplier).",
-        "Professions: fixed **Pin Reagents** doing nothing on click.",
-        "Professions: **Pin Reagents** is now hidden for gathering professions (Fishing/Mining/Herbalism/Skinning) and Archaeology.",
+        "Professions: **Pin Reagents** now correctly pins required reagents and adds their quantities to Watchlist targets.",
+        "UI: Search boxes now retain focus during background refreshes (no more typing falling through to the game).",
     }
 }
 
