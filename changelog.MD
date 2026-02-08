@@ -13,7 +13,7 @@
 
 - Added **Reagent Targets** to Watchlist with **Owned/Target** display and **progress bars**.
 - Added a **“Pin Reagents”** button to the Professions recipe view to pin required reagents and add quantities to desired amounts.
-- Fixed the “Set desired amount” popup (edit box reference) to prevent LUA errors when saving targets.
+- Fixed the “Set desired amount” pop-up (edit box reference) to prevent LUA errors when saving targets.
 
 ### Notes
 - Thank you to everyone who helped test the pre‑release builds ❤️
