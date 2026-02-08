@@ -8,6 +8,37 @@ local TheQuartermaster = ns.TheQuartermaster
 
 local COLORS = ns.UI_COLORS
 local CreateCard = ns.UI_CreateCard
+-- Compatibility helpers
+local function QM_IsAddOnLoaded(name)
+    if C_AddOns and C_AddOns.IsAddOnLoaded then
+        return C_AddOns.IsAddOnLoaded(name)
+    end
+    if IsAddOnLoaded then
+        return IsAddOnLoaded(name)
+    end
+    return false
+end
+
+local function QM_GetItemQualityColor(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return 1, 1, 1 end
+
+    local quality
+    if C_Item and C_Item.GetItemQualityByID then
+        quality = C_Item.GetItemQualityByID(itemID)
+    end
+    if not quality then
+        local _, _, q = GetItemInfo(itemID)
+        quality = q
+    end
+
+    if quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[quality] then
+        local c = ITEM_QUALITY_COLORS[quality]
+        return c.r or 1, c.g or 1, c.b or 1
+    end
+    return 1, 1, 1
+end
+
 
 -- Treat Trade Goods / Gems / Reagent class items as "Reagents" for Watchlist grouping
 local ITEM_CLASS_TRADEGOODS = Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods or 7
@@ -187,6 +218,15 @@ function TheQuartermaster:DrawWatchlist(parent)
     local yOffset = 8
     local width = parent:GetWidth() - 20
 
+    -- If any item names are not yet cached on first load, request item data and redraw once.
+    local needsRefresh = false
+    local function RequestItemData(itemID)
+        if C_Item and C_Item.RequestLoadItemDataByID and itemID then
+            C_Item.RequestLoadItemDataByID(itemID)
+        end
+        needsRefresh = true
+    end
+
     
 -- ===== HEADER CARD =====
 local titleCard = CreateCard(parent, 72)
@@ -206,6 +246,202 @@ titleText:SetTextColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3])
 local subText = titleCard:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 subText:SetPoint("TOPLEFT", titleText, "BOTTOMLEFT", 0, -2)
 subText:SetText("Pinned items, reagents and currencies (totals across your Warband)")
+-- Auctionator export button (only enabled when Auctionator is installed)
+local auctionatorBtn = CreateFrame("Button", nil, titleCard, "BackdropTemplate")
+auctionatorBtn:SetSize(160, 26)
+auctionatorBtn:SetPoint("RIGHT", -16, 0)
+auctionatorBtn:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8", edgeFile = "Interface\\BUTTONS\\WHITE8X8", edgeSize = 1 })
+auctionatorBtn:SetBackdropColor(0.10, 0.10, 0.12, 0.9)
+auctionatorBtn:SetBackdropBorderColor(0.35, 0.1, 0.1, 0.8)
+
+auctionatorBtn.text = auctionatorBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+auctionatorBtn.text:SetPoint("CENTER")
+auctionatorBtn.text:SetText("Export (Auctionator)")
+
+local hasAuctionator = QM_IsAddOnLoaded("Auctionator")
+-- Keep the button mouse-enabled so the tooltip still works even if Auctionator is not loaded.
+-- We visually grey it out and block clicks when inactive.
+auctionatorBtn:SetEnabled(true)
+auctionatorBtn._qmAuctionatorActive = hasAuctionator
+auctionatorBtn:SetAlpha(hasAuctionator and 1 or 0.35)
+
+auctionatorBtn:SetScript("OnEnter", function(selfBtn)
+    local active = QM_IsAddOnLoaded("Auctionator")
+    GameTooltip:SetOwner(selfBtn, "ANCHOR_TOP")
+    if not active then
+        GameTooltip:AddLine("Auctionator not an active addon", 1, 0.2, 0.2)
+    else
+        GameTooltip:AddLine("Click to export a shopping list to import into Auctionator", 1, 1, 1, true)
+    end
+    GameTooltip:Show()
+end)
+auctionatorBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+local function BuildAuctionatorImportText()
+    local wl = TheQuartermaster.db and TheQuartermaster.db.profile and TheQuartermaster.db.profile.watchlist or nil
+    if not wl or not wl.reagents then
+        return "Watchlist Items"
+    end
+
+    local entries = {}
+
+    for itemID, entry in pairs(wl.reagents) do
+        if entry then
+            local target = TheQuartermaster:GetWatchlistReagentTarget(itemID) or 0
+            if target and target > 0 then
+                local total = TheQuartermaster:CountItemTotals(itemID, wl.includeGuildBank) or 0
+                if total < target then
+                    -- Prefer C_Item (more reliable than GetItemInfo for uncached items)
+                    local name, bindType
+                    if C_Item and C_Item.GetItemInfo then
+                        local info = C_Item.GetItemInfo(itemID)
+                        if info then
+                            name = info.itemName
+                            bindType = info.bindType
+                        else
+                            if C_Item.RequestLoadItemDataByID then
+                                C_Item.RequestLoadItemDataByID(itemID)
+                            end
+                        end
+                    end
+
+                    if not name then
+                        name, _, _, _, _, _, _, _, _, _, _, _, bindType = GetItemInfo(itemID)
+                    end
+
+                    -- Skip BoP / soulbound and Sparks (character-specific)
+                    local lname = name and name:lower() or ""
+                    if name and bindType ~= 1 and not lname:find("spark") then
+                        -- Auctionator shopping list format uses caret (^) separators between entries.
+                        -- IMPORTANT: Do not leave a trailing caret at the end.
+                        table.insert(entries, string.format('"%s";;0;0;0;0;0;0;0;0;;#;;', name))
+                    end
+                end
+            end
+        end
+    end
+
+    if #entries == 0 then
+        return "Watchlist Items"
+    end
+
+    return "Watchlist Items^" .. table.concat(entries, "^")
+end
+
+local function EnsureAuctionatorCopyPopup()
+    if TheQuartermaster._qmAuctionatorCopyFrame then
+        return TheQuartermaster._qmAuctionatorCopyFrame
+    end
+
+    local f = CreateFrame("Frame", "QM_AuctionatorCopyFrame", UIParent, "BackdropTemplate")
+    f:SetSize(640, 260)
+    f:SetPoint("CENTER")
+    f:SetFrameStrata("FULLSCREEN_DIALOG")
+    f:SetClampedToScreen(true)
+    f:SetMovable(true)
+    f:EnableMouse(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", f.StartMoving)
+    f:SetScript("OnDragStop", f.StopMovingOrSizing)
+    f:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8", edgeFile = "Interface\\BUTTONS\\WHITE8X8", edgeSize = 1 })
+    f:SetBackdropColor(0.06, 0.06, 0.08, 0.96)
+    do local b = COLORS.border; f:SetBackdropBorderColor(b[1], b[2], b[3], 0.9) end
+    f:Hide()
+
+    local titleBar = CreateFrame("Frame", nil, f, "BackdropTemplate")
+    titleBar:SetPoint("TOPLEFT", 1, -1)
+    titleBar:SetPoint("TOPRIGHT", -1, -1)
+    titleBar:SetHeight(34)
+    titleBar:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
+    do local a = COLORS.accentDark; titleBar:SetBackdropColor(a[1], a[2], a[3], 0.92) end
+
+    local title = titleBar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("LEFT", 14, 0)
+    title:SetText("Auctionator Import Text")
+    title:SetTextColor(1, 1, 1)
+
+    local hint = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    hint:SetPoint("TOPLEFT", titleBar, "BOTTOMLEFT", 14, -10)
+    hint:SetText("Ctrl+C to copy — closes automatically after copying")
+    hint:SetTextColor(0.85, 0.85, 0.85)
+
+    -- Scrollable edit box (for long Auctionator lists)
+    local scroll = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", 16, -102)
+    scroll:SetPoint("BOTTOMRIGHT", -34, 16)
+    scroll:SetFrameLevel(f:GetFrameLevel() + 2)
+
+    local eb = CreateFrame("EditBox", nil, scroll)
+    eb:SetMultiLine(true)
+    eb:SetAutoFocus(true)
+    eb:SetFontObject("ChatFontNormal")
+    eb:SetWidth(scroll:GetWidth() - 16)
+    eb:SetTextInsets(10, 10, 10, 10)
+    eb:EnableMouse(true)
+    eb:SetScript("OnEscapePressed", function() f:Hide() end)
+    eb:SetScript("OnKeyDown", function(_, key)
+        if IsControlKeyDown() and (key == "C" or key == "c") then
+            C_Timer.After(0.05, function()
+                if f:IsShown() then f:Hide() end
+            end)
+        end
+    end)
+    eb:SetScript("OnTextChanged", function(self)
+        scroll:UpdateScrollChildRect()
+    end)
+
+    -- Backdrop around the scroll frame (matches QM theme)
+    scroll.bg = CreateFrame("Frame", nil, f, "BackdropTemplate")
+    scroll.bg:SetPoint("TOPLEFT", scroll, -2, 2)
+    scroll.bg:SetPoint("BOTTOMRIGHT", scroll, 22, -2)
+    scroll.bg:SetFrameLevel(f:GetFrameLevel() + 1)
+    scroll.bg:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8", edgeFile = "Interface\\BUTTONS\\WHITE8X8", edgeSize = 1 })
+    scroll.bg:SetBackdropColor(0, 0, 0, 0.55)
+    do local b = COLORS.border; scroll.bg:SetBackdropBorderColor(b[1], b[2], b[3], 0.85) end
+
+    scroll:SetScrollChild(eb)
+
+    f:SetScript("OnShow", function()
+        eb:SetWidth(math.max(1, scroll:GetWidth() - 24))
+        scroll:UpdateScrollChildRect()
+    end)
+
+    f.editBox = eb
+
+    local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+    close:SetPoint("TOPRIGHT", -4, -4)
+
+    TheQuartermaster._qmAuctionatorCopyFrame = f
+    return f
+end
+
+local function ShowAuctionatorCopyPopup()
+    local textToCopy = BuildAuctionatorImportText()
+    local f = EnsureAuctionatorCopyPopup()
+
+    -- Try to keep it above the main QM frame if it exists
+    if TheQuartermaster.UI and TheQuartermaster.UI.mainFrame and TheQuartermaster.UI.mainFrame:IsShown() then
+        f:ClearAllPoints()
+        f:SetPoint("CENTER", TheQuartermaster.UI.mainFrame, "CENTER", 0, 0)
+    else
+        f:ClearAllPoints()
+        f:SetPoint("CENTER")
+    end
+
+    f:Show()
+    f.editBox:SetText(textToCopy)
+    f.editBox:HighlightText()
+    f.editBox:SetFocus()
+end
+
+auctionatorBtn:SetScript("OnClick", function()
+    local active = QM_IsAddOnLoaded("Auctionator")
+    if not active then
+        -- Do nothing (tooltip already explains why)
+        return
+    end
+    ShowAuctionatorCopyPopup()
+end)
 subText:SetTextColor(0.7, 0.7, 0.7)
 yOffset = yOffset + 84
 
@@ -242,7 +478,11 @@ yOffset = yOffset + 84
             local name, _, _, _, _, _, _, _, _, icon = GetItemInfo(itemID)
             local row = CreateRow(parent, yOffset, width, rowH)
             row.icon:SetTexture(icon or 134400)
+            if not name then
+                RequestItemData(itemID)
+            end
             row.name:SetText(name or ("Item " .. tostring(itemID)))
+            do local r,g,b = QM_GetItemQualityColor(itemID); row.name:SetTextColor(r,g,b) end
             -- Items do not use target amounts/progress bars.
             row.total:SetText(tostring(total))
 
@@ -261,11 +501,6 @@ yOffset = yOffset + 84
                 GameTooltip:SetOwner(selfRow, "ANCHOR_RIGHT")
                 if GameTooltip.SetItemByID then
                     GameTooltip:SetItemByID(itemID)
-                end
-                GameTooltip:AddLine(" ")
-                GameTooltip:AddLine("Totals", 1,1,1)
-                for label, count in pairs(breakdown) do
-                    GameTooltip:AddDoubleLine(label, tostring(count), 0.8,0.8,0.8, 1,1,1)
                 end
                 GameTooltip:Show()
             end)
@@ -295,7 +530,11 @@ yOffset = yOffset + 84
             local name, _, _, _, _, _, _, _, _, icon = GetItemInfo(itemID)
             local row = CreateRow(parent, yOffset, width, rowH)
             row.icon:SetTexture(icon or 134400)
+            if not name then
+                RequestItemData(itemID)
+            end
             row.name:SetText(name or ("Item " .. tostring(itemID)))
+            do local r,g,b = QM_GetItemQualityColor(itemID); row.name:SetTextColor(r,g,b) end
             if target and target > 0 then
                 row.total:SetText(string.format("%d/%d", total, target))
             else
@@ -423,11 +662,6 @@ yOffset = yOffset + 84
                 if GameTooltip.SetItemByID then
                     GameTooltip:SetItemByID(itemID)
                 end
-                GameTooltip:AddLine(" ")
-                GameTooltip:AddLine("Totals", 1,1,1)
-                for label, count in pairs(breakdown) do
-                    GameTooltip:AddDoubleLine(label, tostring(count), 0.8,0.8,0.8, 1,1,1)
-                end
                 GameTooltip:Show()
             end)
 
@@ -541,6 +775,18 @@ noticeSubText:SetText("Tip: In Global Search, right-click a result row to Pin/Un
 
 yOffset = yOffset + 75
 
+
+    -- If any rows were drawn using fallback text (e.g. "Item 12345"), schedule a single redraw once item data is available.
+    if needsRefresh and not TheQuartermaster._watchlistRefreshPending then
+        TheQuartermaster._watchlistRefreshPending = true
+        C_Timer.After(0.25, function()
+            TheQuartermaster._watchlistRefreshPending = nil
+            local mf = TheQuartermaster.UI and TheQuartermaster.UI.mainFrame
+            if mf and mf:IsShown() and mf.currentTab == "watchlist" then
+                TheQuartermaster:PopulateContent()
+            end
+        end)
+    end
 parent:SetHeight(yOffset + 20)
     return yOffset
 end

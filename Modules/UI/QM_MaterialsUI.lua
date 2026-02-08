@@ -428,6 +428,30 @@ end
 
 -- ============================================================================
 -- UI
+
+local function ApplyItemQualityColor(fontString, itemID)
+    if not fontString or not itemID then return end
+
+    local quality
+    if C_Item and C_Item.GetItemQualityByID then
+        quality = C_Item.GetItemQualityByID(itemID)
+        if quality == nil and C_Item.RequestLoadItemDataByID then
+            C_Item.RequestLoadItemDataByID(itemID)
+        end
+    end
+
+    if quality == nil then
+        quality = select(3, GetItemInfo(itemID))
+    end
+
+    if quality ~= nil then
+        local r, g, b = GetItemQualityColor(quality)
+        fontString:SetTextColor(r or 1, g or 1, b or 1)
+    else
+        fontString:SetTextColor(1, 1, 1)
+    end
+end
+
 -- ============================================================================
 
 local function CreateRow(parent, y, width, height)
@@ -701,10 +725,12 @@ function TheQuartermaster:DrawMaterialsTab(parent)
     local rowH = 30
     for i=1, math.min(#filtered, 200) do
         local it = filtered[i]
+        local itemID = it and it.itemID
         local row = CreateRow(resultsParent, yOffset, width, rowH)
 
         row.icon:SetTexture(it.iconFileID or 134400)
         row.name:SetText(it.name or ("Item " .. tostring(it.itemID)))
+        ApplyItemQualityColor(row.name, itemID)
         -- show a clean profession label (not raw subtype noise)
         local profKey = GetProfessionCategoryForItem(it)
         local profLabel = "Reagent"
@@ -713,8 +739,6 @@ function TheQuartermaster:DrawMaterialsTab(parent)
         end
         row.meta:SetText(profLabel)
         row.count:SetText(tostring(it.total or 0))
-
-        local itemID = it.itemID
         -- Materials are reagents; keep pin state in the reagent watchlist bucket.
         local pinned = itemID and self:IsWatchlistedReagent(itemID)
         if pinned then
