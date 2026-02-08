@@ -9,15 +9,18 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14aa"
+local CURRENT_VERSION = "1.0.14"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14aa",
-    date = "2026-02-07",
+    version = "1.0.14",
+    date = "2026-02-08",
     changes = {
-        "Professions: **Pin Reagents** now correctly pins required reagents and adds their quantities to Watchlist targets.",
-        "UI: Search boxes now retain focus during background refreshes (no more typing falling through to the game).",
+        "New **Watchlist** tab for pinned **Items**, **Reagents**, and **Currencies** (totals across your Warband).",
+        "Materials: **Pin/Unpin** reagents directly to Watchlist from the results list (star icon / right-click).",
+        "Professions: **Pin Reagents** button to add missing crafting reagents to your Watchlist targets in one click.",
+        "Watchlist: **Target quantities** for reagents with progress bars (track how close you are to your goal).",
+        "Watchlist: **Auctionator export** button to create an importable shopping list (with tooltip + themed copy window).",
     }
 }
 

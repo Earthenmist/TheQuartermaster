@@ -184,7 +184,20 @@ AddText("• Items show total quantity with a breakdown by character/location in
 AddText("• Currencies show total across characters.", "GameFontNormal", {0.9, 0.9, 0.9}, 10)
 AddText("Tip: You can also Pin/Unpin directly from Items and Storage screens via right-click on rows (List or Slot view).", "GameFontHighlightSmall", {0.75, 0.75, 0.75}, 14)
 
-    -- Statistics Tab
+    
+    -- Watchlist Enhancements (v1.0.14)
+    AddText("Watchlist Enhancements (v1.0.14)", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("New tools to help you track crafting goals and export shopping lists.", "GameFontNormal", {0.9, 0.9, 0.9}, 8)
+    AddText("• Reagents can have a Target quantity with a progress bar (Owned / Target).", "GameFontNormal", {0.9, 0.9, 0.9}, 4)
+    AddText("• Professions: use the Pin Reagents button on a recipe to add missing mats to your Watchlist targets.", "GameFontNormal", {0.9, 0.9, 0.9}, 4)
+    AddText("• Export (Auctionator): creates an importable shopping list from your Watchlist reagents.", "GameFontNormal", {0.9, 0.9, 0.9}, 10)
+
+    -- Materials Improvements (v1.0.14)
+    AddText("Materials Improvements (v1.0.14)", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
+    AddText("Browse crafting materials with better readability and faster pinning.", "GameFontNormal", {0.9, 0.9, 0.9}, 8)
+    AddText("• Item names use quality colours for quick scanning.", "GameFontNormal", {0.9, 0.9, 0.9}, 4)
+    AddText("• Pin/Unpin reagents to your Watchlist directly from the Materials results list.", "GameFontNormal", {0.9, 0.9, 0.9}, 10)
+-- Statistics Tab
     AddText("Statistics", "GameFontNormalLarge", {COLORS.accent[1], COLORS.accent[2], COLORS.accent[3]}, 8)
     AddText("Account-wide collection stats such as achievement points, mounts, companions, toys, and storage usage.", "GameFontNormal", {0.9, 0.9, 0.9}, 15)
   
