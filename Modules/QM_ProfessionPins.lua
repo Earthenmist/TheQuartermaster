@@ -313,6 +313,9 @@ local function CreatePinButton(parent)
     btn.text:SetPoint("CENTER")
     btn.text:SetText("Pin Reagents")
 
+    -- Start hidden; UpdatePinButtonVisibility() controls when it should be shown.
+    btn:Hide()
+
     btn:SetScript("OnEnter", function(selfBtn)
         selfBtn:SetBackdropColor(0, 0, 0, 0.35)
         GameTooltip:SetOwner(selfBtn, "ANCHOR_RIGHT")
@@ -343,7 +346,9 @@ local function CreatePinButton(parent)
             return
         end
 
-        local dialog = StaticPopup_Show("QM_PIN_RECIPE_REAGENTS")
+		-- Ensure our popup dialog exists before showing it.
+		EnsurePopup()
+		local dialog = StaticPopup_Show("QM_PIN_RECIPE_REAGENTS")
         print("|cffff5555[QM]|r Pin Reagents: StaticPopup_Show returned=" .. tostring(dialog))
         if dialog then
             dialog.data = dialog.data or {}
