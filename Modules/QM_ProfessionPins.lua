@@ -114,6 +114,22 @@ local function GetCurrentProfessionTitle()
 		if type(t) == "string" and t ~= "" then return t end
 	end
 
+	-- Some pages don't expose TitleText; try crafting page header/title widgets.
+	if pf.CraftingPage then
+		local cp = pf.CraftingPage
+		if cp.SchematicForm then
+			local sf = cp.SchematicForm
+			if sf.Title and sf.Title.GetText then
+				local t = sf.Title:GetText()
+				if type(t) == "string" and t ~= "" then return t end
+			end
+		end
+		if cp.Header and cp.Header.Title and cp.Header.Title.GetText then
+			local t = cp.Header.Title:GetText()
+			if type(t) == "string" and t ~= "" then return t end
+		end
+	end
+
 	-- Final fallback: some builds expose a name directly.
 	if type(pf.professionName) == "string" and pf.professionName ~= "" then
 		return pf.professionName
@@ -226,10 +242,20 @@ local function EnsurePopup()
 			local crafts = tonumber((eb and eb:GetText() or "") or "") or 1
             crafts = math.max(1, math.floor(crafts + 0.5))
 
-            if not data or not data.reagents then return end
+            print("|cffff5555[QM]|r Pin Reagents OnAccept. crafts=" .. tostring(crafts))
+            if not data or not data.reagents then
+                print("|cffff5555[QM]|r Pin Reagents OnAccept: missing data/reagents")
+                return
+            end
+            local svc = TheQuartermaster and TheQuartermaster.GetModule and TheQuartermaster:GetModule("SearchService", true)
+            if not svc then
+                print("|cffff5555[QM]|r Pin Reagents OnAccept: SearchService not available")
+            end
             for itemID, qty in pairs(data.reagents) do
+                local delta = (qty * crafts)
+                print("|cffff5555[QM]|r  - itemID=" .. tostring(itemID) .. " qty=" .. tostring(qty) .. " crafts=" .. tostring(crafts) .. " targetDelta=" .. tostring(delta))
                 -- Ensure pinned and add the required amount (scaled by craft count) to the desired target.
-                QM:ToggleWatchlistReagent(itemID, { mode = "ensure", targetDelta = (qty * crafts) })
+                QM:ToggleWatchlistReagent(itemID, { mode = "ensure", targetDelta = delta })
             end
         end,
         EditBoxOnEnterPressed = function(selfPopup)
@@ -267,24 +293,29 @@ local function CreatePinButton(parent)
 
     btn:SetScript("OnClick", function()
         local recipeID = GetSelectedRecipeID()
-        if not recipeID then return end
-
-        local reagents = GetRequiredReagents(recipeID)
-        local any = false
-        for _ in pairs(reagents) do any = true break end
-        if not any then
-            UIErrorsFrame:AddMessage("Quartermaster: No explicit required reagents to pin for this recipe.", 1, 0.2, 0.2)
+        print("|cffff5555[QM]|r Pin Reagents clicked. recipeID=" .. tostring(recipeID))
+        if not recipeID then
+            print("|cffff5555[QM]|r Pin Reagents: no selected recipe ID (nothing to pin).")
             return
         end
 
-		EnsurePopup()
-		local popup = StaticPopup_Show("QM_PIN_RECIPE_REAGENTS", nil, nil, { reagents = reagents })
-		-- Some UI replacements / error suppressors can prevent the popup from appearing.
-		-- If that happens, fall back to pinning once immediately so the button still works.
-		if not popup then
-			ApplyReagentsToWatchlist(reagents, 1)
-			UIErrorsFrame:AddMessage("Quartermaster: Pinned required reagents (x1).", 0.2, 1, 0.2)
-		end
+        local reagents = GetRequiredReagents(recipeID)
+        local count = 0
+        for _ in pairs(reagents) do count = count + 1 end
+        print("|cffff5555[QM]|r Pin Reagents: reagents found=" .. tostring(count))
+
+        if count == 0 then
+            UIErrorsFrame:AddMessage("Quartermaster: No explicit required reagents to pin for this recipe.", 1, 0.1, 0.1)
+            return
+        end
+
+        local dialog = StaticPopup_Show("QM_PIN_RECIPE_REAGENTS")
+        print("|cffff5555[QM]|r Pin Reagents: StaticPopup_Show returned=" .. tostring(dialog))
+        if dialog then
+            dialog.data = dialog.data or {}
+            dialog.data.reagents = reagents
+            dialog.data.recipeID = recipeID
+        end
     end)
 
     return btn

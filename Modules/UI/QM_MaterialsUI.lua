@@ -716,7 +716,11 @@ function TheQuartermaster:DrawMaterialsTab(parent)
 
         local itemID = it.itemID
         local pinned = itemID and self:IsWatchlistedItem(itemID)
-        row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
+        if pinned then
+            row.pin.icon:SetVertexColor(1, 0.2, 0.2) -- red when pinned
+        else
+            row.pin.icon:SetVertexColor(1, 0.82, 0) -- yellow when not pinned
+        end
 
         row.pin:SetScript("OnClick", function()
             if itemID then self:ToggleWatchlistReagent(itemID) end

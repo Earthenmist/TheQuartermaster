@@ -302,7 +302,11 @@ local searchText = ns.globalSearchText or ""
                 row.itemID = itemID
                 row.currencyID = nil
                 local pinned = itemID and ((mode == "reagents") and self:IsWatchlistedReagent(itemID) or self:IsWatchlistedItem(itemID))
-                row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
+                if pinned then
+                    row.pin.icon:SetVertexColor(1, 0.2, 0.2) -- red when pinned
+                else
+                    row.pin.icon:SetVertexColor(1, 0.82, 0) -- yellow when not pinned
+                end
 
                 row.pin:SetScript("OnClick", function()
                     if not itemID then return end
@@ -356,7 +360,11 @@ local searchText = ns.globalSearchText or ""
                 row.count:SetText(tostring(c.quantity or c.count or 0))
 
                 local pinned = currencyID and self:IsWatchlistedCurrency(currencyID)
-                row.pin.icon:SetVertexColor(pinned and COLORS.accent[1] or 1, pinned and COLORS.accent[2] or 1, pinned and COLORS.accent[3] or 1)
+                if pinned then
+                    row.pin.icon:SetVertexColor(1, 0.2, 0.2) -- red when pinned
+                else
+                    row.pin.icon:SetVertexColor(1, 0.82, 0) -- yellow when not pinned
+                end
 
                 row.pin:SetScript("OnClick", function()
                     if currencyID then self:ToggleWatchlistCurrency(currencyID) end
