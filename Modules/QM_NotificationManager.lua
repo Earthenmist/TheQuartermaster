@@ -9,11 +9,11 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14"
+local CURRENT_VERSION = "1.0.14a"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14",
+    version = "1.0.14a",
     date = "2026-02-08",
     changes = {
         "New **Watchlist** tab for pinned **Items**, **Reagents**, and **Currencies** (totals across your Warband).",
@@ -22,7 +22,7 @@ local CHANGELOG = {
         "Professions: **Pin Reagents** button to add missing crafting reagents to your Watchlist targets in one click.",
         "Watchlist: **Target quantities** for reagents with progress bars (track how close you are to your goal).",
         "Watchlist: **Auctionator export** button to create an importable shopping list (with tooltip + themed copy window).",
-        "General polish: better initial refresh so item names/icons resolve cleanly after login/reload.",
+        "Option added to Suppress /played chat message (enabled by default).",
     }
 }
 
