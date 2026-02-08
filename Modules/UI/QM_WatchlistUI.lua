@@ -162,7 +162,7 @@ local function CreateRow(parent, y, width, height)
 	-- Put the % text on the row (not the StatusBar) so it never gets hidden by the fill texture.
 	row._qmProgressText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	row._qmProgressText:SetPoint("CENTER", row._qmProgress, "CENTER", 0, 0)
-	row._qmProgressText:SetDrawLayer("OVERLAY", 7)
+	row._qmProgressText:SetDrawLayer("OVERLAY", 20)
     row._qmProgressText:SetTextColor(1, 1, 1, 0.85)
     row._qmProgressText:SetText("")
     row.remove.text:SetTextColor(1, 1, 1)

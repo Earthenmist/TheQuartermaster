@@ -30,41 +30,57 @@ local function GetSelectedRecipeID()
 end
 
 local function GetRequiredReagents(recipeID)
-    if not (C_TradeSkillUI and C_TradeSkillUI.GetRecipeSchematic) then return {} end
+    if not recipeID or not C_TradeSkillUI or not C_TradeSkillUI.GetRecipeSchematic then
+        return {}
+    end
 
     local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
-    if not schematic or not schematic.reagentSlotSchematics then return {} end
+    if not schematic or not schematic.reagentSlotSchematics then
+        return {}
+    end
 
-    local BASIC = (Enum and Enum.CraftingReagentType and Enum.CraftingReagentType.Basic) or 0
     local out = {}
+    local function add(itemID, qty)
+        itemID = tonumber(itemID)
+        qty = tonumber(qty) or 0
+        if not itemID or itemID <= 0 or qty <= 0 then return end
+        out[itemID] = (out[itemID] or 0) + qty
+    end
 
     for _, slot in ipairs(schematic.reagentSlotSchematics) do
-        -- Only include required/basic reagents; optional/finishing reagents are excluded.
-        if (slot.reagentType == nil) or (slot.reagentType == BASIC) then
-            local qty = slot.quantityRequired or slot.quantity or slot.requiredQuantity or 0
-            local reagents = slot.reagents or {}
+        local required = slot.quantityRequired or slot.quantityRequiredPerCraft or slot.requiredQuantity or slot.quantity or slot.reagentCount or 0
+        required = tonumber(required) or 0
+        if required > 0 then
+            -- The slot can expose the reagent item in a few different ways across builds.
+            -- Prefer a direct itemID, otherwise derive from an itemLink if present.
+            local itemID
 
-            -- Many schematics list multiple reagent entries for *quality* of the same item.
-            -- We can safely auto-pin if all listed options resolve to a single unique itemID.
-            if qty and qty > 0 and #reagents >= 1 then
-                local uniqueItemID
-                local ambiguous = false
+            -- Some builds expose a single reagent as slot.reagent (table) or slot.reagents[1]
+            if slot.reagent and type(slot.reagent) == "table" then
+                itemID = slot.reagent.itemID or (slot.reagent.item and slot.reagent.item.itemID)
+            end
 
-                for _, r in ipairs(reagents) do
-                    local itemID = r and tonumber(r.itemID)
-                    if itemID then
-                        if not uniqueItemID then
-                            uniqueItemID = itemID
-                        elseif uniqueItemID ~= itemID then
-                            ambiguous = true
-                            break
-                        end
+            if not itemID and slot.reagents and type(slot.reagents) == "table" and #slot.reagents > 0 then
+                -- Prefer the first entry; qualities map to same base itemID for most mats
+                local r = slot.reagents[1]
+                if type(r) == "table" then
+                    itemID = r.itemID or (r.item and r.item.itemID) or (r.reagent and r.reagent.itemID)
+                    if not itemID and r.itemLink then
+                        itemID = GetItemInfoInstant(r.itemLink)
                     end
                 end
+            end
 
-                if uniqueItemID and not ambiguous then
-                    out[uniqueItemID] = (out[uniqueItemID] or 0) + qty
-                end
+            if not itemID and slot.itemID then
+                itemID = slot.itemID
+            end
+
+            if not itemID and slot.itemLink then
+                itemID = GetItemInfoInstant(slot.itemLink)
+            end
+
+            if itemID then
+                add(itemID, required)
             end
         end
     end
@@ -106,17 +122,27 @@ local function GetCurrentProfessionTitle()
 end
 
 local function IsBlockedProfession()
-	local title = GetCurrentProfessionTitle()
-	if not title or title == "" then return false end
-	title = title:lower()
+    local title = GetCurrentProfessionTitle()
 
-	-- Gathering professions + archaeology should never show the pin button.
-	-- Also catch "Skinning"/"Herbalism" etc in localized strings by checking the internal skill line when possible.
-	if title:find("fishing") or title:find("mining") or title:find("herbalism") or title:find("skinning") or title:find("archaeology") then
-		return true
-	end
+    -- Fallback to tradeskill line name if the frame title isn't available (some pages don't use TitleText)
+    local lineName
+    if C_TradeSkillUI and C_TradeSkillUI.GetTradeSkillLine then
+        local n = C_TradeSkillUI.GetTradeSkillLine()
+        if type(n) == "string" and n ~= "" then
+            lineName = n
+        end
+    end
 
-	return false
+    local haystack = ((title or "") .. " " .. (lineName or "")):lower()
+
+    -- Gathering professions & Archaeology: no "reagents required" concept in the recipe UI
+    if haystack:find("fishing", 1, true) then return true end
+    if haystack:find("mining", 1, true) then return true end
+    if haystack:find("herbalism", 1, true) then return true end
+    if haystack:find("skinning", 1, true) then return true end
+    if haystack:find("archaeology", 1, true) then return true end
+
+    return false
 end
 
 local function UpdatePinButtonVisibility()
@@ -131,6 +157,12 @@ local function UpdatePinButtonVisibility()
 
     -- Only show on the Crafting page (Journal/other panes shouldn't get this).
     if not pf.CraftingPage or not pf.CraftingPage.IsShown or not pf.CraftingPage:IsShown() then
+        btn:Hide()
+        return
+    end
+
+    -- If Create/Forge controls aren't visible, we're not on a craftable recipe view.
+    if not pf.CraftingPage.CreateAllButton or not pf.CraftingPage.CreateAllButton.IsShown or not pf.CraftingPage.CreateAllButton:IsShown() then
         btn:Hide()
         return
     end
@@ -211,6 +243,9 @@ end
 
 local function CreatePinButton(parent)
     local btn = CreateFrame("Button", "QM_ProfessionsPinReagentsButton", parent, "BackdropTemplate")
+    btn:RegisterForClicks("LeftButtonUp")
+    btn:SetFrameStrata("DIALOG")
+    btn:SetFrameLevel(1000)
     btn:SetSize(120, 22)
     btn:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
     btn:SetBackdropColor(0, 0, 0, 0.25)
