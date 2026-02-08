@@ -13,6 +13,6 @@ Added **Reagent Targets** to Watchlist with **Owned/Target** display and **progr
 Added a **“Pin Reagents”** button to the Professions recipe view to pin required reagents and add quantities to desired amounts.  
 Fixed the “Set desired amount” popup (edit box reference) to prevent LUA errors when saving targets.  
 Option added to Suppress /played chat message (enabled by default).  
-
+  
 ### Notes
 - Thank you to everyone who helped test the pre‑release builds ❤️
