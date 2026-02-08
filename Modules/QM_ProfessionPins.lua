@@ -274,16 +274,23 @@ local function EnsurePopup()
                 print("|cffff5555[QM]|r Pin Reagents OnAccept: missing data/reagents")
                 return
             end
-            local svc = TheQuartermaster and TheQuartermaster.GetModule and TheQuartermaster:GetModule("SearchService", true)
-            if not svc then
-                print("|cffff5555[QM]|r Pin Reagents OnAccept: SearchService not available")
-            end
-            for itemID, qty in pairs(data.reagents) do
-                local delta = (qty * crafts)
-                print("|cffff5555[QM]|r  - itemID=" .. tostring(itemID) .. " qty=" .. tostring(qty) .. " crafts=" .. tostring(crafts) .. " targetDelta=" .. tostring(delta))
-                -- Ensure pinned and add the required amount (scaled by craft count) to the desired target.
-                QM:ToggleWatchlistReagent(itemID, { mode = "ensure", targetDelta = delta })
-            end
+	            local wl = (TheQuartermaster and TheQuartermaster.db and TheQuartermaster.db.profile and TheQuartermaster.db.profile.watchlist) or nil
+	            local reagentTbl = wl and wl.reagents or nil
+	            if not reagentTbl then
+	                print("|cffff5555[QM]|r Pin Reagents OnAccept: watchlist table missing")
+	                return
+	            end
+	            for itemID, qty in pairs(data.reagents) do
+	                local delta = (qty * crafts)
+	                local existing = (reagentTbl[itemID] and reagentTbl[itemID].desired) or 0
+	                local newDesired = math.max(0, existing) + math.max(0, delta)
+	                print("|cffff5555[QM]|r  - itemID=" .. tostring(itemID) .. " qty=" .. tostring(qty) .. " crafts=" .. tostring(crafts) .. " add=" .. tostring(delta) .. " desired " .. tostring(existing) .. "->" .. tostring(newDesired))
+	                QM:ToggleWatchlistReagent(itemID, true, newDesired)
+	            end
+	            -- If the Watchlist UI is open, refresh it immediately.
+	            if TheQuartermaster and TheQuartermaster.UI and TheQuartermaster.UI.WatchlistUI and TheQuartermaster.UI.WatchlistUI.PopulateContent then
+	                TheQuartermaster.UI.WatchlistUI:PopulateContent()
+	            end
         end,
         EditBoxOnEnterPressed = function(selfPopup)
             local parentPopup = selfPopup:GetParent()

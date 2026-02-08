@@ -308,14 +308,18 @@ local searchText = ns.globalSearchText or ""
                     row.pin.icon:SetVertexColor(1, 0.82, 0) -- yellow when not pinned
                 end
 
-                row.pin:SetScript("OnClick", function()
-                    if not itemID then return end
-                    if mode == "reagents" then
-                        self:ToggleWatchlistReagent(itemID)
-                    else
-                        self:ToggleWatchlistItem(itemID)
-                    end
-                end)
+				row.pin:SetScript("OnClick", function()
+					if not itemID then return end
+					if mode == "reagents" then
+						self:ToggleWatchlistReagent(itemID)
+						local nowPinned = self:IsWatchlistedReagent(itemID)
+						row.pin.icon:SetVertexColor(nowPinned and 1 or 1, nowPinned and 0.2 or 0.82, nowPinned and 0.2 or 0, 1)
+					else
+						self:ToggleWatchlistItem(itemID)
+						local nowPinned = self:IsWatchlistedItem(itemID)
+						row.pin.icon:SetVertexColor(nowPinned and 1 or 1, nowPinned and 0.2 or 0.82, nowPinned and 0.2 or 0, 1)
+					end
+				end)
 
                 row:SetScript("OnEnter", function(selfRow)
                     selfRow:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.8)
@@ -366,9 +370,16 @@ local searchText = ns.globalSearchText or ""
                     row.pin.icon:SetVertexColor(1, 0.82, 0) -- yellow when not pinned
                 end
 
-                row.pin:SetScript("OnClick", function()
-                    if currencyID then self:ToggleWatchlistCurrency(currencyID) end
-                end)
+				row.pin:SetScript("OnClick", function()
+					if not currencyID then return end
+					self:ToggleWatchlistCurrency(currencyID)
+					local nowPinned = self:IsWatchlistedCurrency(currencyID)
+					if nowPinned then
+						row.pin.icon:SetVertexColor(1, 0.2, 0.2)
+					else
+						row.pin.icon:SetVertexColor(1, 0.82, 0)
+					end
+				end)
 
                 row:SetScript("OnEnter", function(selfRow)
                     selfRow:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.8)

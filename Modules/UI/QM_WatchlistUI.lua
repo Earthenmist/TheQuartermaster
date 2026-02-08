@@ -151,6 +151,9 @@ local function CreateRow(parent, y, width, height)
 	row._qmProgress:SetFrameLevel(row:GetFrameLevel() + 1)
     row._qmProgress:SetHeight(10)
     row._qmProgress:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
+	-- Keep the fill texture below overlay text.
+	local tex = row._qmProgress:GetStatusBarTexture()
+	if tex then tex:SetDrawLayer("ARTWORK", 0) end
     row._qmProgress:SetMinMaxValues(0, 1)
     row._qmProgress:SetValue(0)
     row._qmProgress:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8", edgeFile = "Interface\\BUTTONS\\WHITE8X8", edgeSize = 1 })
