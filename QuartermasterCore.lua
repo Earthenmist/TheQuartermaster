@@ -239,6 +239,12 @@ function TheQuartermaster:OnInitialize()
         end
     end)
     
+
+    -- Suppress /played system message spam (optional, enabled by default)
+    if self.UpdateTimePlayedChatFilter then
+        self:UpdateTimePlayedChatFilter()
+    end
+
 end
 
 --[[
@@ -1562,9 +1568,40 @@ function TheQuartermaster:OnPlayerEnteringWorld(event, isInitialLogin, isReloadi
     -- TIME_PLAYED_MSG is asynchronous, so we request it shortly after login/reload.
     C_Timer.After(2.5, function()
         if not TheQuartermaster then return end
+
+        -- If enabled, suppress the Blizzard /played system chat lines by temporarily hiding SYSTEM messages.
+        -- This is the only 100% reliable method across UI stacks.
+        local suppressPlayed = true
+        if TheQuartermaster.db and TheQuartermaster.db.profile and TheQuartermaster.db.profile.suppressPlayedTimeChat ~= nil then
+            suppressPlayed = TheQuartermaster.db.profile.suppressPlayedTimeChat
+        end
+
+        local removedSystem = false
+        if suppressPlayed and ChatFrame_RemoveMessageGroup and ChatFrame_AddMessageGroup then
+            removedSystem = true
+            for i = 1, (NUM_CHAT_WINDOWS or 10) do
+                local cf = _G["ChatFrame"..i]
+                if cf then
+                    pcall(ChatFrame_RemoveMessageGroup, cf, "SYSTEM")
+                end
+            end
+        end
+
         if RequestTimePlayed then
             RequestTimePlayed()
         end
+
+        if removedSystem and C_Timer and C_Timer.After then
+            C_Timer.After(2, function()
+                for i = 1, (NUM_CHAT_WINDOWS or 10) do
+                    local cf = _G["ChatFrame"..i]
+                    if cf then
+                        pcall(ChatFrame_AddMessageGroup, cf, "SYSTEM")
+                    end
+                end
+            end)
+        end
+
         if TheQuartermaster.OnSpecializationChanged then
             TheQuartermaster:OnSpecializationChanged("PLAYER_SPECIALIZATION_CHANGED", "player")
         end

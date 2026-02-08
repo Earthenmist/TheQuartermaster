@@ -237,3 +237,6 @@ L["ERROR_API_UNAVAILABLE"] = "Required API is not available."
 L["ERROR_INVALID_ITEM"] = "Invalid item specified."
 L["ERROR_PROTECTED_FUNCTION"] = "Cannot call protected function in combat."
 
+L["SUPPRESS_TIME_PLAYED_CHAT"] = "Suppress /played chat message"
+L["PREVENTS_THE_TIME_PLAYED_SYSTEM_MESSAGE_FROM_APPEARING_IN_CHAT_WHEN_THE_ADDON_UPDATES_PLAYTIME"] = "Prevents the \"Time played\" system message from appearing in chat when The Quartermaster updates played time."
+

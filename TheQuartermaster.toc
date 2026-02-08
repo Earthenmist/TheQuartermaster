@@ -30,6 +30,7 @@ Locales\zhTW.lua
 Core\QM_Constants.lua
 Core\QM_Defaults.lua
 QuartermasterCore.lua
+Modules\QM_TimePlayedSuppress.lua
 QuartermasterConfig.lua
 
 # Modules (Core Services - Load First!)

@@ -9,6 +9,7 @@ local ADDON_NAME, ns = ...
 ns.DEFAULTS = {
     profile = {
         enabled = true,
+        suppressPlayedTimeChat = true,
         minimap = {
             hide = false,
             minimapPos = 220,

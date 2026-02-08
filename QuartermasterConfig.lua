@@ -47,6 +47,23 @@ local options = {
                 end
             end,
         },
+
+        suppressPlayedTimeChat = {
+            order = 13,
+            type = "toggle",
+            name = L["SUPPRESS_TIME_PLAYED_CHAT"],
+            desc = L["PREVENTS_THE_TIME_PLAYED_SYSTEM_MESSAGE_FROM_APPEARING_IN_CHAT_WHEN_THE_ADDON_UPDATES_PLAYTIME"],
+            width = 1.8,
+            get = function() return TheQuartermaster.db.profile.suppressPlayedTimeChat end,
+            set = function(_, value)
+                TheQuartermaster.db.profile.suppressPlayedTimeChat = value
+                if ns and ns.QM_ApplyPlayedSuppression then
+                    ns.QM_ApplyPlayedSuppression()
+                elseif TheQuartermaster.UpdateTimePlayedChatFilter then
+                    TheQuartermaster:UpdateTimePlayedChatFilter()
+                end
+            end,
+        },
         minimapIcon = {
             order = 13,
             type = "toggle",
