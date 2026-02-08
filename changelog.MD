@@ -1,6 +1,6 @@
 # The Quartermaster — Changelog  
   
-## 📜 Changelog – Version 1.0.14b (2026-02-08)  
+## 📜 Changelog – Version 1.0.14c (2026-02-08)  
   
 Introduced the new **Watchlist** tab for pinned **Items**, **Reagents**, and **Currencies** (Warband totals).  
 Added **Reagent Targets** with progress bars to help track crafting goals.  
