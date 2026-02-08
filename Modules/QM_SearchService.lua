@@ -72,7 +72,8 @@ local function GetProfileWatchlist(self)
     -- Migrate any crafting reagents that were pinned as items into the reagents bucket,
     -- preserving the full entry table (including pinned state).
     for itemID, entry in pairs(wl.items) do
-        if type(entry) == "table" and HasCraftingReagentLine(itemID) then
+        -- NOTE: use our local tooltip-scan helper (the global name does not exist)
+        if type(entry) == "table" and QM_HasCraftingReagentLine(itemID) then
             entry.itemType = "reagent"
             wl.reagents[itemID] = wl.reagents[itemID] or entry
             wl.items[itemID] = nil

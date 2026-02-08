@@ -59,12 +59,16 @@ local function GetSelectedRecipeID()
 end
 
 local function GetRequiredReagents(recipeID)
-    if not recipeID or not C_TradeSkillUI then
+    if not recipeID or not C_TradeSkillUI or not C_TradeSkillUI.GetRecipeSchematic then
+        return {}
+    end
+
+    local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
+    if not schematic or not schematic.reagentSlotSchematics then
         return {}
     end
 
     local out = {}
-
     local function add(itemID, qty)
         itemID = tonumber(itemID)
         qty = tonumber(qty) or 0
@@ -72,111 +76,163 @@ local function GetRequiredReagents(recipeID)
         out[itemID] = (out[itemID] or 0) + qty
     end
 
-    local function isSparkItem(itemID, hintText)
-        if hintText and tostring(hintText):lower():find("spark", 1, true) then
-            return true
+    -- Some recipes include "Spark" reagents (e.g. Spark of Omens) in the *required* section.
+    -- For Quartermaster's watchlist workflow we explicitly skip these.
+    local function IsSparkItem(itemID)
+        itemID = tonumber(itemID)
+        if not itemID or itemID <= 0 then return false end
+
+        local name
+        if C_Item and C_Item.GetItemNameByID then
+            name = C_Item.GetItemNameByID(itemID)
         end
-        if itemID and _G.GetItemInfo then
-            local name = _G.GetItemInfo(itemID)
-            if type(name) == "string" and name:lower():find("spark", 1, true) then
-                return true
+        if not name then
+            name = GetItemInfo(itemID)
+        end
+        if type(name) ~= "string" then
+            return false
+        end
+
+        -- Whole word match for "Spark" to avoid false positives like "Sparkling".
+        return name:match("%f[%a]Spark%f[%A]") ~= nil
+    end
+
+
+
+
+    -- Prefer the classic reagent API when available (it typically returns ONLY required reagents,
+    -- excluding Optional/Finishing reagent slots). This also avoids edge cases in schematic slot typing.
+    if _G.C_TradeSkillUI and _G.C_TradeSkillUI.GetRecipeNumReagents then
+        local ok, num = pcall(_G.C_TradeSkillUI.GetRecipeNumReagents, recipeID)
+        if ok and type(num) == "number" and num > 0 then
+            for i = 1, num do
+                local qty
+                if _G.C_TradeSkillUI.GetRecipeReagentInfo then
+                    local ok2, _name, _tex, reagentCount = pcall(_G.C_TradeSkillUI.GetRecipeReagentInfo, recipeID, i)
+                    if ok2 then
+                        qty = reagentCount
+                    end
+                end
+
+                local itemID
+                if _G.C_TradeSkillUI.GetRecipeReagentItemLink then
+                    local ok3, link = pcall(_G.C_TradeSkillUI.GetRecipeReagentItemLink, recipeID, i)
+                    if ok3 and link then
+                        itemID = GetItemInfoInstant(link)
+                    end
+                end
+
+                qty = tonumber(qty) or 0
+                if itemID and qty > 0 then
+                    if not IsSparkItem(itemID) then
+                        add(itemID, qty)
+                    else
+                        dprint("Skipping Spark reagent itemID="..tostring(itemID))
+                    end
+                end
+            end
+
+            if next(out) ~= nil then
+                return out
             end
         end
+    end
+
+-- Filter out optional & finishing reagent slots. We only want the *required/basic* reagents.
+local function IsBasicReagentSlot(slot)
+    if not slot or type(slot) ~= "table" then return false end
+
+    -- Preferred: slotType enum (retail)
+    local st = slot.slotType
+    if st and _G.Enum and _G.Enum.TradeskillSlotType then
+        local t = _G.Enum.TradeskillSlotType
+
+        -- Explicit exclusions
+        if t.OptionalReagent and st == t.OptionalReagent then return false end
+        if t.ModifiedReagent and st == t.ModifiedReagent then return false end
+        if t.FinishingReagent and st == t.FinishingReagent then return false end
+        if t.EnhancingReagent and st == t.EnhancingReagent then return false end
+
+        -- Explicit inclusions
+        if t.Reagent and st == t.Reagent then return true end
+        if t.BasicReagent and st == t.BasicReagent then return true end
+
+        -- Common pattern: 1 = required/basic, >1 = optional/finishing
+        if type(st) == "number" then
+            return st == 1
+        end
+    end
+
+    -- Alternate: crafting reagent type enum
+    local rt = slot.reagentType or slot.craftingReagentType
+    if rt and _G.Enum and _G.Enum.CraftingReagentType then
+        local r = _G.Enum.CraftingReagentType
+        if r.Optional and rt == r.Optional then return false end
+        if r.Finishing and rt == r.Finishing then return false end
+        if r.Basic and rt == r.Basic then return true end
+    end
+
+    -- Flag-based fallbacks (varies by build)
+    if slot.isOptionalReagent or slot.isModifyingReagent or slot.isFinishingReagent then
         return false
     end
-
-    -- Build an exclusion set from the schematic for Optional + Finishing slots (and Spark-labelled slots),
-    -- so we can safely filter the reagent list API even when it includes these.
-    local excluded = {}
-    local schematic = C_TradeSkillUI.GetRecipeSchematic and C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
-    if schematic and schematic.reagentSlotSchematics then
-        local slotEnum = _G.Enum and _G.Enum.TradeskillSlotType
-        local OPTIONAL = slotEnum and slotEnum.OptionalReagent
-        local FINISHING = slotEnum and slotEnum.FinishingReagent
-
-        for _, slot in ipairs(schematic.reagentSlotSchematics) do
-            local slotType = slot.slotType
-            local slotText = slot.slotText or slot.slotName or slot.name
-            local lower = slotText and tostring(slotText):lower() or ""
-
-            local isOptional = slot.isOptionalReagent or (OPTIONAL and slotType == OPTIONAL) or lower:find("optional", 1, true)
-            local isFinishing = slot.isFinishingReagent or (FINISHING and slotType == FINISHING) or lower:find("finishing", 1, true)
-
-            if isOptional or isFinishing or lower:find("spark", 1, true) then
-                if slot.reagents then
-                    for _, r in ipairs(slot.reagents) do
-                        local itemID = r.itemID or r.itemId
-                        if itemID then excluded[tonumber(itemID)] = true end
-                    end
-                elseif slot.reagent and (slot.reagent.itemID or slot.reagent.itemId) then
-                    local itemID = slot.reagent.itemID or slot.reagent.itemId
-                    excluded[tonumber(itemID)] = true
-                end
-            end
-        end
+    if slot.isRequiredReagent ~= nil then
+        return slot.isRequiredReagent and true or false
     end
 
-    -- Prefer Blizzard's reagent list API (this is generally the "Reagents" section),
-    -- but we filter using the schematic exclusion set to guarantee Optional/Finishing are not pinned.
-    if C_TradeSkillUI.GetRecipeNumReagents and C_TradeSkillUI.GetRecipeReagentInfo then
-        local okNum, num = pcall(C_TradeSkillUI.GetRecipeNumReagents, recipeID)
-        if okNum and type(num) == "number" and num > 0 then
-            for i = 1, num do
-                local okInfo, name, _, reagentCount = pcall(C_TradeSkillUI.GetRecipeReagentInfo, recipeID, i)
-                reagentCount = tonumber(reagentCount) or 0
-                if okInfo and reagentCount > 0 then
-                    local itemID
-                    if C_TradeSkillUI.GetRecipeReagentItemLink then
-                        local okLink, link = pcall(C_TradeSkillUI.GetRecipeReagentItemLink, recipeID, i)
-                        if okLink and link then
-                            itemID = _G.GetItemInfoInstant and _G.GetItemInfoInstant(link)
-                        end
-                    end
-                    if (not itemID or itemID <= 0) and C_TradeSkillUI.GetRecipeReagentItemID then
-                        local okID, rid = pcall(C_TradeSkillUI.GetRecipeReagentItemID, recipeID, i)
-                        if okID and rid then itemID = rid end
-                    end
+    -- Text heuristics (last resort)
+    local label = (slot.slotText or slot.slotName or slot.name or ""):lower()
+    if label:find("optional", 1, true) then return false end
+    if label:find("finishing", 1, true) then return false end
 
-                    itemID = tonumber(itemID)
-                    if itemID and itemID > 0 then
-                        if not excluded[itemID] and not isSparkItem(itemID, name) then
-                            add(itemID, reagentCount)
-                        end
+    -- Default: be conservative (treat as non-basic)
+    return false
+end
+
+    for _, slot in ipairs(schematic.reagentSlotSchematics) do
+        if IsBasicReagentSlot(slot) then
+            -- IMPORTANT: only treat slots as "required" if the schematic provides an explicit required quantity.
+            -- Optional/finishing slots sometimes carry generic fields (e.g. slot.quantity) that can be non-zero
+            -- even though they're not truly required reagents.
+            local required = slot.quantityRequired or slot.quantityRequiredPerCraft or slot.requiredQuantity or 0
+            required = tonumber(required) or 0
+
+            if required > 0 then
+                -- The slot can expose the reagent item in a few different ways across builds.
+                -- Prefer a direct itemID, otherwise derive from an itemLink if present.
+                local itemID
+
+                -- Some builds expose a single reagent as slot.reagent (table) or slot.reagents[1]
+                if slot.reagent and type(slot.reagent) == "table" then
+                    itemID = slot.reagent.itemID or (slot.reagent.item and slot.reagent.item.itemID)
+                end
+
+            if not itemID and slot.reagents and type(slot.reagents) == "table" and #slot.reagents > 0 then
+                -- Prefer the first entry; qualities map to same base itemID for most mats
+                local r = slot.reagents[1]
+                if type(r) == "table" then
+                    itemID = r.itemID or (r.item and r.item.itemID) or (r.reagent and r.reagent.itemID)
+                    if not itemID and r.itemLink then
+                        itemID = GetItemInfoInstant(r.itemLink)
                     end
                 end
             end
-        end
-    end
 
-    -- If the reagent list API produced nothing (or isn't available), fall back to schematic required-only slots.
-    if not next(out) and schematic and schematic.reagentSlotSchematics then
-        local slotEnum = _G.Enum and _G.Enum.TradeskillSlotType
-        local OPTIONAL = slotEnum and slotEnum.OptionalReagent
-        local FINISHING = slotEnum and slotEnum.FinishingReagent
+            if not itemID and slot.itemID then
+                itemID = slot.itemID
+            end
 
-        for _, slot in ipairs(schematic.reagentSlotSchematics) do
-            local slotType = slot.slotType
-            local slotText = slot.slotText or slot.slotName or slot.name
-            local lower = slotText and tostring(slotText):lower() or ""
+            if not itemID and slot.itemLink then
+                itemID = GetItemInfoInstant(slot.itemLink)
+            end
 
-            local isOptional = slot.isOptionalReagent or (OPTIONAL and slotType == OPTIONAL) or lower:find("optional", 1, true)
-            local isFinishing = slot.isFinishingReagent or (FINISHING and slotType == FINISHING) or lower:find("finishing", 1, true)
-
-            if not isOptional and not isFinishing and not lower:find("spark", 1, true) then
-                local required = slot.quantityRequired or slot.quantityRequiredPerCraft or slot.requiredQuantity or slot.quantity or slot.reagentCount or 0
-                required = tonumber(required) or 0
-                if required > 0 then
-                    local itemID
-                    if slot.reagents and slot.reagents[1] then
-                        itemID = slot.reagents[1].itemID or slot.reagents[1].itemId
-                    elseif slot.reagent then
-                        itemID = slot.reagent.itemID or slot.reagent.itemId
-                    end
-                    itemID = tonumber(itemID)
-                    if itemID and itemID > 0 and not isSparkItem(itemID, slotText) then
-                        add(itemID, required)
-                    end
+            if itemID then
+                if not IsSparkItem(itemID) then
+                    add(itemID, required)
+                else
+                    dprint("Skipping Spark reagent itemID="..tostring(itemID))
                 end
+            end
             end
         end
     end
@@ -354,59 +410,74 @@ If a reagent is already pinned, its desired amount will be increased.]],
         whileDead = true,
         hideOnEscape = true,
         preferredIndex = 3,
-
         hasEditBox = true,
         editBoxWidth = 80,
-        maxLetters = 6,
-
+        maxLetters = 4,
         OnShow = function(selfPopup, data)
-            -- Default to 1 craft and focus the edit box.
             if selfPopup.editBox then
-                selfPopup.editBox:SetAutoFocus(true)
                 selfPopup.editBox:SetNumeric(true)
-                selfPopup.editBox:SetNumber(1)
+                selfPopup.editBox:SetAutoFocus(true)
+                selfPopup.editBox:SetText("1")
                 selfPopup.editBox:HighlightText()
-                selfPopup.editBox:SetFocus()
             end
         end,
-
         EditBoxOnEnterPressed = function(editBox)
-            -- In StaticPopup, this callback receives the editBox, not the popup.
             local popup = editBox and editBox:GetParent()
+            if popup and popup.data then
+                local n = tonumber(editBox:GetText())
+                if n and n > 0 then popup.data._qmCrafts = math.floor(n) end
+            end
             if popup and popup.button1 and popup.button1.Click then
                 popup.button1:Click()
             end
         end,
-
+        EditBoxOnEscapePressed = function(editBox)
+            local popup = editBox and editBox:GetParent()
+            if popup then popup:Hide() end
+        end,
         OnAccept = function(selfPopup, data)
             data = data or selfPopup.data
             if not data then return end
 
-            local crafts = 1
-            if selfPopup and selfPopup.editBox and selfPopup.editBox.GetText then
-                local n = tonumber(selfPopup.editBox:GetText())
-                if n and n > 0 then crafts = math.floor(n) end
+
+	        local reagents = data.reagents
+	        if not reagents or #reagents == 0 then return end
+
+	        -- Apply: +requiredQty to Watchlist reagent targets (and ensure they are pinned)
+	        -- IMPORTANT: Never "toggle" here. A recipe can reference the same item multiple times (quality/optional slots)
+	        -- and a toggle would cancel itself out. We aggregate and use ensure+targetDelta.
+	        local crafts = 1
+            -- Read planned crafts from popup edit box (defaults to 1)
+            do
+                local edit = (selfPopup and (selfPopup.editBox or (_G[selfPopup.GetName and (selfPopup:GetName() .. "EditBox") or nil] )))
+                if edit and edit.GetText then
+                    local n = tonumber(edit:GetText())
+                    if n and n > 0 then crafts = math.floor(n) end
+                elseif data and type(data._qmCrafts) == "number" and data._qmCrafts > 0 then
+                    crafts = math.floor(data._qmCrafts)
+                end
             end
 
-            local reagents = data.reagents
-            if not reagents or #reagents == 0 then return end
 
-            -- Apply: +(requiredQty * crafts) to Watchlist reagent targets (and ensure they are pinned)
-            -- IMPORTANT: Never "toggle" here. A recipe can reference the same item multiple times (quality/optional slots)
-            -- and a toggle would cancel itself out. We aggregate and use ensure+targetDelta.
+            crafts = math.floor(crafts)
+            if crafts < 1 then crafts = 1 end
+
             local totals = {}
             for _, r in ipairs(reagents) do
-                local itemID = r.itemID
-                local qty = tonumber(r.quantity) or 0
-                if itemID and qty > 0 then
-                    totals[itemID] = (totals[itemID] or 0) + (qty * crafts)
-                end
-            end
-            for itemID, qty in pairs(totals) do
-                if QM and QM.ToggleWatchlistReagent then
-                    QM:ToggleWatchlistReagent(itemID, { mode = "ensure", targetDelta = qty })
-                end
-            end
+	            local itemID = r.itemID
+	            local qty = tonumber(r.quantity) or 0
+	            if itemID and qty > 0 then
+	                totals[itemID] = (totals[itemID] or 0) + (qty * crafts)
+	            end
+	        end
+	        for itemID, qty in pairs(totals) do
+	            -- Use the addon instance captured from ... (QM), not a global.
+	            -- In The Quartermaster, the object is stored on the namespace, so a global
+	            -- 'TheQuartermaster' may not exist.
+	            if QM and QM.ToggleWatchlistReagent then
+	                QM:ToggleWatchlistReagent(itemID, { mode = "ensure", targetDelta = qty })
+	            end
+	        end
         end,
     }
 end
