@@ -315,7 +315,8 @@ yOffset = yOffset + 84
                     row._qmBar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
 					local tex = row._qmBar:GetStatusBarTexture()
 					if tex and tex.SetDrawLayer then
-						tex:SetDrawLayer("ARTWORK", 0)
+						-- Keep fill behind the percentage text.
+						tex:SetDrawLayer("BACKGROUND", 0)
 					end
                     row._qmBar:SetMinMaxValues(0, 1)
                     row._qmBar:SetValue(0)
@@ -330,6 +331,9 @@ yOffset = yOffset + 84
                     row._qmBar:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.85)
 
 					row._qmBarText = row._qmBar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+					if row._qmBarText and row._qmBarText.SetDrawLayer then
+						row._qmBarText:SetDrawLayer("OVERLAY", 7)
+					end
                     row._qmBarText:SetPoint("CENTER", row._qmBar, "CENTER", 0, 0)
 					row._qmBarText:SetText("")
 					row._qmBarText:SetTextColor(1, 1, 1)

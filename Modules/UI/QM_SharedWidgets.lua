@@ -999,11 +999,20 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
         -- Throttle callback - refresh after delay (live search)
         throttleTimer = C_Timer.NewTimer(delay, function()
             if onTextChanged then
+                -- Request focus restoration after the UI refreshes.
+                if TheQuartermaster and TheQuartermaster.UI then
+                    TheQuartermaster.UI._restoreSearchFocus = true
+                end
                 onTextChanged(newSearchText)
             end
             throttleTimer = nil
         end)
     end)
+
+    -- Expose the most recently created search box so the UI can restore focus after refresh.
+    if TheQuartermaster and TheQuartermaster.UI then
+        TheQuartermaster.UI.activeSearchBox = searchBox
+    end
     
     -- Escape to clear
     searchBox:SetScript("OnEscapePressed", function(self)

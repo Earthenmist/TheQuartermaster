@@ -204,6 +204,20 @@ local function UpdatePinButtonVisibility()
         return
     end
 
+    -- Only show when the recipe schematic form is actually visible.
+    -- Journal-style panes (Fishing, etc.) can still have CraftingPage shown but no schematic.
+    if not pf.CraftingPage.SchematicForm or not pf.CraftingPage.SchematicForm.IsShown or not pf.CraftingPage.SchematicForm:IsShown() then
+        btn:Hide()
+        return
+    end
+
+    -- Only show when the recipe schematic is actually visible (gathering professions & journal-like panes won't have it).
+    local form = pf.CraftingPage.SchematicForm
+    if not form or not form.IsShown or not form:IsShown() then
+        btn:Hide()
+        return
+    end
+
     -- If Create/Forge controls aren't visible, we're not on a craftable recipe view.
     if not pf.CraftingPage.CreateAllButton or not pf.CraftingPage.CreateAllButton.IsShown or not pf.CraftingPage.CreateAllButton:IsShown() then
         btn:Hide()
@@ -247,9 +261,13 @@ local function EnsurePinTicker()
 end
 
 local function EnsurePopup()
-    if StaticPopupDialogs["QM_PIN_RECIPE_REAGENTS"] then return end
+    local dialogs = _G.StaticPopupDialogs
+    if not dialogs then
+        return
+    end
+    if dialogs["QM_PIN_RECIPE_REAGENTS"] then return end
 
-    StaticPopupDialogs["QM_PIN_RECIPE_REAGENTS"] = {
+    dialogs["QM_PIN_RECIPE_REAGENTS"] = {
         text = "Pin required reagents\n\nHow many crafts?",
         button1 = OKAY,
         button2 = CANCEL,
@@ -401,6 +419,43 @@ local function TryAttachButton()
     -- Initial/refresh visibility (and keep it updated while the frame is open).
     UpdatePinButtonVisibility()
     EnsurePinTicker()
+
+    -- Extra hooks so the button shows/hides correctly when swapping professions/tabs.
+    if not pf._qmPinHooksApplied then
+        pf._qmPinHooksApplied = true
+
+        -- Professions frame shown/hidden
+        if pf.HookScript then
+            pf:HookScript("OnShow", function()
+                C_Timer.After(0, UpdatePinButtonVisibility)
+            end)
+        end
+
+        -- Schematic form visibility & common refresh methods
+        if form and form.HookScript then
+            form:HookScript("OnShow", function() C_Timer.After(0, UpdatePinButtonVisibility) end)
+            form:HookScript("OnHide", function() C_Timer.After(0, UpdatePinButtonVisibility) end)
+        end
+
+        local function SafeHook(obj, method)
+            if not obj then return end
+            local fn = obj[method]
+            if type(fn) == "function" then
+                hooksecurefunc(obj, method, function()
+                    C_Timer.After(0, UpdatePinButtonVisibility)
+                end)
+            end
+        end
+
+        -- Methods vary by build; hook a few likely ones.
+        SafeHook(pf, "SetProfession")
+        SafeHook(pf, "SetProfessionInfo")
+        SafeHook(pf.CraftingPage, "SetProfession")
+        SafeHook(form, "SetRecipeID")
+        SafeHook(form, "SetRecipe")
+        SafeHook(form, "Refresh")
+        SafeHook(form, "Update")
+    end
 end
 
 -- Lightweight event driver

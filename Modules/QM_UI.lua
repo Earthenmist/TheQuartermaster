@@ -1118,6 +1118,24 @@ function TheQuartermaster:RefreshUI()
     if mainFrame and mainFrame:IsShown() then
         self:PopulateContent()
         self:SyncBankTab()
+
+        -- Focus restoration for search boxes: certain module refreshes rebuild frames and can drop focus.
+        -- SharedWidgets sets TheQuartermaster.UI._restoreSearchFocus and activeSearchBox while typing.
+        if self.UI and self.UI._restoreSearchFocus and self.UI.activeSearchBox and self.UI.activeSearchBox.IsShown and self.UI.activeSearchBox:IsShown() then
+            local eb = self.UI.activeSearchBox
+            -- Only restore if the user isn't currently focusing another edit box.
+            local currentFocus = GetFocus()
+            if not currentFocus or currentFocus == eb then
+                eb:SetFocus()
+                if eb.GetText then
+                    local t = eb:GetText() or ""
+                    if eb.SetCursorPosition then
+                        eb:SetCursorPosition(#t)
+                    end
+                end
+            end
+            self.UI._restoreSearchFocus = nil
+        end
     end
 end
 
