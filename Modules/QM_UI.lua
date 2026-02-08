@@ -45,12 +45,12 @@ local date = date
 
 -- Constants
 local DEFAULT_WIDTH = 680
-local DEFAULT_HEIGHT = 500
+local DEFAULT_HEIGHT = 680
 -- Minimum size must account for the widest tab content (Characters has multiple
 -- columns and long names). We clamp both during resize *and* on load so a saved
 -- too-small size can't break the layout.
 local MIN_WIDTH = 1050
-local MIN_HEIGHT = 620
+local MIN_HEIGHT = 680
 local ROW_HEIGHT = 26
 
 local mainFrame = nil
@@ -208,7 +208,7 @@ function TheQuartermaster:CreateMainWindow()
     -- Main frame
     local f = CreateFrame("Frame", "TheQuartermasterFrame", UIParent, "BackdropTemplate")
     f:SetSize(savedWidth, savedHeight)
-    f:SetPoint("CENTER")
+    f:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
     f:SetMovable(true)
     f:SetResizable(true)
     f:SetResizeBounds(MIN_WIDTH, MIN_HEIGHT, 1200, 900)

@@ -16,6 +16,54 @@ if not QM then return end
 local DEBUG_PINS = false -- set true for temporary debugging
 local function dprint(msg) if DEBUG_PINS then print("|cff00ff88[QM]|r "..msg) end end
 
+
+-- === Themed button styling (matches Quartermaster UI) ===
+local function GetCOLORS()
+    return ns.UI_COLORS or {
+        accent = {1, 0.82, 0},
+        tabInactive = {0.18, 0.18, 0.18},
+        tabHover = {0.24, 0.24, 0.24},
+    }
+end
+
+local function StripDefaultButtonTextures(btn)
+    if not btn then return end
+    local nt = btn:GetNormalTexture(); if nt then nt:SetAlpha(0) end
+    local pt = btn:GetPushedTexture(); if pt then pt:SetAlpha(0) end
+    local ht = btn:GetHighlightTexture(); if ht then ht:SetAlpha(0) end
+    local dt = btn:GetDisabledTexture(); if dt then dt:SetAlpha(0) end
+end
+
+local function ApplyThemedPinButton(btn)
+    if not btn or not btn.SetBackdrop then return end
+    local COLORS = GetCOLORS()
+
+    StripDefaultButtonTextures(btn)
+    btn:SetBackdrop({
+        bgFile = "Interface\\BUTTONS\\WHITE8X8",
+        edgeFile = "Interface\\BUTTONS\\WHITE8X8",
+        edgeSize = 1,
+    })
+    local fill = COLORS.accentDark or COLORS.tabActive or COLORS.tabInactive
+    btn:SetBackdropColor(fill[1], fill[2], fill[3], 0.90)
+    btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.90)
+
+    if btn.text then
+        btn.text:SetFontObject("GameFontHighlightSmall")
+        btn.text:SetTextColor(1, 1, 1, 1)
+    end
+
+    -- Subtle hover feedback (same feel as QM action buttons)
+    btn:HookScript("OnEnter", function(selfBtn)
+        local hover = COLORS.accent or COLORS.tabHover or COLORS.tabActive or COLORS.tabInactive
+        selfBtn:SetBackdropColor(hover[1], hover[2], hover[3], 0.95)
+        selfBtn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 1)
+    end)
+    btn:HookScript("OnLeave", function(selfBtn)
+        selfBtn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.90)
+    end)
+end
+
 local function GetSelectedRecipeID()
     if C_TradeSkillUI and C_TradeSkillUI.GetSelectedRecipeID then
         local id = C_TradeSkillUI.GetSelectedRecipeID()
@@ -487,25 +535,23 @@ local function CreatePinButton(parent)
     btn:RegisterForClicks("LeftButtonUp")
     btn:SetFrameStrata("DIALOG")
     btn:SetFrameLevel(1000)
-    btn:SetSize(120, 22)
-    btn:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
-    btn:SetBackdropColor(0, 0, 0, 0.25)
+    btn:SetSize(130, 24)
     btn.text = btn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     btn.text:SetPoint("CENTER")
     btn.text:SetText("Pin Reagents")
+
+    ApplyThemedPinButton(btn)
 
     -- Start hidden; UpdatePinButtonVisibility() controls when it should be shown.
     btn:Hide()
 
     btn:SetScript("OnEnter", function(selfBtn)
-        selfBtn:SetBackdropColor(0, 0, 0, 0.35)
         GameTooltip:SetOwner(selfBtn, "ANCHOR_RIGHT")
         GameTooltip:AddLine("Pin required reagents to Watchlist", 1,1,1)
         GameTooltip:AddLine("Adds required quantities to desired amounts.", 0.8,0.8,0.8)
         GameTooltip:Show()
     end)
     btn:SetScript("OnLeave", function(selfBtn)
-        selfBtn:SetBackdropColor(0, 0, 0, 0.25)
         GameTooltip:Hide()
     end)
 

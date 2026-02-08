@@ -1,0 +1,56 @@
+lightweight tag 33cbc1da9dc721747021d71d33f40be12b80d9d8 v1.0.14a-Release
+Author:	GitHub <noreply@github.com>
+Date:	Sun Feb 8 13:50:31 2026 +0000
+
+commit 33cbc1da9dc721747021d71d33f40be12b80d9d8
+Author: Lanni of Alonsus <jamierhirst@icloud.com>
+Date:   Sun Feb 8 13:50:31 2026 +0000
+
+    Fix project name and update README content
+    
+    Updated the project name formatting and removed outdated version information.
+
+commit 3a80eb05e384ae42a0904794a634c8d4b224ed61
+Author: Lanni of Alonsus <jamierhirst@icloud.com>
+Date:   Sun Feb 8 13:50:02 2026 +0000
+
+    Fix formatting in changelog header
+
+commit cedb4b6a58c2704927547557f7ac9fa52769a46e
+Author: Lanni of Alonsus <jamierhirst@icloud.com>
+Date:   Sun Feb 8 13:49:31 2026 +0000
+
+    Update changelog with recent changes and fixes
+
+commit f1f978d050bd24a9441b7c0d1f7dca1cc30284df
+Author: Lanni of Alonsus <jamierhirst@icloud.com>
+Date:   Sun Feb 8 13:48:50 2026 +0000
+
+    v1.0.14a
+
+commit a43eea892bdab30f6883756e30c8e8a92217ab44
+Author: Lanni of Alonsus <jamierhirst@icloud.com>
+Date:   Sun Feb 8 13:43:55 2026 +0000
+
+    v1.0.14a
+
+commit a43eea892bdab30f6883756e30c8e8a92217ab44
+Author: Lanni of Alonsus <jamierhirst@icloud.com>
+Date:   Sun Feb 8 13:43:55 2026 +0000
+
+    v1.0.14a
+
+commit 6646dd25177e6817a84364de20d468e569c26d60
+Author: Lanni of Alonsus <jamierhirst@icloud.com>
+Date:   Sun Feb 8 13:42:37 2026 +0000
+
+    Revise changelog for version 1.0.14a updates
+    
+    Updated changelog to reflect changes in version 1.0.14a, including new features and fixes.
+
+commit d05b50cf0bc8288d944261574f8b0e4cb638c3bf
+Author: Lanni of Alonsus <jamierhirst@icloud.com>
+Date:   Sun Feb 8 13:38:30 2026 +0000
+
+    v1.0.14a
+
