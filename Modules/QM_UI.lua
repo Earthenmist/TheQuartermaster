@@ -44,12 +44,12 @@ local floor = math.floor
 local date = date
 
 -- Constants
-local DEFAULT_WIDTH = 680
+local DEFAULT_WIDTH = 1200
 local DEFAULT_HEIGHT = 680
 -- Minimum size must account for the widest tab content (Characters has multiple
 -- columns and long names). We clamp both during resize *and* on load so a saved
 -- too-small size can't break the layout.
-local MIN_WIDTH = 1050
+local MIN_WIDTH = 1200
 local MIN_HEIGHT = 680
 local ROW_HEIGHT = 26
 
