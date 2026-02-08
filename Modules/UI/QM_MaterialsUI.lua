@@ -715,7 +715,8 @@ function TheQuartermaster:DrawMaterialsTab(parent)
         row.count:SetText(tostring(it.total or 0))
 
         local itemID = it.itemID
-        local pinned = itemID and self:IsWatchlistedItem(itemID)
+        -- Materials are reagents; keep pin state in the reagent watchlist bucket.
+        local pinned = itemID and self:IsWatchlistedReagent(itemID)
         if pinned then
             row.pin.icon:SetVertexColor(1, 0.2, 0.2) -- red when pinned
         else
@@ -732,7 +733,7 @@ function TheQuartermaster:DrawMaterialsTab(parent)
             if not itemID then return end
 
             if button == "RightButton" then
-                local pinnedNow = self:IsWatchlistedItem(itemID)
+                local pinnedNow = self:IsWatchlistedReagent(itemID)
                 local menu = {
                     {
                         text = pinnedNow and "Unpin from Watchlist" or "Pin to Watchlist",

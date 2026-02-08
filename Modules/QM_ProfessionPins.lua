@@ -21,10 +21,37 @@ local function GetSelectedRecipeID()
     end
     -- Fallbacks for different builds
     local pf = _G.ProfessionsFrame
-    if pf and pf.CraftingPage and pf.CraftingPage.SchematicForm then
-        local form = pf.CraftingPage.SchematicForm
-        if form.recipeID and form.recipeID > 0 then return form.recipeID end
-        if form.currentRecipeID and form.currentRecipeID > 0 then return form.currentRecipeID end
+    if pf and pf.CraftingPage then
+        local page = pf.CraftingPage
+
+        -- Most reliable: the schematic form exposes a getter
+        if page.SchematicForm then
+            local form = page.SchematicForm
+            if type(form.GetRecipeID) == "function" then
+                local rid = form:GetRecipeID()
+                if rid and rid > 0 then return rid end
+            end
+
+            -- Older/variant fields
+            if form.recipeID and form.recipeID > 0 then return form.recipeID end
+            if form.currentRecipeID and form.currentRecipeID > 0 then return form.currentRecipeID end
+
+            -- Some builds store the recipe on the transaction
+            if form.transaction and type(form.transaction.GetRecipeID) == "function" then
+                local rid = form.transaction:GetRecipeID()
+                if rid and rid > 0 then return rid end
+            end
+        end
+
+        -- Recipe list fallbacks
+        if page.RecipeList then
+            local rl = page.RecipeList
+            if type(rl.GetSelectedRecipeID) == "function" then
+                local rid = rl:GetSelectedRecipeID()
+                if rid and rid > 0 then return rid end
+            end
+            if rl.selectedRecipeID and rl.selectedRecipeID > 0 then return rl.selectedRecipeID end
+        end
     end
     return nil
 end
