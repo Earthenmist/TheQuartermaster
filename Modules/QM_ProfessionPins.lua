@@ -59,16 +59,12 @@ local function GetSelectedRecipeID()
 end
 
 local function GetRequiredReagents(recipeID)
-    if not recipeID or not C_TradeSkillUI or not C_TradeSkillUI.GetRecipeSchematic then
-        return {}
-    end
-
-    local schematic = C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
-    if not schematic or not schematic.reagentSlotSchematics then
+    if not recipeID or not C_TradeSkillUI then
         return {}
     end
 
     local out = {}
+
     local function add(itemID, qty)
         itemID = tonumber(itemID)
         qty = tonumber(qty) or 0
@@ -76,40 +72,111 @@ local function GetRequiredReagents(recipeID)
         out[itemID] = (out[itemID] or 0) + qty
     end
 
-    for _, slot in ipairs(schematic.reagentSlotSchematics) do
-        local required = slot.quantityRequired or slot.quantityRequiredPerCraft or slot.requiredQuantity or slot.quantity or slot.reagentCount or 0
-        required = tonumber(required) or 0
-        if required > 0 then
-            -- The slot can expose the reagent item in a few different ways across builds.
-            -- Prefer a direct itemID, otherwise derive from an itemLink if present.
-            local itemID
-
-            -- Some builds expose a single reagent as slot.reagent (table) or slot.reagents[1]
-            if slot.reagent and type(slot.reagent) == "table" then
-                itemID = slot.reagent.itemID or (slot.reagent.item and slot.reagent.item.itemID)
+    local function isSparkItem(itemID, hintText)
+        if hintText and tostring(hintText):lower():find("spark", 1, true) then
+            return true
+        end
+        if itemID and _G.GetItemInfo then
+            local name = _G.GetItemInfo(itemID)
+            if type(name) == "string" and name:lower():find("spark", 1, true) then
+                return true
             end
+        end
+        return false
+    end
 
-            if not itemID and slot.reagents and type(slot.reagents) == "table" and #slot.reagents > 0 then
-                -- Prefer the first entry; qualities map to same base itemID for most mats
-                local r = slot.reagents[1]
-                if type(r) == "table" then
-                    itemID = r.itemID or (r.item and r.item.itemID) or (r.reagent and r.reagent.itemID)
-                    if not itemID and r.itemLink then
-                        itemID = GetItemInfoInstant(r.itemLink)
+    -- Build an exclusion set from the schematic for Optional + Finishing slots (and Spark-labelled slots),
+    -- so we can safely filter the reagent list API even when it includes these.
+    local excluded = {}
+    local schematic = C_TradeSkillUI.GetRecipeSchematic and C_TradeSkillUI.GetRecipeSchematic(recipeID, false)
+    if schematic and schematic.reagentSlotSchematics then
+        local slotEnum = _G.Enum and _G.Enum.TradeskillSlotType
+        local OPTIONAL = slotEnum and slotEnum.OptionalReagent
+        local FINISHING = slotEnum and slotEnum.FinishingReagent
+
+        for _, slot in ipairs(schematic.reagentSlotSchematics) do
+            local slotType = slot.slotType
+            local slotText = slot.slotText or slot.slotName or slot.name
+            local lower = slotText and tostring(slotText):lower() or ""
+
+            local isOptional = slot.isOptionalReagent or (OPTIONAL and slotType == OPTIONAL) or lower:find("optional", 1, true)
+            local isFinishing = slot.isFinishingReagent or (FINISHING and slotType == FINISHING) or lower:find("finishing", 1, true)
+
+            if isOptional or isFinishing or lower:find("spark", 1, true) then
+                if slot.reagents then
+                    for _, r in ipairs(slot.reagents) do
+                        local itemID = r.itemID or r.itemId
+                        if itemID then excluded[tonumber(itemID)] = true end
+                    end
+                elseif slot.reagent and (slot.reagent.itemID or slot.reagent.itemId) then
+                    local itemID = slot.reagent.itemID or slot.reagent.itemId
+                    excluded[tonumber(itemID)] = true
+                end
+            end
+        end
+    end
+
+    -- Prefer Blizzard's reagent list API (this is generally the "Reagents" section),
+    -- but we filter using the schematic exclusion set to guarantee Optional/Finishing are not pinned.
+    if C_TradeSkillUI.GetRecipeNumReagents and C_TradeSkillUI.GetRecipeReagentInfo then
+        local okNum, num = pcall(C_TradeSkillUI.GetRecipeNumReagents, recipeID)
+        if okNum and type(num) == "number" and num > 0 then
+            for i = 1, num do
+                local okInfo, name, _, reagentCount = pcall(C_TradeSkillUI.GetRecipeReagentInfo, recipeID, i)
+                reagentCount = tonumber(reagentCount) or 0
+                if okInfo and reagentCount > 0 then
+                    local itemID
+                    if C_TradeSkillUI.GetRecipeReagentItemLink then
+                        local okLink, link = pcall(C_TradeSkillUI.GetRecipeReagentItemLink, recipeID, i)
+                        if okLink and link then
+                            itemID = _G.GetItemInfoInstant and _G.GetItemInfoInstant(link)
+                        end
+                    end
+                    if (not itemID or itemID <= 0) and C_TradeSkillUI.GetRecipeReagentItemID then
+                        local okID, rid = pcall(C_TradeSkillUI.GetRecipeReagentItemID, recipeID, i)
+                        if okID and rid then itemID = rid end
+                    end
+
+                    itemID = tonumber(itemID)
+                    if itemID and itemID > 0 then
+                        if not excluded[itemID] and not isSparkItem(itemID, name) then
+                            add(itemID, reagentCount)
+                        end
                     end
                 end
             end
+        end
+    end
 
-            if not itemID and slot.itemID then
-                itemID = slot.itemID
-            end
+    -- If the reagent list API produced nothing (or isn't available), fall back to schematic required-only slots.
+    if not next(out) and schematic and schematic.reagentSlotSchematics then
+        local slotEnum = _G.Enum and _G.Enum.TradeskillSlotType
+        local OPTIONAL = slotEnum and slotEnum.OptionalReagent
+        local FINISHING = slotEnum and slotEnum.FinishingReagent
 
-            if not itemID and slot.itemLink then
-                itemID = GetItemInfoInstant(slot.itemLink)
-            end
+        for _, slot in ipairs(schematic.reagentSlotSchematics) do
+            local slotType = slot.slotType
+            local slotText = slot.slotText or slot.slotName or slot.name
+            local lower = slotText and tostring(slotText):lower() or ""
 
-            if itemID then
-                add(itemID, required)
+            local isOptional = slot.isOptionalReagent or (OPTIONAL and slotType == OPTIONAL) or lower:find("optional", 1, true)
+            local isFinishing = slot.isFinishingReagent or (FINISHING and slotType == FINISHING) or lower:find("finishing", 1, true)
+
+            if not isOptional and not isFinishing and not lower:find("spark", 1, true) then
+                local required = slot.quantityRequired or slot.quantityRequiredPerCraft or slot.requiredQuantity or slot.quantity or slot.reagentCount or 0
+                required = tonumber(required) or 0
+                if required > 0 then
+                    local itemID
+                    if slot.reagents and slot.reagents[1] then
+                        itemID = slot.reagents[1].itemID or slot.reagents[1].itemId
+                    elseif slot.reagent then
+                        itemID = slot.reagent.itemID or slot.reagent.itemId
+                    end
+                    itemID = tonumber(itemID)
+                    if itemID and itemID > 0 and not isSparkItem(itemID, slotText) then
+                        add(itemID, required)
+                    end
+                end
             end
         end
     end
@@ -277,6 +344,8 @@ local function EnsurePopup()
     dialogs["QM_PIN_RECIPE_REAGENTS"] = {
         text = [[Pin required reagents to Watchlist
 
+How many crafts do you want to plan for?
+
 Adds the recipe's required reagent quantities to your desired amounts.
 If a reagent is already pinned, its desired amount will be increased.]],
         button1 = ACCEPT,
@@ -285,29 +354,59 @@ If a reagent is already pinned, its desired amount will be increased.]],
         whileDead = true,
         hideOnEscape = true,
         preferredIndex = 3,
+
+        hasEditBox = true,
+        editBoxWidth = 80,
+        maxLetters = 6,
+
+        OnShow = function(selfPopup, data)
+            -- Default to 1 craft and focus the edit box.
+            if selfPopup.editBox then
+                selfPopup.editBox:SetAutoFocus(true)
+                selfPopup.editBox:SetNumeric(true)
+                selfPopup.editBox:SetNumber(1)
+                selfPopup.editBox:HighlightText()
+                selfPopup.editBox:SetFocus()
+            end
+        end,
+
+        EditBoxOnEnterPressed = function(editBox)
+            -- In StaticPopup, this callback receives the editBox, not the popup.
+            local popup = editBox and editBox:GetParent()
+            if popup and popup.button1 and popup.button1.Click then
+                popup.button1:Click()
+            end
+        end,
+
         OnAccept = function(selfPopup, data)
             data = data or selfPopup.data
             if not data then return end
 
-	        local reagents = data.reagents
-	        if not reagents or #reagents == 0 then return end
+            local crafts = 1
+            if selfPopup and selfPopup.editBox and selfPopup.editBox.GetText then
+                local n = tonumber(selfPopup.editBox:GetText())
+                if n and n > 0 then crafts = math.floor(n) end
+            end
 
-	        -- Apply: +requiredQty to Watchlist reagent targets (and ensure they are pinned)
-	        -- IMPORTANT: Never "toggle" here. A recipe can reference the same item multiple times (quality/optional slots)
-	        -- and a toggle would cancel itself out. We aggregate and use ensure+targetDelta.
-	        local totals = {}
-	        for _, r in ipairs(reagents) do
-	            local itemID = r.itemID
-	            local qty = tonumber(r.quantity) or 0
-	            if itemID and qty > 0 then
-	                totals[itemID] = (totals[itemID] or 0) + qty
-	            end
-	        end
-	        for itemID, qty in pairs(totals) do
-	            if TheQuartermaster and TheQuartermaster.ToggleWatchlistReagent then
-	                TheQuartermaster:ToggleWatchlistReagent(itemID, { mode = "ensure", targetDelta = qty })
-	            end
-	        end
+            local reagents = data.reagents
+            if not reagents or #reagents == 0 then return end
+
+            -- Apply: +(requiredQty * crafts) to Watchlist reagent targets (and ensure they are pinned)
+            -- IMPORTANT: Never "toggle" here. A recipe can reference the same item multiple times (quality/optional slots)
+            -- and a toggle would cancel itself out. We aggregate and use ensure+targetDelta.
+            local totals = {}
+            for _, r in ipairs(reagents) do
+                local itemID = r.itemID
+                local qty = tonumber(r.quantity) or 0
+                if itemID and qty > 0 then
+                    totals[itemID] = (totals[itemID] or 0) + (qty * crafts)
+                end
+            end
+            for itemID, qty in pairs(totals) do
+                if QM and QM.ToggleWatchlistReagent then
+                    QM:ToggleWatchlistReagent(itemID, { mode = "ensure", targetDelta = qty })
+                end
+            end
         end,
     }
 end
