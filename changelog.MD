@@ -1,4 +1,4 @@
-# TheQuartermaster — Changelog  
+# The Quartermaster — Changelog  
   
 ## 📜 Changelog – Version 1.0.14a (2026-02-08)  
   
