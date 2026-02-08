@@ -1,13 +1,6 @@
-# TheQuartermaster
+# The Quartermaster
 
-## What's New in 1.0.14
-- **Watchlist**: pin Items/Reagents/Currencies with Warband totals.
-- **Reagent Targets**: set desired amounts and track progress.
-- **Professions Pin Reagents**: one-click pinning of missing reagents to Watchlist targets.
-- **Auctionator Export**: generate an importable shopping list from your Watchlist reagents.
-- **Materials improvements**: better browsing, source toggles, and item quality colours.
-
-**TheQuartermaster** is a comprehensive Warband-aware inventory, currency, profession, and character overview addon for World of Warcraft, designed for the *Midnight* / *The War Within* era.
+**The Quartermaster** is a comprehensive Warband-aware inventory, currency, profession, and character overview addon for World of Warcraft, designed for the *Midnight* / *The War Within* era.
 
 It provides a unified dashboard to track your entire account’s progression, storage, and collectables across all characters — while staying visually aligned with Blizzard’s modern UI style.
 
@@ -29,8 +22,6 @@ It provides a unified dashboard to track your entire account’s progression, st
 - Section-based category grouping with collapsible headers.
 - Visual consistency across list and grid views.
 
-
-
 ### 🔎 Global Search (New in v1.0.13)
 - Search **Items + Currency** across all cached characters and storage locations.
 - Mode selector: **All / Items / Currency**
@@ -44,6 +35,13 @@ It provides a unified dashboard to track your entire account’s progression, st
 - You can Pin/Unpin from:
   - Global Search results (star or right-click)
   - Items and Storage screens (List or Slot view) via **right-click** row menu
+
+  ## What's New in 1.0.14
+- **Watchlist**: pin Items/Reagents/Currencies with Warband totals.
+- **Reagent Targets**: set desired amounts and track progress.
+- **Professions Pin Reagents**: one-click pinning of missing reagents to Watchlist targets.
+- **Auctionator Export**: generate an importable shopping list from your Watchlist reagents.
+- **Materials improvements**: better browsing, source toggles, and item quality colours.
 
 ### 💰 Currencies
 - Warband-wide currency tracking.
@@ -159,6 +157,4 @@ Redistribution or modification without permission is not permitted.
   - Items/Storage: right-click an item row (List or Slot view) → Pin/Unpin.
 - **Copy Item Link**: right-click an item row → Copy Item Link (opens it in chat for easy Ctrl+C).
 
-## 📅 Release Notes
-- v1.0.13 (2026-02-06) – Global Search + Watchlist, right-click menus, and pinning improvements.
 
