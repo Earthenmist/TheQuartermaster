@@ -17,8 +17,6 @@ local CHANGELOG = {
     date = "2026-02-08",
     changes = {
         "New **Watchlist** tab for pinned **Items**, **Reagents**, and **Currencies** (totals across your Warband).",
-        "**Materials** screen upgraded: improved results list, source toggles (Reagent Bag / Warband Bank / All Characters / Guild Bank cached), and **quality-coloured** item names.",
-        "Materials: **Pin/Unpin** reagents directly to Watchlist from the results list (star icon / right-click).",
         "Professions: **Pin Reagents** button to add missing crafting reagents to your Watchlist targets in one click.",
         "Watchlist: **Target quantities** for reagents with progress bars (track how close you are to your goal).",
         "Watchlist: **Auctionator export** button to create an importable shopping list (with tooltip + themed copy window).",
