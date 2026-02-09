@@ -8,7 +8,7 @@
 ## OptionalDeps: Ace3
 ## Category: Bags & Inventory
 ## X-Curse-Project-ID: 1444475
-## X-Wago-ID: 
+## X-Wago-ID: O67D4ZK3
 
 # Libraries
 embeds.xml
