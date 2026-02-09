@@ -1,19 +1,12 @@
-## :jigsaw: Addon Updates (2026-02-08)
+## 🧩 Addon Updates (2026-02-09)
 
-**The Quartermaster** — v1.0.14c  
+**The Quartermaster** — v1.0.15  
 
 **Changes:**  
-• Added a new **Watchlist** tab for pinned **Items**, **Reagents**, and **Currencies** (Warband totals).  
-• Added **Reagent Targets** with Owned/Target display and progress bars for crafting goals.  
-• Added a Professions **Pin Reagents** button to pin missing reagents (with quantities) directly from recipes.  
-• Added **Auctionator export** for Watchlist reagents (includes a themed copy window + tooltip).  
-• Upgraded the **Materials** screen with improved browsing, source toggles, and quality-coloured reagent names.  
-• General UI polish and refresh improvements after login/reload.  
-• Professions: improved **Pin Reagents** button visibility.  
-• Adjusted the default Quartermaster window size to prevent clipping.
+• Release packaging update (standardised changelog + cleaner zip output).  
 
 **Fixes:**  
-• Fixed the “Set desired amount” popup (edit box reference) to prevent LUA errors when saving targets.  
+• None.
 
 **Known issues:**  
 • None currently known.
