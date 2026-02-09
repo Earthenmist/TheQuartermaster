@@ -9,15 +9,14 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.14c"
+local CURRENT_VERSION = "1.0.15"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.14c",
-    date = "2026-02-08",
+    version = "1.0.15",
+    date = "2026-02-09",
     changes = {
-        "Professions: **Pin Reagents** button updated for visibility.",
-        "Altered default UI size of The Quartermaster to stop clipping.",
+        "Release packaging update (standardised changelog + cleaner zip output).",
     }
 }
 
