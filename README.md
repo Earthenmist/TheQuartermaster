@@ -122,9 +122,7 @@ For bug reports, feature requests, release notes, and beta builds, join the offi
 https://discord.gg/U8mKfHpeeP
 
 ## 📜 License
-This addon is provided as-is for personal use.
-
-Redistribution or modification without permission is not permitted.
+All Rights Reserved.
 
 ## ❤️ Credits
 - **Author:** LanniOfAlonsus  
