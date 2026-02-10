@@ -428,6 +428,7 @@ local function CollectMaterials(self, opts)
 
     local playerKey = UnitName("player") .. "-" .. GetRealmName()
 
+
     -- Reagent Bag (current char) is bagID 5 in your inventory mapping (bagIndex varies).
     if includeReagentBag and db.char and db.char.inventory and db.char.inventory.items and db.char.inventory.bagIDs then
         for bagIndex, bagID in ipairs(db.char.inventory.bagIDs) do
@@ -477,8 +478,8 @@ local function CollectMaterials(self, opts)
                         end)
                     end
                 end
-                if charData.personalBank and charData.personalBank.items then
-                    IterateContainerItems(charData.personalBank.items, function(item)
+                if charData.personalBank then
+                    IterateContainerItems(charData.personalBank, function(item)
                         AddItemToTotals(totals, item, tonumber(item.stackCount or 1) or 1, "Bank", charKey)
                     end)
                 end
@@ -543,14 +544,32 @@ local function _QM_GetMaterialsTooltipTotals(itemID)
 
     -- Character inventories + personal banks (all characters)
     if db.global and db.global.characters then
-        for _, charData in pairs(db.global.characters) do
+        local playerKey = UnitName("player") .. "-" .. GetRealmName()
+        for charKey, charData in pairs(db.global.characters) do
             if type(charData) == "table" then
-                -- Bags
+                -- Bags (split reagent bag for current character when bagIDs are available)
                 if charData.inventory and charData.inventory.items then
-                    for _, bagData in pairs(charData.inventory.items) do
-                        for _, item in pairs(bagData) do
-                            if item and item.itemID == itemID then
-                                add("Bags", (item.stackCount or 1))
+                    if charData.inventory.bagIDs then
+                        for bagIndex, bagID in ipairs(charData.inventory.bagIDs) do
+                            local bagSlots = charData.inventory.items[bagIndex]
+                            if type(bagSlots) == "table" then
+                                for _, item in pairs(bagSlots) do
+                                    if item and item.itemID == itemID then
+                                        if charKey == playerKey and bagID == 5 then
+                                            add("Reagent Bag", (item.stackCount or 1))
+                                        else
+                                            add("Bags", (item.stackCount or 1))
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        for _, bagData in pairs(charData.inventory.items) do
+                            for _, item in pairs(bagData) do
+                                if item and item.itemID == itemID then
+                                    add("Bags", (item.stackCount or 1))
+                                end
                             end
                         end
                     end
@@ -563,22 +582,6 @@ local function _QM_GetMaterialsTooltipTotals(itemID)
                                 add("Bank", (item.stackCount or 1))
                             end
                         end
-                    end
-                end
-            end
-        end
-    end
-
-    -- Reagent Bag (current char) - only if present in db.char inventory with bagIDs mapping
-    -- This is kept as a separate line for clarity.
-    local playerKey = UnitName("player") .. "-" .. GetRealmName()
-    if db.char and db.char.inventory and db.char.inventory.items and db.char.inventory.bagIDs then
-        for bagIndex, bagID in ipairs(db.char.inventory.bagIDs) do
-            if bagID == 5 then
-                local bagSlots = db.char.inventory.items[bagIndex] or {}
-                for _, item in pairs(bagSlots) do
-                    if item and item.itemID == itemID then
-                        add("Reagent Bag", (item.stackCount or 1))
                     end
                 end
             end
