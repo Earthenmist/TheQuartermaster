@@ -282,6 +282,10 @@ local function IsStrictReagent(item)
             if not QM_HasCraftingReagentLine(item.itemID) then
                 return false
             end
+        else
+            -- If the game reports this item is a Trade Good / Gem / Reagent, treat it as a material
+            -- even if the scanner hasn't populated subtype metadata yet (prevents undercounting).
+            return true
         end
     end
 
@@ -948,7 +952,19 @@ function TheQuartermaster:DrawMaterialsTab(parent)
             if c.key == profKey and c.key ~= "all" then profLabel = c.label end
         end
         row.meta:SetText(profLabel)
-        row.count:SetText(tostring(it.total or 0))
+
+        -- Ensure the row count matches the tooltip + "Total owned" logic.
+        -- (The tooltip totals are computed from the canonical per-character bag/bank caches.)
+        local displayTotal = it.total or 0
+        if itemID then
+            local tt = _QM_GetMaterialsTooltipTotals(itemID)
+            if tt and tt.total then
+                displayTotal = tt.total
+                it.total = tt.total
+            end
+        end
+
+        row.count:SetText(tostring(displayTotal))
         -- Materials are reagents; keep pin state in the reagent watchlist bucket.
         local pinned = itemID and self:IsWatchlistedReagent(itemID)
         if pinned then
