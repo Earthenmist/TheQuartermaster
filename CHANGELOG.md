@@ -1,9 +1,9 @@
-## 🧩 Addon Updates (2026-02-09)
+## 🧩 Addon Updates (2026-02-10)
 
-**The Quartermaster** — v1.0.15  
+**The Quartermaster** — v1.0.16  
 
 **Changes:**  
-• Release packaging update (standardised changelog + cleaner zip output).  
+• Added Discord Feature Request: Clear button on Search Boxes. This only appears when there is something to clear.  
 
 **Fixes:**  
 • None.
