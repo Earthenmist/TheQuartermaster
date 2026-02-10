@@ -6,7 +6,7 @@
 • Added Discord Feature Request: Clear button on Search Boxes. This only appears when there is something to clear.  
 
 **Fixes:**  
-• Updated the Materials expansion-tag lookup to fix issue found with No crafting materials found….
+• Updated the Materials expansion-tag lookup to fix issue found with No crafting materials found.  
 • Fixed an item count tooltip error on Materials screen
 
 **Known issues:**  
