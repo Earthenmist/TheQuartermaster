@@ -9,14 +9,14 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.15"
+local CURRENT_VERSION = "1.0.16"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.15",
-    date = "2026-02-09",
+    version = "1.0.16",
+    date = "2026-02-10",
     changes = {
-        "Release packaging update (standardised changelog + cleaner zip output).",
+        "Added Discord Feature Request: Clear button on Search Boxes. This only appears when there is something to clear.",
     }
 }
 
