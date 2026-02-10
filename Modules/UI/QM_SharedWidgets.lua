@@ -948,11 +948,48 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
     searchIcon:SetPoint("LEFT", 10, 0)
     searchIcon:SetTexture("Interface\\Icons\\INV_Misc_Spyglass_02")
     searchIcon:SetAlpha(0.5)
+
+    -- Clear button (appears when text is present)
+    -- Styled to match other themed action buttons (e.g., List View toggle)
+    local clearBtn = CreateFrame("Button", nil, searchFrame, "BackdropTemplate")
+    clearBtn:SetSize(24, 24)
+    clearBtn:SetPoint("RIGHT", -6, 0)
+    clearBtn:SetBackdrop({
+        bgFile = "Interface\\BUTTONS\\WHITE8X8",
+        edgeFile = "Interface\\BUTTONS\\WHITE8X8",
+        edgeSize = 1,
+    })
+    clearBtn:SetBackdropColor(COLORS.tabInactive[1], COLORS.tabInactive[2], COLORS.tabInactive[3], 1)
+    clearBtn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.65)
+
+    clearBtn.text = clearBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    clearBtn.text:SetPoint("CENTER", 0, 0)
+    clearBtn.text:SetTextColor(1, 1, 1, 0.95)
+    clearBtn.text:SetText("×")
+
+    clearBtn:SetScript("OnEnter", function(btn)
+        if btn.SetBackdropColor then
+            btn:SetBackdropColor(COLORS.tabHover[1], COLORS.tabHover[2], COLORS.tabHover[3], 1)
+            btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.9)
+        end
+        GameTooltip:SetOwner(btn, "ANCHOR_TOP")
+        GameTooltip:AddLine("Clear Search", 1, 0.82, 0)
+        GameTooltip:AddLine("Clear the current search filter.", 0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+
+    clearBtn:SetScript("OnLeave", function(btn)
+        if btn.SetBackdropColor then
+            btn:SetBackdropColor(COLORS.tabInactive[1], COLORS.tabInactive[2], COLORS.tabInactive[3], 1)
+            btn:SetBackdropBorderColor(COLORS.accent[1], COLORS.accent[2], COLORS.accent[3], 0.65)
+        end
+        GameTooltip:Hide()
+    end)
     
     -- EditBox
     local searchBox = CreateFrame("EditBox", nil, searchFrame)
     searchBox:SetPoint("LEFT", searchIcon, "RIGHT", 8, 0)
-    searchBox:SetPoint("RIGHT", -10, 0)
+    searchBox:SetPoint("RIGHT", clearBtn, "LEFT", -6, 0)
     searchBox:SetHeight(20)
     searchBox:SetFontObject("GameFontNormal")
     searchBox:SetAutoFocus(false)
@@ -972,8 +1009,10 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
     -- Show/hide placeholder based on initial text
     if initialText and initialText ~= "" then
         placeholderText:Hide()
+        clearBtn:Show()
     else
         placeholderText:Show()
+        clearBtn:Hide()
     end
     
     -- OnTextChanged handler with throttle
@@ -985,9 +1024,11 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
         
         if text and text ~= "" then
             placeholderText:Hide()
+            clearBtn:Show()
             newSearchText = text:lower()
         else
             placeholderText:Show()
+            clearBtn:Hide()
             newSearchText = ""
         end
         
@@ -1047,7 +1088,34 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
     local function ClearSearch()
         searchBox:SetText("")
         placeholderText:Show()
+        clearBtn:Hide()
     end
+
+    -- Clear button handler (immediate clear + immediate callback)
+    clearBtn:SetScript("OnClick", function()
+        local hadFocus = searchBox:HasFocus()
+        if throttleTimer then
+            throttleTimer:Cancel()
+            throttleTimer = nil
+        end
+        searchBox:SetText("")
+        placeholderText:Show()
+        clearBtn:Hide()
+
+        if onTextChanged then
+            -- Keep focus sticky after the UI refreshes.
+            if TheQuartermaster and TheQuartermaster.UI then
+                TheQuartermaster.UI._restoreSearchFocus = hadFocus
+                TheQuartermaster.UI._restoreSearchFocusUntil = (GetTime() or 0) + 1.5
+                TheQuartermaster.UI.activeSearchBox = searchBox
+            end
+            onTextChanged("")
+        end
+
+        if hadFocus then
+            searchBox:SetFocus()
+        end
+    end)
     
     return container, ClearSearch
 end
