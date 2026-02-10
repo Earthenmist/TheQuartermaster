@@ -509,6 +509,118 @@ local function CollectMaterials(self, opts)
     return out
 end
 
+
+-- ============================================================================
+-- Tooltip totals (live scan fallback)
+-- ============================================================================
+-- The Materials tab has its own aggregated totals (based on tab filters).
+-- However, the global tooltip enhancer may also add a "Total owned" line which
+-- includes additional sources (warband/guild/banks). To avoid confusing mismatches
+-- we compute a lightweight "live" breakdown for the hovered item ID and show it
+-- consistently in the Materials tooltip.
+local _materialsTooltipTotalsCache = {} -- [itemID] = { ts=time(), data = { total=, sources=table } }
+local _MATERIALS_TOOLTIP_CACHE_TTL = 3
+
+local function _QM_GetMaterialsTooltipTotals(itemID)
+    if not itemID then return nil end
+    local now = time()
+    local cached = _materialsTooltipTotalsCache[itemID]
+    if cached and cached.ts and (now - cached.ts) <= _MATERIALS_TOOLTIP_CACHE_TTL then
+        return cached.data
+    end
+
+    local db = TheQuartermaster and TheQuartermaster.db
+    if not db then return nil end
+
+    local sources = {}
+    local total = 0
+
+    local function add(src, amount)
+        if not amount or amount <= 0 then return end
+        sources[src] = (sources[src] or 0) + amount
+        total = total + amount
+    end
+
+    -- Character inventories + personal banks (all characters)
+    if db.global and db.global.characters then
+        for _, charData in pairs(db.global.characters) do
+            if type(charData) == "table" then
+                -- Bags
+                if charData.inventory and charData.inventory.items then
+                    for _, bagData in pairs(charData.inventory.items) do
+                        for _, item in pairs(bagData) do
+                            if item and item.itemID == itemID then
+                                add("Bags", (item.stackCount or 1))
+                            end
+                        end
+                    end
+                end
+                -- Personal Bank
+                if charData.personalBank then
+                    for _, bagData in pairs(charData.personalBank) do
+                        for _, item in pairs(bagData) do
+                            if item and item.itemID == itemID then
+                                add("Bank", (item.stackCount or 1))
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Reagent Bag (current char) - only if present in db.char inventory with bagIDs mapping
+    -- This is kept as a separate line for clarity.
+    local playerKey = UnitName("player") .. "-" .. GetRealmName()
+    if db.char and db.char.inventory and db.char.inventory.items and db.char.inventory.bagIDs then
+        for bagIndex, bagID in ipairs(db.char.inventory.bagIDs) do
+            if bagID == 5 then
+                local bagSlots = db.char.inventory.items[bagIndex] or {}
+                for _, item in pairs(bagSlots) do
+                    if item and item.itemID == itemID then
+                        add("Reagent Bag", (item.stackCount or 1))
+                    end
+                end
+            end
+        end
+    end
+
+    -- Warband Bank
+    if db.global and db.global.warbandBank and db.global.warbandBank.items then
+        for _, bagData in pairs(db.global.warbandBank.items) do
+            for _, item in pairs(bagData) do
+                if item and item.itemID == itemID then
+                    add("Warband Bank", (item.stackCount or 1))
+                end
+            end
+        end
+    end
+
+    -- Guild Bank (cached)
+    if db.global and db.global.guildBank then
+        local guildCount = 0
+        for _, guildData in pairs(db.global.guildBank) do
+            if type(guildData) == "table" and guildData.tabs then
+                for _, tabData in pairs(guildData.tabs) do
+                    if tabData and tabData.items then
+                        for _, item in pairs(tabData.items) do
+                            if item and item.itemID == itemID then
+                                guildCount = guildCount + (item.stackCount or item.count or item.quantity or 1)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        add("Guild Bank", guildCount)
+    end
+
+    local data = { total = total, sources = sources }
+    _materialsTooltipTotalsCache[itemID] = { ts = now, data = data }
+    return data
+end
+
+
 -- ============================================================================
 -- UI
 
@@ -897,9 +1009,18 @@ function TheQuartermaster:DrawMaterialsTab(parent)
                 GameTooltip:SetHyperlink(it.itemLink or select(2, GetItemInfo(itemID)) or ("item:"..itemID))
                 GameTooltip:AddLine(" ")
                 GameTooltip:AddLine("|cffffffffTotals|r", 1,1,1)
-                GameTooltip:AddLine("Total: " .. tostring(it.total or 0), 0.8,0.8,0.8)
-                if it.sources then
-                    for src, amt in pairs(it.sources) do
+
+                local tData = _QM_GetMaterialsTooltipTotals(itemID)
+                local totalVal = (tData and tData.total) or (it.total or 0)
+                local sources = (tData and tData.sources) or it.sources or {}
+
+                GameTooltip:AddLine("Total: " .. tostring(totalVal), 0.8,0.8,0.8)
+
+                -- Show sources in a consistent order (only when > 0)
+                local ordered = { "Bags", "Bank", "Reagent Bag", "Warband Bank", "Guild Bank" }
+                for _, src in ipairs(ordered) do
+                    local amt = sources[src]
+                    if amt and amt > 0 then
                         GameTooltip:AddLine(src .. ": " .. tostring(amt), 0.8,0.8,0.8)
                     end
                 end
