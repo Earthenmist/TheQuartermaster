@@ -952,7 +952,7 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
     -- Clear button (appears when text is present)
     -- Styled to match other themed action buttons (e.g., List View toggle)
     local clearBtn = CreateFrame("Button", nil, searchFrame, "BackdropTemplate")
-    clearBtn:SetSize(24, 24)
+    clearBtn:SetSize(52, 24)
     clearBtn:SetPoint("RIGHT", -6, 0)
     clearBtn:SetBackdrop({
         bgFile = "Interface\\BUTTONS\\WHITE8X8",
@@ -965,7 +965,7 @@ local function CreateSearchBox(parent, width, placeholder, onTextChanged, thrott
     clearBtn.text = clearBtn:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     clearBtn.text:SetPoint("CENTER", 0, 0)
     clearBtn.text:SetTextColor(1, 1, 1, 0.95)
-    clearBtn.text:SetText("×")
+    clearBtn.text:SetText("Clear")
 
     clearBtn:SetScript("OnEnter", function(btn)
         if btn.SetBackdropColor then
