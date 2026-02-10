@@ -106,9 +106,76 @@ local function QM_GetExpansionTagFromLabel(label)
     return tag
 end
 
-local function QM_GetReagentExpansionTag(itemID)
-    return QM_GetExpansionTagFromLabel(QM_GetCraftingReagentLabel(itemID))
+local _QM_MaterialsExpTagCache = {}
+local _QM_MaterialsExpPendingLoads = {}
+
+local function QM_RequestItemLoadForExpansionTag(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return end
+    if _QM_MaterialsExpPendingLoads[itemID] then return end
+    _QM_MaterialsExpPendingLoads[itemID] = true
+
+    -- Kick item data request (Retail)
+    if C_Item and C_Item.RequestLoadItemDataByID then
+        C_Item.RequestLoadItemDataByID(itemID)
+    end
+
+    -- When the item data is available, re-scan and refresh the Materials view.
+    if Item and Item.CreateFromItemID then
+        local it = Item:CreateFromItemID(itemID)
+        if it and it.ContinueOnItemLoad then
+            it:ContinueOnItemLoad(function()
+                _QM_MaterialsExpPendingLoads[itemID] = nil
+
+                local label = QM_GetCraftingReagentLabel(itemID)
+                local tag = QM_GetExpansionTagFromLabel(label)
+
+                -- Cache: false means "known no tag" (avoids rescans)
+                _QM_MaterialsExpTagCache[itemID] = tag or false
+
+                -- Debounce refreshes (multiple items can load at once)
+                if not ns._qmMaterialsExpRefreshPending then
+                    ns._qmMaterialsExpRefreshPending = true
+                    C_Timer.After(0.15, function()
+                        ns._qmMaterialsExpRefreshPending = nil
+                        if TheQuartermaster and TheQuartermaster.UI and TheQuartermaster.UI.mainFrame
+                            and TheQuartermaster.UI.mainFrame.currentTab == "materials"
+                            and TheQuartermaster.frame and TheQuartermaster.frame:IsShown()
+                            and TheQuartermaster.PopulateContent then
+                            TheQuartermaster:PopulateContent()
+                        end
+                    end)
+                end
+            end)
+        else
+            _QM_MaterialsExpPendingLoads[itemID] = nil
+        end
+    else
+        _QM_MaterialsExpPendingLoads[itemID] = nil
+    end
 end
+
+local function QM_GetReagentExpansionTag(itemID)
+    itemID = tonumber(itemID)
+    if not itemID then return nil end
+
+    local cached = _QM_MaterialsExpTagCache[itemID]
+    if cached ~= nil then
+        return cached or nil
+    end
+
+    local label = QM_GetCraftingReagentLabel(itemID)
+    if not label then
+        -- Item data may not be cached yet; request and refresh once it's available.
+        QM_RequestItemLoadForExpansionTag(itemID)
+        return nil
+    end
+
+    local tag = QM_GetExpansionTagFromLabel(label)
+    _QM_MaterialsExpTagCache[itemID] = tag or false
+    return tag
+end
+
 
 local function QM_HasCraftingReagentLine(itemID)
     return QM_GetCraftingReagentLabel(itemID) ~= nil
