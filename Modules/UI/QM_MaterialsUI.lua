@@ -106,8 +106,91 @@ local function QM_GetExpansionTagFromLabel(label)
     return tag
 end
 
+local function QM_QueueMaterialsRefresh()
+    if ns._materialsRefreshQueued then return end
+    ns._materialsRefreshQueued = true
+    if C_Timer and C_Timer.After then
+        C_Timer.After(0.20, function()
+            ns._materialsRefreshQueued = nil
+            if TheQuartermaster and TheQuartermaster.PopulateContent then
+                TheQuartermaster:PopulateContent()
+            end
+        end)
+    else
+        ns._materialsRefreshQueued = nil
+        if TheQuartermaster and TheQuartermaster.PopulateContent then
+            TheQuartermaster:PopulateContent()
+        end
+    end
+end
+
+local function QM_EnsureMaterialsItemDataListener()
+    if ns._materialsItemDataListener then return end
+
+    local f = CreateFrame("Frame")
+    ns._materialsItemDataListener = f
+
+    local function HandleItemLoaded(itemID, success)
+        itemID = tonumber(itemID)
+        if not itemID then return end
+        if ns.materialsPendingItemData and ns.materialsPendingItemData[itemID] then
+            ns.materialsPendingItemData[itemID] = nil
+            -- Clear cached tag (forces a re-scan on next filter pass)
+            if ns.materialsExpansionTagCache then
+                ns.materialsExpansionTagCache[itemID] = nil
+            end
+            QM_QueueMaterialsRefresh()
+        end
+    end
+
+    f:SetScript("OnEvent", function(_, event, ...)
+        if event == "ITEM_DATA_LOAD_RESULT" then
+            local itemID, success = ...
+            HandleItemLoaded(itemID, success)
+        elseif event == "GET_ITEM_INFO_RECEIVED" then
+            local itemID, success = ...
+            HandleItemLoaded(itemID, success)
+        end
+    end)
+
+    if f.RegisterEvent then
+        if C_Item and C_Item.RequestLoadItemDataByID then
+            f:RegisterEvent("ITEM_DATA_LOAD_RESULT")
+        end
+        -- Fallback for older clients / edge cases
+        f:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+    end
+end
+
 local function QM_GetReagentExpansionTag(itemID)
-    return QM_GetExpansionTagFromLabel(QM_GetCraftingReagentLabel(itemID))
+    itemID = tonumber(itemID)
+    if not itemID then return nil end
+
+    ns.materialsExpansionTagCache = ns.materialsExpansionTagCache or {}
+    local cache = ns.materialsExpansionTagCache
+
+    if cache[itemID] then
+        return cache[itemID]
+    end
+
+    -- Ensure item data is cached before tooltip scans; otherwise request load and refresh later.
+    if C_Item and C_Item.IsItemDataCachedByID and not C_Item.IsItemDataCachedByID(itemID) then
+        if C_Item.RequestLoadItemDataByID then
+            C_Item.RequestLoadItemDataByID(itemID)
+        end
+        ns.materialsPendingItemData = ns.materialsPendingItemData or {}
+        ns.materialsPendingItemData[itemID] = true
+        QM_EnsureMaterialsItemDataListener()
+        return nil
+    end
+
+    local tag = QM_GetExpansionTagFromLabel(QM_GetCraftingReagentLabel(itemID))
+    if tag and tag ~= "" then
+        cache[itemID] = tag
+        return tag
+    end
+
+    return nil
 end
 
 local function QM_HasCraftingReagentLine(itemID)
@@ -199,6 +282,10 @@ local function IsStrictReagent(item)
             if not QM_HasCraftingReagentLine(item.itemID) then
                 return false
             end
+        else
+            -- If the game reports this item is a Trade Good / Gem / Reagent, treat it as a material
+            -- even if the scanner hasn't populated subtype metadata yet (prevents undercounting).
+            return true
         end
     end
 
@@ -345,6 +432,7 @@ local function CollectMaterials(self, opts)
 
     local playerKey = UnitName("player") .. "-" .. GetRealmName()
 
+
     -- Reagent Bag (current char) is bagID 5 in your inventory mapping (bagIndex varies).
     if includeReagentBag and db.char and db.char.inventory and db.char.inventory.items and db.char.inventory.bagIDs then
         for bagIndex, bagID in ipairs(db.char.inventory.bagIDs) do
@@ -394,8 +482,8 @@ local function CollectMaterials(self, opts)
                         end)
                     end
                 end
-                if charData.personalBank and charData.personalBank.items then
-                    IterateContainerItems(charData.personalBank.items, function(item)
+                if charData.personalBank then
+                    IterateContainerItems(charData.personalBank, function(item)
                         AddItemToTotals(totals, item, tonumber(item.stackCount or 1) or 1, "Bank", charKey)
                     end)
                 end
@@ -425,6 +513,120 @@ local function CollectMaterials(self, opts)
     end
     return out
 end
+
+
+-- ============================================================================
+-- Tooltip totals (live scan fallback)
+-- ============================================================================
+-- The Materials tab has its own aggregated totals (based on tab filters).
+-- However, the global tooltip enhancer may also add a "Total owned" line which
+-- includes additional sources (warband/guild/banks). To avoid confusing mismatches
+-- we compute a lightweight "live" breakdown for the hovered item ID and show it
+-- consistently in the Materials tooltip.
+local _materialsTooltipTotalsCache = {} -- [itemID] = { ts=time(), data = { total=, sources=table } }
+local _MATERIALS_TOOLTIP_CACHE_TTL = 3
+
+local function _QM_GetMaterialsTooltipTotals(itemID)
+    if not itemID then return nil end
+    local now = time()
+    local cached = _materialsTooltipTotalsCache[itemID]
+    if cached and cached.ts and (now - cached.ts) <= _MATERIALS_TOOLTIP_CACHE_TTL then
+        return cached.data
+    end
+
+    local db = TheQuartermaster and TheQuartermaster.db
+    if not db then return nil end
+
+    local sources = {}
+    local total = 0
+
+    local function add(src, amount)
+        if not amount or amount <= 0 then return end
+        sources[src] = (sources[src] or 0) + amount
+        total = total + amount
+    end
+
+    -- Character inventories + personal banks (all characters)
+    if db.global and db.global.characters then
+        local playerKey = UnitName("player") .. "-" .. GetRealmName()
+        for charKey, charData in pairs(db.global.characters) do
+            if type(charData) == "table" then
+                -- Bags (split reagent bag for current character when bagIDs are available)
+                if charData.inventory and charData.inventory.items then
+                    if charData.inventory.bagIDs then
+                        for bagIndex, bagID in ipairs(charData.inventory.bagIDs) do
+                            local bagSlots = charData.inventory.items[bagIndex]
+                            if type(bagSlots) == "table" then
+                                for _, item in pairs(bagSlots) do
+                                    if item and item.itemID == itemID then
+                                        if charKey == playerKey and bagID == 5 then
+                                            add("Reagent Bag", (item.stackCount or 1))
+                                        else
+                                            add("Bags", (item.stackCount or 1))
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    else
+                        for _, bagData in pairs(charData.inventory.items) do
+                            for _, item in pairs(bagData) do
+                                if item and item.itemID == itemID then
+                                    add("Bags", (item.stackCount or 1))
+                                end
+                            end
+                        end
+                    end
+                end
+                -- Personal Bank
+                if charData.personalBank then
+                    for _, bagData in pairs(charData.personalBank) do
+                        for _, item in pairs(bagData) do
+                            if item and item.itemID == itemID then
+                                add("Bank", (item.stackCount or 1))
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Warband Bank
+    if db.global and db.global.warbandBank and db.global.warbandBank.items then
+        for _, bagData in pairs(db.global.warbandBank.items) do
+            for _, item in pairs(bagData) do
+                if item and item.itemID == itemID then
+                    add("Warband Bank", (item.stackCount or 1))
+                end
+            end
+        end
+    end
+
+    -- Guild Bank (cached)
+    if db.global and db.global.guildBank then
+        local guildCount = 0
+        for _, guildData in pairs(db.global.guildBank) do
+            if type(guildData) == "table" and guildData.tabs then
+                for _, tabData in pairs(guildData.tabs) do
+                    if tabData and tabData.items then
+                        for _, item in pairs(tabData.items) do
+                            if item and item.itemID == itemID then
+                                guildCount = guildCount + (item.stackCount or item.count or item.quantity or 1)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        add("Guild Bank", guildCount)
+    end
+
+    local data = { total = total, sources = sources }
+    _materialsTooltipTotalsCache[itemID] = { ts = now, data = data }
+    return data
+end
+
 
 -- ============================================================================
 -- UI
@@ -690,6 +892,7 @@ function TheQuartermaster:DrawMaterialsTab(parent)
 
     -- Apply filters (profession category + expansion + text search)
     local filtered = {}
+    local hadPendingItemData = false
     for _, it in ipairs(data) do
         local prof = GetProfessionCategoryForItem(it)
         local okCat = (catKey == "all") or (prof == catKey) or (prof == "all" and IsUniversalReagentSubtype(it.itemSubType))
@@ -697,7 +900,14 @@ function TheQuartermaster:DrawMaterialsTab(parent)
             local okExp = true
             if expKey ~= "all" then
                 local tag = QM_GetReagentExpansionTag(it.itemID)
-                okExp = (tag == expKey)
+                if not tag then
+                    if ns.materialsPendingItemData and ns.materialsPendingItemData[tonumber(it.itemID)] then
+                        hadPendingItemData = true
+                    end
+                    okExp = false
+                else
+                    okExp = (tag == expKey)
+                end
             end
             if okExp then
                 if searchText == "" or (it.name and it.name:lower():find(searchText, 1, true)) then
@@ -714,7 +924,11 @@ function TheQuartermaster:DrawMaterialsTab(parent)
     local yOffset = 0
 
     if #filtered == 0 then
-        yOffset = DrawEmptyState(resultsParent, "No crafting materials found for your current filters.", 0)
+        if hadPendingItemData then
+            yOffset = DrawEmptyState(resultsParent, "Loading item data for expansion filtering... please try again in a moment.", 0)
+        else
+            yOffset = DrawEmptyState(resultsParent, "No crafting materials found for your current filters.", 0)
+        end
         resultsParent:SetHeight(yOffset + 10)
 
         local total = 20 + 88 + 10 + 52 + 10 + 20 + 6 + yOffset + 30
@@ -738,7 +952,19 @@ function TheQuartermaster:DrawMaterialsTab(parent)
             if c.key == profKey and c.key ~= "all" then profLabel = c.label end
         end
         row.meta:SetText(profLabel)
-        row.count:SetText(tostring(it.total or 0))
+
+        -- Ensure the row count matches the tooltip + "Total owned" logic.
+        -- (The tooltip totals are computed from the canonical per-character bag/bank caches.)
+        local displayTotal = it.total or 0
+        if itemID then
+            local tt = _QM_GetMaterialsTooltipTotals(itemID)
+            if tt and tt.total then
+                displayTotal = tt.total
+                it.total = tt.total
+            end
+        end
+
+        row.count:SetText(tostring(displayTotal))
         -- Materials are reagents; keep pin state in the reagent watchlist bucket.
         local pinned = itemID and self:IsWatchlistedReagent(itemID)
         if pinned then
@@ -802,9 +1028,18 @@ function TheQuartermaster:DrawMaterialsTab(parent)
                 GameTooltip:SetHyperlink(it.itemLink or select(2, GetItemInfo(itemID)) or ("item:"..itemID))
                 GameTooltip:AddLine(" ")
                 GameTooltip:AddLine("|cffffffffTotals|r", 1,1,1)
-                GameTooltip:AddLine("Total: " .. tostring(it.total or 0), 0.8,0.8,0.8)
-                if it.sources then
-                    for src, amt in pairs(it.sources) do
+
+                local tData = _QM_GetMaterialsTooltipTotals(itemID)
+                local totalVal = (tData and tData.total) or (it.total or 0)
+                local sources = (tData and tData.sources) or it.sources or {}
+
+                GameTooltip:AddLine("Total: " .. tostring(totalVal), 0.8,0.8,0.8)
+
+                -- Show sources in a consistent order (only when > 0)
+                local ordered = { "Bags", "Bank", "Reagent Bag", "Warband Bank", "Guild Bank" }
+                for _, src in ipairs(ordered) do
+                    local amt = sources[src]
+                    if amt and amt > 0 then
                         GameTooltip:AddLine(src .. ": " .. tostring(amt), 0.8,0.8,0.8)
                     end
                 end

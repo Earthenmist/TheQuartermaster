@@ -9,14 +9,17 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.16"
+local CURRENT_VERSION = "1.0.16a"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.16",
+    version = "1.0.16a",
     date = "2026-02-10",
     changes = {
         "Added Discord Feature Request: Clear button on Search Boxes. This only appears when there is something to clear.",
+        "Updated the Materials expansion-tag lookup to fix issue found with No crafting materials found.",
+        "This should now properly show & filter the correct expansion tag for all materials.",
+        "Fixed an item count tooltip error on Materials screen"
     }
 }
 
