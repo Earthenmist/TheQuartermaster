@@ -233,3 +233,5 @@ L["SHOW_UPDATE_NOTES_AGAIN"] = "再次顯示更新說明"
 L["ERROR_API_UNAVAILABLE"] = "所需的 API 無法使用。"
 L["ERROR_INVALID_ITEM"] = "指定的物品無效。"
 L["ERROR_PROTECTED_FUNCTION"] = "戰鬥中無法呼叫受保護的函式。"
+
+L["EQUIPMENT_DESC"] = "Shows each character's equipped gear (cached per character)."

@@ -382,6 +382,67 @@ function TheQuartermaster:SaveCurrentCharacterData()
         avgIlvl, equippedIlvl = GetAverageItemLevel()
     end
 
+    -- Equipped items (per-slot) (best-effort, current character only)
+    -- Stored so other screens can do offline "gear checks" for alts.
+    local function CollectEquippedItems()
+        local equipment = {}
+
+        -- Slot order roughly matches the character pane.
+        local slotNames = {
+            "HeadSlot",
+            "NeckSlot",
+            "ShoulderSlot",
+            "BackSlot",
+            "ChestSlot",
+            "WristSlot",
+            "HandsSlot",
+            "WaistSlot",
+            "LegsSlot",
+            "FeetSlot",
+            "Finger0Slot",
+            "Finger1Slot",
+            "Trinket0Slot",
+            "Trinket1Slot",
+            "MainHandSlot",
+            "SecondaryHandSlot",
+        }
+
+        for _, slotName in ipairs(slotNames) do
+            local slotId = (GetInventorySlotInfo and GetInventorySlotInfo(slotName)) or nil
+            if slotId then
+                local link = (GetInventoryItemLink and GetInventoryItemLink("player", slotId)) or nil
+                local itemID = (GetInventoryItemID and GetInventoryItemID("player", slotId)) or nil
+                local tex = (GetInventoryItemTexture and GetInventoryItemTexture("player", slotId)) or nil
+
+                if link or itemID or tex then
+                    local ilvl = nil
+                    if link and C_Item and C_Item.GetDetailedItemLevelInfo then
+                        ilvl = C_Item.GetDetailedItemLevelInfo(link)
+                    end
+
+                    -- GetItemInfo can be asynchronous; store what we can.
+                    local name, _, quality = nil, nil, nil
+                    if link and GetItemInfo then
+                        name, _, quality = GetItemInfo(link)
+                    end
+
+                    equipment[slotName] = {
+                        itemLink = link,
+                        itemID = itemID,
+                        iconFileID = tex,
+                        itemLevel = ilvl,
+                        name = name,
+                        quality = quality,
+                    }
+                end
+            end
+        end
+
+        return equipment
+    end
+
+    local equipment = CollectEquippedItems()
+
     -- Experience / Rested XP (best-effort)
     local currentXP, maxXP, restedXP, fullyRestedIn = nil, nil, nil, nil
     local maxPlayerLevel = (GetMaxPlayerLevel and GetMaxPlayerLevel()) or 80
@@ -438,6 +499,7 @@ function TheQuartermaster:SaveCurrentCharacterData()
         ilvl = equippedIlvl,
         ilvlEquipped = equippedIlvl,
         ilvlAvg = avgIlvl,
+        equipment = equipment,
         gold = gold,
         faction = faction,
         race = race,
@@ -459,6 +521,7 @@ function TheQuartermaster:SaveCurrentCharacterData()
         pve = pveData,  -- Store PvE data
         currencies = currencyData, -- Store Currency data
         currencyHeaders = currencyHeaders, -- Store Currency headers
+        equipment = equipment, -- Equipped items per slot (offline gear check)
         personalBank = personalBank,  -- Store personal bank for search
         inventory = inventory,  -- Store inventory for storage search
     }

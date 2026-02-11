@@ -9,17 +9,16 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.16a"
+local CURRENT_VERSION = "1.0.17"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.16a",
-    date = "2026-02-10",
+    version = "1.0.17",
+    date = "2026-02-11",
     changes = {
-        "Added Discord Feature Request: Clear button on Search Boxes. This only appears when there is something to clear.",
-        "Updated the Materials expansion-tag lookup to fix issue found with No crafting materials found.",
-        "This should now properly show & filter the correct expansion tag for all materials.",
-        "Fixed an item count tooltip error on Materials screen"
+        "Added a new **Equipment** screen, showing equipped gear for all tracked characters (cached per character).",
+        "The equipment screen will require logging into a character at least once to cache their gear data.",
+        "Updated Ace3 to latest release.",
     }
 }
 

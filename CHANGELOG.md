@@ -1,13 +1,13 @@
-## 🧩 Addon Updates (2026-02-10)
+## 🧩 Addon Updates (2026-02-11)
 
-**The Quartermaster** — v1.0.16a  
+**The Quartermaster** — v1.0.17  
 
 **Changes:**  
-• Added Discord Feature Request: Clear button on Search Boxes. This only appears when there is something to clear.  
+- Added a new **Equipment** screen, showing equipped gear for all tracked characters (cached per character).  
+- Updated Ace3 to latest release.  
 
 **Fixes:**  
-• Updated the Materials expansion-tag lookup to fix issue found with No crafting materials found.  
-• Fixed an item count tooltip error on Materials screen
+- None
 
 **Known issues:**  
-• None currently known.
+- None currently known.

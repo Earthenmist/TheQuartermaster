@@ -233,3 +233,5 @@ L["SHOW_UPDATE_NOTES_AGAIN"] = "Показать примечания к обн�
 L["ERROR_API_UNAVAILABLE"] = "Требуемый API недоступен."
 L["ERROR_INVALID_ITEM"] = "Указан неверный предмет."
 L["ERROR_PROTECTED_FUNCTION"] = "Нельзя вызвать защищенную функцию в бою."
+
+L["EQUIPMENT_DESC"] = "Shows each character's equipped gear (cached per character)."

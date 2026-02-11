@@ -233,3 +233,5 @@ L["SHOW_UPDATE_NOTES_AGAIN"] = "업데이트 노트 다시 표시"
 L["ERROR_API_UNAVAILABLE"] = "필요한 API를 사용할 수 없습니다."
 L["ERROR_INVALID_ITEM"] = "잘못된 아이템이 지정되었습니다."
 L["ERROR_PROTECTED_FUNCTION"] = "전투 중에는 보호된 함수를 호출할 수 없습니다."
+
+L["EQUIPMENT_DESC"] = "Shows each character's equipped gear (cached per character)."
