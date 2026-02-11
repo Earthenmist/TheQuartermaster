@@ -241,3 +241,17 @@ L["SUPPRESS_TIME_PLAYED_CHAT"] = "Suppress /played chat message"
 L["PREVENTS_THE_TIME_PLAYED_SYSTEM_MESSAGE_FROM_APPEARING_IN_CHAT_WHEN_THE_ADDON_UPDATES_PLAYTIME"] = "Prevents the \"Time played\" system message from appearing in chat when The Quartermaster updates played time."
 
 L["EQUIPMENT_DESC"] = "Shows each character's equipped gear (cached per character)."
+
+-- ==============================
+-- Mail
+-- ==============================
+L["MAIL"] = "Mail"
+L["MAIL_TOTAL"] = "Total"
+L["MAIL_SOONEST_EXPIRY"] = "Soonest expiry"
+L["MAIL_RETURNING_IN"] = "Returning in"
+L["MAIL_DELETING_IN"] = "Deleting in"
+L["MAIL_LAST_SCANNED"] = "Last scanned"
+L["MAIL_UPDATES_NOTE"] = "|cff888888Updates when you open a mailbox on this character.|r"
+L["MAIL_DETAILS_NOTE"] = "|cff888888Shows up to 10 mails expiring/deleting soonest.|r"
+L["MAIL_EXPIRING_IN"] = "Expiring in"
+L["MAIL_SENT_BY"] = "Mail sent by %s"

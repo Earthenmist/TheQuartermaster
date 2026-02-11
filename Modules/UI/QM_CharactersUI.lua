@@ -643,16 +643,32 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
     keyText:SetJustifyH("CENTER")
 
     local keyIcon = row:CreateTexture(nil, "OVERLAY")
-    keyIcon:SetSize(16, 16)
+    keyIcon:SetSize(22, 22)
     keyIcon:SetPoint("CENTER", row, "LEFT", keyOffset + (keyWidth / 2), 0)
     keyIcon:Hide()
+
+    -- Mail icon (shows when mailbox data is cached for this character)
+    local mailIcon = row:CreateTexture(nil, "OVERLAY")
+    mailIcon:SetSize(22, 22)
+    mailIcon:SetPoint("CENTER", row, "LEFT", keyOffset + (keyWidth / 2), 0)
+    mailIcon:SetTexture("Interface\\Minimap\\Tracking\\Mailbox")
+    mailIcon:Hide()
+
 
     local keyBtn = CreateFrame("Button", nil, row)
     keyBtn:SetAllPoints(keyIcon)
     keyBtn:EnableMouse(false)
 
+
+    local mailBtn = CreateFrame("Button", nil, row)
+    mailBtn:SetAllPoints(mailIcon)
+    mailBtn:EnableMouse(false)
+
+
     local ks = (char.pve and char.pve.mythicPlus and char.pve.mythicPlus.keystone) or nil
     local kLevel = ks and ks.level or nil
+
+    local mailData = (TheQuartermaster.GetMailCache and TheQuartermaster:GetMailCache(charKey)) or nil
 
     if kLevel and kLevel > 0 then
         keyText:SetText("")
@@ -679,6 +695,114 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
         keyBtn:EnableMouse(false)
         keyBtn:SetScript("OnEnter", nil)
         keyBtn:SetScript("OnLeave", nil)
+    end
+
+    -- Mail icon + tooltip (cached when a mailbox is opened on that character)
+    local showMail = mailData and (mailData.count or 0) > 0
+
+    if showMail then
+        mailIcon:Show()
+        mailBtn:EnableMouse(true)
+
+        mailBtn:SetScript("OnEnter", function(self)
+            -- Hide row tooltip (prevents double-tooltips)
+            bg:SetColorTexture(unpack(row.bgColor))
+            GameTooltip:Hide()
+
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText(L["MAIL"] or "Mail", 1, 1, 1)
+
+            GameTooltip:AddDoubleLine(L["MAIL_TOTAL"] or "Total", tostring(mailData.count or 0), 0.9, 0.9, 0.9, 1, 1, 1)
+
+            local now = time()
+            if mailData.soonestAt then
+                local seconds = (mailData.soonestAt - now)
+                if seconds < 0 then seconds = 0 end
+                local fmt = (TheQuartermaster.FormatMailTimeLeft and TheQuartermaster:FormatMailTimeLeft(seconds)) or tostring(seconds)
+
+                -- Yellow normally; turn red when <= 12 hours remaining
+                local warn = (seconds <= (12 * 3600))
+                if warn then
+                    GameTooltip:AddDoubleLine(L["MAIL_SOONEST_EXPIRY"] or "Soonest expiry", fmt, 1, 0.2, 0.2, 1, 0.2, 0.2)
+                else
+                    GameTooltip:AddDoubleLine(L["MAIL_SOONEST_EXPIRY"] or "Soonest expiry", fmt, 1, 0.82, 0, 1, 1, 1)
+                end
+            end
+
+            -- Per-mail details (cached when mailbox is opened on that character)
+            if mailData.details and type(mailData.details) == "table" and #mailData.details > 0 then
+                GameTooltip:AddLine(" ")
+                for i = 1, #mailData.details do
+                    local entry = mailData.details[i]
+                    if entry and entry.expiresAt then
+                        local seconds = (entry.expiresAt - now)
+                        if seconds < 0 then seconds = 0 end
+                        local fmt = (TheQuartermaster.FormatMailTimeLeft and TheQuartermaster:FormatMailTimeLeft(seconds)) or tostring(seconds)
+
+                        local sender = entry.sender or "Unknown"
+                        local left = string.format(L["MAIL_SENT_BY"] or "Mail sent by %s", sender)
+
+                        local rightLabel
+                        if entry.type == "DELETE" then
+                            rightLabel = (L["MAIL_DELETING_IN"] or "Deleting in")
+                        else
+                            rightLabel = (L["MAIL_EXPIRING_IN"] or "Expiring in")
+                        end
+
+                        GameTooltip:AddDoubleLine(left, rightLabel .. " " .. fmt, 0.9, 0.9, 0.9, 1, 1, 1)
+                    end
+                end
+            else
+                -- Fallback (older cache versions)
+                if mailData.returnSoonestAt then
+                    local seconds = (mailData.returnSoonestAt - now)
+                    if seconds < 0 then seconds = 0 end
+                    local fmt = (TheQuartermaster.FormatMailTimeLeft and TheQuartermaster:FormatMailTimeLeft(seconds)) or tostring(seconds)
+                    GameTooltip:AddDoubleLine(L["MAIL_RETURNING_IN"] or "Returning in", fmt, 0.9, 0.9, 0.9, 1, 1, 1)
+                end
+
+                if mailData.deleteSoonestAt then
+                    local seconds = (mailData.deleteSoonestAt - now)
+                    if seconds < 0 then seconds = 0 end
+                    local fmt = (TheQuartermaster.FormatMailTimeLeft and TheQuartermaster:FormatMailTimeLeft(seconds)) or tostring(seconds)
+                    GameTooltip:AddDoubleLine(L["MAIL_DELETING_IN"] or "Deleting in", fmt, 0.9, 0.9, 0.9, 1, 1, 1)
+                end
+            end
+
+            if mailData.lastScan then
+                GameTooltip:AddLine(" ")
+                GameTooltip:AddDoubleLine(L["MAIL_LAST_SCANNED"] or "Last scanned", date("%Y-%m-%d %H:%M", mailData.lastScan), 0.7, 0.7, 0.7, 0.9, 0.9, 0.9)
+                GameTooltip:AddLine(L["MAIL_UPDATES_NOTE"] or "|cff888888Updates when you open a mailbox on this character.|r", 0.7, 0.7, 0.7, true)
+                GameTooltip:AddLine(L["MAIL_DETAILS_NOTE"] or "|cff888888Shows up to 10 soonest-expiring mails.|r", 0.7, 0.7, 0.7, true)
+            end
+
+            GameTooltip:Show()
+        end)
+
+        mailBtn:SetScript("OnLeave", function() GameTooltip:Hide() end)
+    else
+        mailIcon:Hide()
+        mailBtn:EnableMouse(false)
+        mailBtn:SetScript("OnEnter", nil)
+        mailBtn:SetScript("OnLeave", nil)
+    end
+
+    -- Position keystone + mail icons nicely within the column
+    do
+        local centerX = keyOffset + (keyWidth / 2)
+        keyIcon:ClearAllPoints()
+        mailIcon:ClearAllPoints()
+
+        if keyIcon:IsShown() and mailIcon:IsShown() then
+            local pad = 6
+            local dx = (keyIcon:GetWidth() / 2) + (mailIcon:GetWidth() / 2) + pad
+            keyIcon:SetPoint("CENTER", row, "LEFT", centerX - (dx / 2), 0)
+            mailIcon:SetPoint("CENTER", row, "LEFT", centerX + (dx / 2), 0)
+        elseif keyIcon:IsShown() then
+            keyIcon:SetPoint("CENTER", row, "LEFT", centerX, 0)
+        elseif mailIcon:IsShown() then
+            mailIcon:SetPoint("CENTER", row, "LEFT", centerX, 0)
+        end
     end
 
     -- Gold (just the amount, right-aligned)
