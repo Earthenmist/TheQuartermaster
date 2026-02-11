@@ -49,6 +49,7 @@ Modules\QM_NotificationManager.lua
 Modules\QM_MinimapButton.lua
 Modules\QM_TooltipEnhancer.lua
 Modules\QM_Scanner.lua
+Modules\QM_Mail.lua
 Modules\QM_Banker.lua
 Modules\QM_PvE.lua
 

@@ -186,6 +186,11 @@ ns.DEFAULTS = {
             perCharacter = {},
         },
 
+        -- Mail cache (requires opening a mailbox on that character)
+        mail = {
+            perCharacter = {},
+        },
+
         -- Window size persistence
         window = {
             width = 700,

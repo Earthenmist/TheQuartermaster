@@ -410,6 +410,15 @@ function TheQuartermaster:OnEnable()
             end
         end)
     end
+
+    -- Mail Tracking: cache mailbox expiry per character (updates when mailbox is opened)
+    if self.InitializeMailTracking then
+        C_Timer.After(0.5, function()
+            if TheQuartermaster and TheQuartermaster.InitializeMailTracking then
+                TheQuartermaster:InitializeMailTracking()
+            end
+        end)
+    end
     
     -- Tooltip Click Handler
     -- Removed: We no longer auto-open/search the addon when Shift is held over
