@@ -9,16 +9,15 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.17"
+local CURRENT_VERSION = "1.0.18"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.17",
+    version = "1.0.18",
     date = "2026-02-11",
     changes = {
-        "Added a new **Equipment** screen, showing equipped gear for all tracked characters (cached per character).",
-        "The equipment screen will require logging into a character at least once to cache their gear data.",
-        "Updated Ace3 to latest release.",
+        "Added per-character mail expiry tracking (cached on mailbox open)",
+        "with a mail icon + tooltip in the Characters list.",
     }
 }
 
