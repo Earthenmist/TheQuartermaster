@@ -58,6 +58,7 @@ Modules\UI\QM_SearchUI.lua
 Modules\UI\QM_WatchlistUI.lua
 Modules\UI\QM_CharactersUI.lua
 Modules\UI\ExperienceUI.lua
+Modules\UI\EquipmentUI.lua
 Modules\UI\GuildUI.lua
 Modules\UI\QM_CurrencyUI.lua
 Modules\UI\QM_ItemsUI.lua
