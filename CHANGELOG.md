@@ -3,6 +3,7 @@
 **The Quartermaster** — v1.0.18  
 
 **Changes:**  
+- Feature request sent via CurseForge DM - **Mailbox expiry tracking** - **ImmortalMotion**  
 - Added **Mailbox expiry tracking** per character on the Character Screen (cached when you open a mailbox).  
 - Characters with cached mail now display a **mail icon** in the Characters list.  
 - Hovering the icon shows:  
