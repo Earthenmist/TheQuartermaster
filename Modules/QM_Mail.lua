@@ -14,6 +14,44 @@ local L = ns.L
 local time = time
 local floor = math.floor
 
+
+
+-- ============================================================
+-- Mail debug (off by default)
+-- Toggle in-game: /qm maildebug
+-- ============================================================
+local function QM_MailDebugEnabled()
+    if not TheQuartermaster or not TheQuartermaster.db or not TheQuartermaster.db.global then
+        return false
+    end
+    TheQuartermaster.db.global.debug = TheQuartermaster.db.global.debug or {}
+    return TheQuartermaster.db.global.debug.mail == true
+end
+
+local function QM_MailDebug(msg)
+    if not QM_MailDebugEnabled() then return end
+    DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ff99[QM:Mail]|r %s", tostring(msg)))
+end
+
+SLASH_QM_MAILDEBUG1 = "/qm"
+SlashCmdList["QM_MAILDEBUG"] = function(input)
+    input = tostring(input or ""):lower()
+    if input == "maildebug" then
+        if not TheQuartermaster or not TheQuartermaster.db or not TheQuartermaster.db.global then
+            DEFAULT_CHAT_FRAME:AddMessage("|cffff5555[QM]|r DB not ready yet.")
+            return
+        end
+        TheQuartermaster.db.global.debug = TheQuartermaster.db.global.debug or {}
+        TheQuartermaster.db.global.debug.mail = not TheQuartermaster.db.global.debug.mail
+        DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ff99[QM]|r Mail debug: %s", TheQuartermaster.db.global.debug.mail and "ON" or "OFF"))
+        return
+    end
+end
+
+-- Mail scan robustness
+local _qmMailLastShowTime = 0
+local _qmMailLastNonZeroTime = 0
+local _qmMailLastCount = 0
 local function EnsureMailDB()
     if not TheQuartermaster or not TheQuartermaster.db then return nil end
     local g = TheQuartermaster.db.global
@@ -107,6 +145,7 @@ function TheQuartermaster:FormatMailTimeLeft(seconds)
 end
 
 local function ScanInboxNow()
+    QM_MailDebug("ScanInboxNow()")
     if not TheQuartermaster or not TheQuartermaster.db then return end
 
     local charKey = GetCharKey()
@@ -116,11 +155,24 @@ local function ScanInboxNow()
     if not perChar then return end
 
     local num = GetInboxCount()
+    QM_MailDebug("Inbox items: " .. tostring(num))
+    _qmMailLastCount = tonumber(num) or 0
+    if _qmMailLastCount > 0 then _qmMailLastNonZeroTime = GetTime() end
     local now = time()
 
         -- If no mail, keep a lightweight record (so UI can hide cleanly)
     if num <= 0 then
-        perChar[charKey] = {
+        QM_MailDebug("No mail found (count <= 0)")
+        -- When a mailbox is first opened, GetInboxCount() often returns 0 briefly.
+        -- Avoid overwriting a previously cached non-empty state with an empty scan during that window.
+        local sinceShow = (GetTime() - (_qmMailLastShowTime or 0))
+        if sinceShow >= 0 and sinceShow < 3 then
+            -- We'll rescan shortly; do not write empty yet.
+            return
+        end
+        QM_MailDebug("Writing cache for " .. tostring(charKey))
+
+    perChar[charKey] = {
             count = 0,
             soonestAt = nil,
             soonestType = nil,
@@ -199,6 +251,7 @@ end
 function TheQuartermaster:InitializeMailTracking()
     if self._mailTrackingInitialized then return end
     self._mailTrackingInitialized = true
+    QM_MailDebug("InitializeMailTracking()")
 
     local f = CreateFrame("Frame")
     self._mailFrame = f
@@ -212,8 +265,22 @@ function TheQuartermaster:InitializeMailTracking()
     f:RegisterEvent("MAIL_INBOX_UPDATE")
 
     f:SetScript("OnEvent", function(_, event)
-        if event == "MAIL_SHOW" or event == "MAIL_INBOX_UPDATE" then
-            DelayedScan()
+        QM_MailDebug("Event: " .. tostring(event))
+
+        if event == "MAIL_SHOW" then
+            _qmMailLastShowTime = GetTime()
+            ScanInboxNow()
+
+            -- Delayed rescans to catch clients that don't fire MAIL_INBOX_UPDATE reliably
+            -- or populate the inbox a moment later.
+            if C_Timer and C_Timer.After then
+                C_Timer.After(0.25, ScanInboxNow)
+                C_Timer.After(1.00, ScanInboxNow)
+                C_Timer.After(2.00, ScanInboxNow)
+            end
+
+        elseif event == "MAIL_INBOX_UPDATE" then
+            ScanInboxNow()
         end
     end)
 end
