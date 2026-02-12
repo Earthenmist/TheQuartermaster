@@ -325,12 +325,14 @@ local EXPANSION_FILTERS = {
     { key = "all", label = "All" },
     -- Tooltip tags use zone/region names (e.g. "Khaz Algar Crafting Reagent").
     -- Keep the *key* as the tag (so filtering works), but display expansion names.
+    { key = "Midnight", label = "Midnight" },
     { key = "Khaz Algar", label = "The War Within" },
     { key = "Dragon Isles", label = "Dragonflight" },
     { key = "Shadowlands", label = "Shadowlands" },
     { key = "Broken Isles", label = "Legion" },
     { key = "Draenor", label = "Warlords of Draenor" },
     { key = "Pandaria", label = "Pandaria" },
+    { key = "Cataclysm", label = "Cataclysm" },
     { key = "Northrend", label = "Wrath of the Lich King" },
     { key = "Outland", label = "The Burning Crusade" },
     { key = "Classic", label = "Classic" },
