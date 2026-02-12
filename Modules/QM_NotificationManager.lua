@@ -9,16 +9,16 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.19a"
+local CURRENT_VERSION = "1.0.19b"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.19a",
+    version = "1.0.19b",
     date = "2026-02-12",
     changes = {
         "Fixed Lua error directly caused by a missing AceLocale key.",
-        "Made mail scanning a little more robust and also added some",
-        "debug code that can be enabled in the event of an issue with mail caching",
+        "Made mail scanning a little more robust.",
+        "Fix for mail icon not showing. This would only have affected realms with spaces/apostrophes/hyphens.",
     }
 }
 
