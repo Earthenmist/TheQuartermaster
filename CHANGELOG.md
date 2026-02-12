@@ -1,19 +1,12 @@
-## 🧩 Addon Updates (2026-02-11)
+## 🧩 Addon Updates (2026-02-12)
 
-**The Quartermaster** — v1.0.18  
+**The Quartermaster** — v1.0.19  
 
 **Changes:**  
-- Feature request sent via CurseForge DM - **Mailbox expiry tracking** - **ImmortalMotion**  
-- Added **Mailbox expiry tracking** per character on the Character Screen (cached when you open a mailbox).  
-- Characters with cached mail now display a **mail icon** in the Characters list.  
-- Hovering the icon shows:  
-  - Total mail count  
-  - Soonest expiry time (turns red when under 12 hours)  
-  - Up to 10 soonest expiring/deleting mails
-  - Last scanned time
+- None
   
 **Fixes:**  
-- None
+- Fixed an LUA error directly caused by a missing AceLocale key.
 
 **Known issues:**  
 - None currently known.
