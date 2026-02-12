@@ -1241,7 +1241,7 @@ end)
             local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontDisable")
             emptyText:SetPoint("TOPLEFT", 10 + indent, -yOffset)
             emptyText:SetTextColor(0.5, 0.5, 0.5)
-            emptyText:SetText(L["NO_GUILD_BANKS_CACHED"] or "No cached guild banks.")
+            emptyText:SetText((rawget(L, "NO_GUILD_BANKS_CACHED") or "No cached guild banks."))
             yOffset = yOffset + SECTION_SPACING
         else
             for _, guildName in ipairs(guildNames) do
@@ -1303,7 +1303,7 @@ end)
                             local emptyText = parent:CreateFontString(nil, "OVERLAY", "GameFontDisable")
                             emptyText:SetPoint("TOPLEFT", 10 + indent * 2, -yOffset)
                             emptyText:SetTextColor(0.5, 0.5, 0.5)
-                            emptyText:SetText(L["NO_ITEMS_IN_GUILD_BANK"] or "No items found.")
+                            emptyText:SetText((rawget(L, "NO_ITEMS_IN_GUILD_BANK") or "No items found."))
                             yOffset = yOffset + SECTION_SPACING
                         else
                             for _, typeName in ipairs(typeNames) do

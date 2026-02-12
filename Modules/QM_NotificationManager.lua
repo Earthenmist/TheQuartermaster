@@ -9,15 +9,14 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.18"
+local CURRENT_VERSION = "1.0.19"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.18",
-    date = "2026-02-11",
+    version = "1.0.19",
+    date = "2026-02-12",
     changes = {
-        "Added per-character mail expiry tracking (cached on mailbox open)",
-        "with a mail icon + tooltip in the Characters list.",
+        "Fixed Lua error directly caused by a missing AceLocale key.",
     }
 }
 

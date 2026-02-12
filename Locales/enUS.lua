@@ -255,3 +255,7 @@ L["MAIL_UPDATES_NOTE"] = "|cff888888Updates when you open a mailbox on this char
 L["MAIL_DETAILS_NOTE"] = "|cff888888Shows up to 10 mails expiring/deleting soonest.|r"
 L["MAIL_EXPIRING_IN"] = "Expiring in"
 L["MAIL_SENT_BY"] = "Mail sent by %s"
+
+-- Storage
+L["NO_GUILD_BANKS_CACHED"] = "No cached guild banks."
+L["NO_ITEMS_IN_GUILD_BANK"] = "No items found."
