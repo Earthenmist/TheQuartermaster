@@ -1,3 +1,11 @@
+
+-- Normalize realm names to match TheQuartermaster:GetCharacterKey() behaviour.
+-- GetNormalizedRealmName() isn't available for arbitrary realms, so we mimic the wrapper fallback.
+local function QM_NormalizeRealmForKey(realm)
+    realm = tostring(realm or "")
+    return realm:gsub("[%s%-']", "")
+end
+
 --[[
     The Quartermaster - Characters Tab
     Display all tracked characters with gold, level, and last seen info
@@ -668,7 +676,8 @@ function TheQuartermaster:DrawCharacterRow(parent, char, index, width, yOffset, 
     local ks = (char.pve and char.pve.mythicPlus and char.pve.mythicPlus.keystone) or nil
     local kLevel = ks and ks.level or nil
 
-    local mailData = (TheQuartermaster.GetMailCache and TheQuartermaster:GetMailCache(charKey)) or nil
+    local mailKey = (char and char.name and char.realm) and ((char.name or "Unknown") .. "-" .. QM_NormalizeRealmForKey(char.realm)) or charKey
+    local mailData = (TheQuartermaster.GetMailCache and (TheQuartermaster:GetMailCache(mailKey) or TheQuartermaster:GetMailCache(charKey))) or nil
 
     if kLevel and kLevel > 0 then
         keyText:SetText("")
