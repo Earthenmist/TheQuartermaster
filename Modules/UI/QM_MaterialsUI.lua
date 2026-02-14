@@ -194,9 +194,50 @@ local function QM_GetReagentExpansionTag(itemID)
 end
 
 local function QM_HasCraftingReagentLine(itemID)
-    return QM_GetCraftingReagentLabel(itemID) ~= nil
-end
+    itemID = tonumber(itemID)
+    if not itemID then return false end
 
+    ns.materialsReagentLineCache = ns.materialsReagentLineCache or {}
+    local cache = ns.materialsReagentLineCache
+
+    if cache[itemID] ~= nil then
+        return cache[itemID]
+    end
+
+    -- If item data isn't ready yet, DO NOT exclude it from the list.
+    -- Request data, mark pending, and allow it to display; we'll refine once info is cached.
+    if C_Item and C_Item.IsItemDataCachedByID and not C_Item.IsItemDataCachedByID(itemID) then
+        if C_Item.RequestLoadItemDataByID then
+            C_Item.RequestLoadItemDataByID(itemID)
+        end
+        ns.materialsPendingItemData = ns.materialsPendingItemData or {}
+        ns.materialsPendingItemData[itemID] = true
+        QM_EnsureMaterialsItemDataListener()
+        return true
+    end
+
+    -- Fast-path: class-based detection without tooltip scans.
+    local classID
+    if C_Item and C_Item.GetItemInfoInstant then
+        classID = select(6, C_Item.GetItemInfoInstant(itemID))
+    end
+    if not classID then
+        classID = select(12, GetItemInfo(itemID))
+    end
+
+    local TRADEGOODS = (Enum and Enum.ItemClass and Enum.ItemClass.Tradegoods) or 7
+    local GEM        = (Enum and Enum.ItemClass and Enum.ItemClass.Gem)        or 3
+    local REAGENT    = (Enum and Enum.ItemClass and Enum.ItemClass.Reagent)    or nil
+
+    if classID == TRADEGOODS or classID == GEM or (REAGENT and classID == REAGENT) then
+        cache[itemID] = true
+        return true
+    end
+
+    -- Slow path: tooltip tag scan (cached).
+    cache[itemID] = (QM_GetCraftingReagentLabel(itemID) ~= nil)
+    return cache[itemID]
+end
 -- Some reagents are ambiguous (multi-profession). As a best-effort, infer a primary
 -- profession from tooltip wording (e.g. "alchemy"), with a sensible priority.
 local PROF_KEYWORDS = {
@@ -215,13 +256,40 @@ local function QM_GetPrimaryProfessionFromTooltip(itemID)
     itemID = tonumber(itemID)
     if not itemID then return nil end
 
+    ns.materialsPrimaryProfCache = ns.materialsPrimaryProfCache or {}
+    local cache = ns.materialsPrimaryProfCache
+
+    if cache[itemID] ~= nil then
+        return cache[itemID] or nil
+    end
+
+    -- Don't do an expensive tooltip scan until item data is ready.
+    if C_Item and C_Item.IsItemDataCachedByID and not C_Item.IsItemDataCachedByID(itemID) then
+        if C_Item.RequestLoadItemDataByID then
+            C_Item.RequestLoadItemDataByID(itemID)
+        end
+        ns.materialsPendingItemData = ns.materialsPendingItemData or {}
+        ns.materialsPendingItemData[itemID] = true
+        QM_EnsureMaterialsItemDataListener()
+        return nil
+    end
+
+    -- Only scan tooltip for items that we believe are crafting reagents.
+    if not QM_HasCraftingReagentLine(itemID) then
+        cache[itemID] = false
+        return nil
+    end
+
     QM_EnsureMaterialsTooltip()
     QM_MaterialsScanTooltip:ClearLines()
 
     local ok = pcall(function()
         QM_MaterialsScanTooltip:SetHyperlink("item:" .. itemID)
     end)
-    if not ok then return nil end
+    if not ok then
+        cache[itemID] = false
+        return nil
+    end
 
     local numLines = QM_MaterialsScanTooltip:NumLines() or 0
     for i = 2, numLines do
@@ -232,14 +300,18 @@ local function QM_GetPrimaryProfessionFromTooltip(itemID)
             for _, def in ipairs(PROF_KEYWORDS) do
                 for _, pat in ipairs(def.patterns) do
                     if lower:find(pat, 1, true) then
+                        cache[itemID] = def.key
                         return def.key
                     end
                 end
             end
         end
     end
+
+    cache[itemID] = false
     return nil
 end
+
 
 -- Map itemSubType to a "best fit" profession category.
 local SUBTYPE_TO_PROF = {
@@ -399,6 +471,28 @@ local function AddItemToTotals(totals, item, amount, source, perChar)
     t.name = t.name or item.name
     t.itemLink = t.itemLink or item.itemLink
     t.classID = t.classID or item.classID
+-- Ensure name/icon are filled even when cached data is incomplete (prevents blank rows).
+if (not t.name or t.name == "") and GetItemInfo then
+    local name, link, _, _, _, _, _, _, _, icon, _, classID = GetItemInfo(id)
+    if name then
+        t.name = name
+        t.itemLink = t.itemLink or link
+        t.iconFileID = t.iconFileID or icon
+        t.classID = t.classID or classID
+    else
+        -- Request item data and refresh once it's available.
+        if C_Item and C_Item.RequestLoadItemDataByID then
+            C_Item.RequestLoadItemDataByID(id)
+        end
+        ns.materialsPendingItemData = ns.materialsPendingItemData or {}
+        ns.materialsPendingItemData[id] = true
+        QM_EnsureMaterialsItemDataListener()
+
+        -- Non-empty placeholder avoids layout quirks.
+        t.name = t.name or ("Item " .. id)
+    end
+end
+
 
     if source then
         t.sources[source] = (t.sources[source] or 0) + amount
