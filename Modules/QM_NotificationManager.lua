@@ -9,14 +9,15 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.19c"
+local CURRENT_VERSION = "1.0.20"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.19c",
-    date = "2026-02-14",
+    version = "1.0.20",
+    date = "2026-02-21",
     changes = {
-        "Small fix to the materials screen to stop it frrezing for a second when entering the screen.",
+        "Fixed item levels not showing on the equipment screen when selected in options.",
+        "Fixed item counts still showing on the items screen when not selected in options.",
     }
 }
 

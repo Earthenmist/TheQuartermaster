@@ -128,8 +128,8 @@ QM_SearchForItem = function(itemName, itemID)
     end
 
     TheQuartermaster:PopulateContent()
-    f:Show()
 end
+
 
 -- Money formatting helper (lazy-resolved to avoid load-order issues)
 local function FormatMoney(amount)
@@ -147,6 +147,50 @@ local function FormatMoney(amount)
     end
     return tostring(tonumber(amount) or 0)
 end
+
+
+-- =====================================================================
+-- Item level + count display helpers (Items tab)
+-- - showItemLevel applies ONLY to Armor items (per UI expectation)
+-- - showItemCount controls stack count overlays/text
+-- =====================================================================
+local function TQ_Profile()
+    return (TheQuartermaster and TheQuartermaster.db and TheQuartermaster.db.profile) or nil
+end
+
+local function TQ_ShouldShowItemCount()
+    local p = TQ_Profile()
+    return p and p.showItemCount
+end
+
+local function TQ_ShouldShowItemLevel(item)
+    local p = TQ_Profile()
+    if not (p and p.showItemLevel) then return false end
+    if not item then return false end
+
+    -- Armor only (do NOT show for consumables, reagents, misc, etc.)
+    local classID = item.classID
+    if (not classID) and item.itemID and type(GetItemInfoInstant) == "function" then
+        local _, _, _, _, _, cID = GetItemInfoInstant(item.itemID)
+        classID = cID
+    end
+    return classID == LE_ITEM_CLASS_ARMOR
+end
+
+local function TQ_GetDetailedItemLevel(item)
+    if not item then return nil end
+    local ilvl = nil
+
+    -- Prefer detailed ilvl from hyperlink (accounts for upgrades/bonusIDs)
+    if item.itemLink and C_Item and C_Item.GetDetailedItemLevelInfo then
+        ilvl = C_Item.GetDetailedItemLevelInfo(item.itemLink)
+    end
+    if (not ilvl) and item.itemLevel then
+        ilvl = item.itemLevel
+    end
+    return ilvl
+end
+
 
 
 -- ==============================
@@ -175,10 +219,11 @@ local function _TQ_ResolveItemInfo(item)
     local itemID = tonumber(item.itemID)
     if not itemID then return end
 
-    local name, link, quality, _, _, itemType, itemSubType, _, _, icon, _, classID, subclassID = GetItemInfo(itemID)
+    local name, link, quality, itemLevel, _, itemType, itemSubType, _, _, icon, _, classID, subclassID = GetItemInfo(itemID)
     if name and name ~= "" then
         item.name = name
-        item.itemLink = item.itemLink or link
+        item.itemLink = item.itemLink or item.link or link
+        if item.itemLevel == nil then item.itemLevel = itemLevel end
         if item.quality == nil then item.quality = quality end
         item.itemType = item.itemType or itemType
         item.itemSubType = item.itemSubType or itemSubType
@@ -429,6 +474,13 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
         countText:SetPoint("BOTTOMRIGHT", -1, 1)
         countText:SetJustifyH("RIGHT")
 
+
+-- Item level overlay (Armor only)
+local ilvlText = btn:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+ilvlText:SetPoint("TOPLEFT", 2, -2)
+ilvlText:SetJustifyH("LEFT")
+btn.ilvlText = ilvlText
+
         local item = itemsForBag and itemsForBag[slotID] or nil
         local match = MatchesSearch(item, itemsSearchText)
 
@@ -437,10 +489,30 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
             -- Different caches may store stack size under different keys.
             -- Inventory (bags) in particular can be `count` rather than `stackCount`.
             local count = tonumber(item.stackCount or item.count or item.quantity) or 1
-            countText:SetText(count > 1 and tostring(count) or "")
+            do
+            local showCount = TQ_ShouldShowItemCount()
+            if showCount and count > 1 then
+                countText:SetText(tostring(count))
+                countText:Show()
+            else
+                countText:SetText("")
+                countText:Hide()
+            end
+        end
+
+-- Item level (Armor only; controlled by Display → Show Item Level)
+do
+    local ilvl = (TQ_ShouldShowItemLevel(item) and TQ_GetDetailedItemLevel(item)) or nil
+    if btn.ilvlText then
+        btn.ilvlText:SetText(ilvl and string.format("|cffffd100%d|r", ilvl) or "")
+    end
+end
+
         else
             icon:SetTexture(nil)
             countText:SetText("")
+            if btn.ilvlText then btn.ilvlText:SetText("") end
+            countText:Hide()
         end
 
         if itemsSearchText and itemsSearchText ~= "" then
@@ -463,7 +535,17 @@ local function DrawPersonalBankSlotView(self, parent, yOffset, width, itemsSearc
             end
         end
 
-        btn:SetScript("OnEnter", function()
+        
+
+-- Item level (Armor only; controlled by Display → Show Item Level)
+do
+    local ilvl = (TQ_ShouldShowItemLevel(item) and TQ_GetDetailedItemLevel(item)) or nil
+    if btn.ilvlText then
+        btn.ilvlText:SetText(ilvl and string.format("|cffffd100%d|r", ilvl) or "")
+    end
+end
+
+btn:SetScript("OnEnter", function()
             if item and item.itemLink then
                 GameTooltip:SetOwner(btn, "ANCHOR_RIGHT")
                 GameTooltip:SetHyperlink(item.itemLink)
@@ -647,12 +729,28 @@ local function DrawWarbandBankSlotView(self, parent, yOffset, width, itemsSearch
         countText:SetPoint("BOTTOMRIGHT", -1, 1)
         countText:SetJustifyH("RIGHT")
 
+
+-- Item level overlay (Armor only)
+local ilvlText = btn:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+ilvlText:SetPoint("TOPLEFT", 2, -2)
+ilvlText:SetJustifyH("LEFT")
+btn.ilvlText = ilvlText
+
         local item = itemsForTab and itemsForTab[slotID] or nil
         if item and item.iconFileID then
             icon:SetTexture(item.iconFileID)
             -- Different caches may store stack size under different keys.
             local count = tonumber(item.stackCount or item.count or item.quantity) or 1
-            countText:SetText(count > 1 and tostring(count) or "")
+            do
+            local showCount = TQ_ShouldShowItemCount()
+            if showCount and count > 1 then
+                countText:SetText(tostring(count))
+                countText:Show()
+            else
+                countText:SetText("")
+                countText:Hide()
+            end
+        end
 
             local match = MatchesSearch(item, itemsSearchText)
             if itemsSearchText and itemsSearchText ~= "" then
@@ -716,6 +814,7 @@ btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
         else
             icon:SetTexture(nil)
             countText:SetText("")
+            if btn.ilvlText then btn.ilvlText:SetText("") end
             btn:SetScript("OnEnter", nil)
             btn:SetScript("OnLeave", nil)
         end
@@ -1700,12 +1799,19 @@ end
                 countText:SetTextColor(1, 1, 1, 0.95)
                 btn.countText = countText
 
+                -- Item level overlay (Armor only)
+                local ilvlText = btn:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+                ilvlText:SetPoint("TOPLEFT", btn, "TOPLEFT", 2, -2)
+                ilvlText:SetJustifyH("LEFT")
+                btn.ilvlText = ilvlText
+
                 local item = (bagItems[selected] or {})[slot]
                 if item and item.iconFileID then
                     icon:SetTexture(item.iconFileID)
 
                     local count = item.stackCount or item.count or item.quantity
-                    if count and count > 1 then
+                    local showCount = TQ_ShouldShowItemCount()
+                    if showCount and count and count > 1 then
                         btn.countText:SetText(count)
                         btn.countText:Show()
                     else
@@ -2180,7 +2286,14 @@ btn:SetScript("OnLeave", function() GameTooltip:Hide() end)
                 row.bg:SetColorTexture(i % 2 == 0 and 0.07 or 0.05, i % 2 == 0 and 0.07 or 0.05, i % 2 == 0 and 0.09 or 0.06, 1)
                 
                 -- Update quantity
-                row.qtyText:SetText(format("|cffffff00%d|r", item.stackCount or 1))
+                do
+                    local showCount = TQ_ShouldShowItemCount()
+                    if showCount then
+                        row.qtyText:SetText(format("|cffffff00%d|r", item.stackCount or 1))
+                    else
+                        row.qtyText:SetText("")
+                    end
+                end
                 _TQ_ResolveItemInfo(item)
 
                 -- Update icon

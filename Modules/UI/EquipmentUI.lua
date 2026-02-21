@@ -394,6 +394,28 @@ local nameLabel = header:CreateFontString(nil, "OVERLAY", "GameFontNormal")
             })
             qBorder:Hide()
 
+            -- Item level label (optional)
+            -- NOTE: The quality border is a separate Frame and can sit above FontStrings even when using OVERLAY.
+            -- To guarantee readability, put the ilvl text on its own overlay Frame with a higher FrameLevel.
+            local ilvlOverlay = CreateFrame("Frame", nil, cell)
+            ilvlOverlay:SetAllPoints(cell)
+            ilvlOverlay:SetFrameLevel(qBorder:GetFrameLevel() + 2)
+
+            local ilvlText = ilvlOverlay:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            ilvlText:SetPoint("BOTTOMRIGHT", -1, 6) -- lifted to clear icon border
+            ilvlText:SetJustifyH("RIGHT")
+            ilvlText:SetTextColor(1, 0.82, 0, 1)
+
+            -- Make it readable on top of everything in the cell
+            ilvlText:SetDrawLayer("OVERLAY", 10)
+            local font, size = ilvlText:GetFont()
+            if font then
+                ilvlText:SetFont(font, (size or 10), "OUTLINE")
+            end
+            ilvlText:SetShadowOffset(1, -1)
+            ilvlText:SetShadowColor(0, 0, 0, 1)
+
+
             -- Track this slot for deferred quality updates (no heavy RefreshUI)
             cell._qmItem = item
             cell._qmQBorder = qBorder
@@ -417,11 +439,34 @@ local nameLabel = header:CreateFontString(nil, "OVERLAY", "GameFontNormal")
                     end
                 end
 
+
+                -- Item level (optional)
+                do
+                    local showIlvl = self.db and self.db.profile and self.db.profile.showItemLevel
+                    local ilvl = nil
+                    if showIlvl and item then
+                        -- Prefer detailed ilvl from hyperlink (accounts for upgrades/bonusIDs)
+                        if item.itemLink and C_Item and C_Item.GetDetailedItemLevelInfo then
+                            ilvl = C_Item.GetDetailedItemLevelInfo(item.itemLink)
+                        end
+                        if (not ilvl) and item.itemLevel then
+                            ilvl = item.itemLevel
+                        end
+                    end
+
+                    if ilvl then
+                        ilvlText:SetText(string.format("|cffffd100%d|r", ilvl))
+                    else
+                        ilvlText:SetText("")
+                    end
+                end
                 AttachItemTooltip(cell, item.itemLink)
             else
                 icon:SetTexture(GetSlotTexture(slot.key) or "Interface\\Icons\\INV_Misc_QuestionMark")
                 icon:SetDesaturated(true)
                 icon:SetAlpha(0.35)
+
+                ilvlText:SetText("")
 
                 cell:SetBackdropBorderColor(0.2, 0.2, 0.25, 0.15)
                 qBorder:Hide()
