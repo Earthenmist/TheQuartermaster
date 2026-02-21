@@ -396,6 +396,12 @@ local function AcquireItemRow(parent, width, rowHeight)
         row.nameText:SetJustifyH("LEFT")
         row.nameText:SetWordWrap(false)
         
+        -- Item level text (optional)
+        row.ilvlText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        row.ilvlText:SetPoint("RIGHT", -78, 0)
+        row.ilvlText:SetWidth(50)
+        row.ilvlText:SetJustifyH("RIGHT")
+
         -- Location text
         row.locationText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         row.locationText:SetPoint("RIGHT", -10, 0)
@@ -409,6 +415,9 @@ local function AcquireItemRow(parent, width, rowHeight)
     row:SetParent(parent)
     row:SetSize(width, rowHeight)
     row:SetFrameLevel(parent:GetFrameLevel() + 1)  -- Ensure proper z-order
+
+    -- Reset pooled values so other tabs don't inherit stale data
+    if row.ilvlText then row.ilvlText:SetText("") end
     row:Show()
     return row
 end
