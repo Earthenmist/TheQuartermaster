@@ -1,13 +1,12 @@
 ## 🧩 Addon Updates (2026-02-21)
 
-**The Quartermaster** — v1.0.20  
+**The Quartermaster** — v1.0.21-Beta  
 
 **Changes:**  
 - None  
   
 **Fixes:**  
-- Fixed item levels not showing on the equipment screen when selected in options.
-- Fixed item counts still showing on the items screen when not selected in options.
+- Looking to be more resiliant clearing the mail icon for empty mailboxes with some addons installed.
 
 **Known issues:**  
 - None currently known.

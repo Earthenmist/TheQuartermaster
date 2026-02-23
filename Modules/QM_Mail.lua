@@ -160,19 +160,28 @@ local function ScanInboxNow()
     if _qmMailLastCount > 0 then _qmMailLastNonZeroTime = GetTime() end
     local now = time()
 
-        -- If no mail, keep a lightweight record (so UI can hide cleanly)
+    -- If no mail, keep a lightweight record (so UI can hide cleanly)
     if num <= 0 then
         QM_MailDebug("No mail found (count <= 0)")
-        -- When a mailbox is first opened, GetInboxCount() often returns 0 briefly.
-        -- Avoid overwriting a previously cached non-empty state with an empty scan during that window.
+
+        -- When a mailbox is first opened, GetInboxCount() can briefly return 0 while the
+        -- client finishes populating the inbox. We only want to protect against clearing a
+        -- *previously non-empty* cached state during that brief window.
+        local existing = perChar[charKey]
+        local existingCount = (existing and existing.count) and tonumber(existing.count) or 0
+
         local sinceShow = (GetTime() - (_qmMailLastShowTime or 0))
-        if sinceShow >= 0 and sinceShow < 3 then
-            -- We'll rescan shortly; do not write empty yet.
+        if existingCount > 0 and sinceShow >= 0 and sinceShow < 3 then
+            -- We'll rescan once we're outside the "initial open" window.
+            if C_Timer and C_Timer.After then
+                C_Timer.After((3 - sinceShow) + 0.05, ScanInboxNow)
+            end
             return
         end
+
         QM_MailDebug("Writing cache for " .. tostring(charKey))
 
-    perChar[charKey] = {
+        perChar[charKey] = {
             count = 0,
             soonestAt = nil,
             soonestType = nil,
