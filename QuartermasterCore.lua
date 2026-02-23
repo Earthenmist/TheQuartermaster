@@ -2545,3 +2545,56 @@ end
 
 
 
+
+-- ============================================================================
+-- ADDON COMPARTMENT (Retail)
+-- ============================================================================
+-- Automatic registration is handled via TOC metadata:
+--   ## AddonCompartmentFunc
+--   ## AddonCompartmentFuncOnEnter
+--   ## AddonCompartmentFuncOnLeave
+--
+-- These functions must be GLOBAL.
+
+function TheQuartermaster_OnAddonCompartmentClick(addonName, buttonName, menuButtonFrame)
+    local ace = LibStub and LibStub("AceAddon-3.0", true)
+    local addon = ace and ace:GetAddon(addonName, true)
+    if not addon then return end
+
+    if buttonName == "LeftButton" then
+        if addon.ToggleMainWindow then
+            addon:ToggleMainWindow()
+        end
+    elseif buttonName == "RightButton" then
+        if addon.ShowMinimapMenu then
+            addon:ShowMinimapMenu()
+        elseif addon.OpenOptions then
+            addon:OpenOptions()
+        end
+    end
+end
+
+function TheQuartermaster_OnAddonCompartmentEnter(addonName, menuButtonFrame)
+    if not menuButtonFrame then return end
+
+    GameTooltip:SetOwner(menuButtonFrame, "ANCHOR_LEFT")
+
+    -- Reuse the existing LibDataBroker tooltip (same text as the minimap button)
+    local ldb = LibStub and LibStub("LibDataBroker-1.1", true)
+    local dataObj = ldb and ldb:GetDataObjectByName(addonName)
+
+    if dataObj and type(dataObj.OnTooltipShow) == "function" then
+        dataObj.OnTooltipShow(GameTooltip)
+    else
+        GameTooltip:SetText(addonName)
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddLine("Left-Click: Toggle window", 0.7, 0.7, 0.7)
+        GameTooltip:AddLine("Right-Click: Options", 0.7, 0.7, 0.7)
+    end
+
+    GameTooltip:Show()
+end
+
+function TheQuartermaster_OnAddonCompartmentLeave(addonName, menuButtonFrame)
+    GameTooltip:Hide()
+end
