@@ -201,6 +201,21 @@ local options = {
                 end
             end,
         },
+
+        trackProfessionRecipes = {
+            order = 44,
+            type = "toggle",
+            name = L["TRACK_PROFESSION_RECIPES"],
+            desc = L["TRACK_PROFESSION_RECIPES_DESC"],
+            width = "full",
+            get = function() return TheQuartermaster.db.profile.trackProfessionRecipes == true end,
+            set = function(_, value)
+                TheQuartermaster.db.profile.trackProfessionRecipes = value and true or false
+                if TheQuartermaster.RefreshUI then
+                    TheQuartermaster:RefreshUI()
+                end
+            end,
+        },
         spacer4 = {
             order = 49,
             type = "description",

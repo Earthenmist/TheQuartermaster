@@ -519,7 +519,10 @@ function TheQuartermaster:OnTradeSkillUpdate()
     Throttle("TRADESKILL_UPDATE", 1.0, function()
         local updated = false
         if self.UpdateDetailedProfessionData then
-            updated = self:UpdateDetailedProfessionData()
+            updated = self:UpdateDetailedProfessionData() or updated
+        end
+        if self.ScanProfessionRecipes then
+            updated = self:ScanProfessionRecipes() or updated
         end
         -- Only refresh UI if data was actually updated
         if updated and self.RefreshUI then

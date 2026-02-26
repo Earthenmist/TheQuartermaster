@@ -505,7 +505,9 @@ end
     @param input string The command input
 ]]
 function TheQuartermaster:SlashCommand(input)
-    local cmd = self:GetArgs(input, 1)
+    -- AceConsole GetArgs returns (arg1, arg2, ..., nextPos). Capture nextPos so
+    -- subcommands can safely parse the remainder of the input.
+    local cmd, nextPos = self:GetArgs(input, 1)
     
     -- No command - open addon window
     if not cmd or cmd == "" then
@@ -529,6 +531,79 @@ function TheQuartermaster:SlashCommand(input)
         return
     elseif cmd == "options" or cmd == "config" or cmd == "settings" then
         self:OpenOptions()
+        return
+    elseif cmd == "recipes" or cmd == "recipe" then
+        -- Use the remainder of the input (supports multi-word queries)
+        local q = ""
+        if type(input) == "string" and type(nextPos) == "number" then
+            q = input:sub(nextPos)
+        end
+        q = tostring(q or "")
+        q = q:gsub("^%s+", ""):gsub("%s+$", "")
+
+        -- Cache reset helpers
+        if q:lower():match("^resetall$") then
+            if self.ClearAllProfessionRecipeCaches then
+                local cleared = self:ClearAllProfessionRecipeCaches()
+                self:Print("|cff00ff00Cleared recipe cache for " .. tostring(cleared) .. " character(s).|r")
+            else
+                self:Print("|cffff6600Recipe module not loaded.|r")
+            end
+            return
+        end
+
+        local resetTarget = q:match("^reset%s+(.+)$")
+        if q:lower() == "reset" or resetTarget then
+            if self.ClearProfessionRecipeCache then
+                local target = resetTarget
+                if target then
+                    target = target:gsub("^%s+", ""):gsub("%s+$", "")
+                end
+                local ok = self:ClearProfessionRecipeCache(target)
+                if ok then
+                    self:Print("|cff00ff00Cleared recipe cache" .. (target and (" for " .. target) or " for current character") .. ".|r")
+                    if self.RefreshUI then self:RefreshUI() end
+                else
+                    self:Print("|cff888888No recipe cache found" .. (target and (" for " .. target) or " for current character") .. ".|r")
+                end
+            else
+                self:Print("|cffff6600Recipe module not loaded.|r")
+            end
+            return
+        end
+
+        if q == "" then
+            self:Print("Usage: |cff00ccff/tq recipes <search>|r")
+            self:Print("  |cff00ccff/tq recipes reset|r - Clear recipe cache for current character")
+            self:Print("  |cff00ccff/tq recipes reset Name-Realm|r - Clear cache for a specific character")
+            self:Print("  |cff00ccff/tq recipes resetall|r - Clear all cached recipe data")
+            self:Print('Tip: Enable "Track Profession Recipes" then open your profession window on each crafter to cache their known recipes.')
+            return
+        end
+
+        if not self.FindRecipeCraftersByName then
+            self:Print("|cffff6600Recipe search module not loaded.|r")
+            return
+        end
+
+        local results = self:FindRecipeCraftersByName(q)
+        if not results or #results == 0 then
+            self:Print("|cff888888No cached recipes matched:|r " .. q)
+            return
+        end
+
+        self:Print("|cff00ccffRecipe matches for:|r " .. q)
+        local shown = 0
+        for i = 1, #results do
+            local r = results[i]
+            shown = shown + 1
+            local crafters = table.concat(r.crafters or {}, ", ")
+            self:Print("  |cff00ff00" .. tostring(r.name) .. "|r - " .. crafters)
+            if shown >= 25 then
+                self:Print("|cff888888(Showing first 25 matches)|r")
+                break
+            end
+        end
         return
     elseif cmd == "cleanup" then
         if self.CleanupStaleCharacters then

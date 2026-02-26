@@ -9,14 +9,14 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.21-Beta"
+local CURRENT_VERSION = "1.0.22"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.21-Beta",
-    date = "2026-02-23",
+    version = "1.0.22",
+    date = "2026-02-26",
     changes = {
-        "Looking to be more resiliant clearing the mail icon for empty mailboxes with some addons installed.",
+        "New Feature: Profession Recipe Tracking & Comparison",
     }
 }
 
