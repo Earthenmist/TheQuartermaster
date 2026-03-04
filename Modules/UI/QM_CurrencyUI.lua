@@ -526,6 +526,24 @@ yOffset = yOffset + 78
         return buckets
     end
 
+
+local function GetSeasonBuckets(buckets)
+    local seasonBuckets = {}
+    local seasonCount = 0
+
+    for i = 1, 6 do
+        local sKey = "season " .. i
+        local sBucket = buckets[sKey]
+        if sBucket and #sBucket.items > 0 then
+            table.insert(seasonBuckets, { key = sKey, bucket = sBucket })
+            seasonCount = seasonCount + #sBucket.items
+        end
+    end
+
+    return seasonBuckets, seasonCount
+end
+
+
     local function RenderCurrenciesUnderHeader(headerTitle, headerKey, headerIcon, items, baseIndent, defaultExpanded, nestedFn, allowEmpty, countOverride)
         if (not items or #items == 0) and not allowEmpty then
             return
@@ -571,18 +589,35 @@ yOffset = yOffset + 78
     local function RenderBlizzardOrder(charKeyForState, currList, baseIndent)
         local buckets = BuildHeaderBuckets(currList)
 
-        -- Midnight (when it exists)
-        local midnight = buckets["midnight"]
-        if midnight and #midnight.items > 0 then
-            RenderCurrenciesUnderHeader(
-                midnight.name,
-                charKeyForState .. "-hdr-midnight",
-                "Interface\\Icons\\inv12_apextalent_demonhunter_midnight",
-                midnight.items,
-                baseIndent,
-                true
-            )
-        end
+        -- Midnight (when it exists) + Seasons nested under it
+local midnight = buckets["midnight"]
+local seasonBuckets, seasonCount = GetSeasonBuckets(buckets)
+
+if midnight and (#midnight.items > 0 or seasonCount > 0) then
+    RenderCurrenciesUnderHeader(
+        midnight.name,
+        charKeyForState .. "-hdr-midnight",
+        "Interface\\Icons\\inv12_apextalent_demonhunter_midnight",
+        midnight.items or {},
+        baseIndent,
+        true,
+        function()
+            -- Nest Season headers under Midnight
+            for _, s in ipairs(seasonBuckets) do
+                RenderCurrenciesUnderHeader(
+                    s.bucket.name,
+                    charKeyForState .. "-hdr-midnight-" .. s.key:gsub("%s",""),
+                    "Interface\\Icons\\INV_Misc_QuestionMark",
+                    s.bucket.items,
+                    baseIndent + 20,
+                    true
+                )
+            end
+        end,
+        true,
+        ((midnight.items and #midnight.items or 0) + seasonCount)
+    )
+end
 
 -- Dungeon & Raid
         local dr = buckets["dungeon and raid"] or buckets["dungeons and raids"] or buckets["dungeon & raid"]
@@ -667,22 +702,6 @@ yOffset = yOffset + 78
             end
         end
 
-
-        -- Season buckets sometimes appear as top-level headers (e.g. "Season 3") but should be nested under
-        -- Legacy → The War Within (to mirror Blizzard's currency layout).
-        local warWithinBucket, warWithinKey = GetBucketByHeaderName(buckets, "The War Within")
-        local seasonCount = 0
-        for i = 1, 6 do
-            local sKey = "season " .. i
-            local sBucket = buckets[sKey]
-            if sBucket and #sBucket.items > 0 then
-                seasonCount = seasonCount + #sBucket.items
-            end
-        end
-        if seasonCount > 0 then
-            legacyItemsCount = legacyItemsCount + seasonCount
-        end
-
         if legacyItemsCount > 0 then
             local legacyKey = charKeyForState .. "-hdr-legacy"
             local legacyExpanded = IsExpanded(legacyKey, true)
@@ -708,58 +727,15 @@ yOffset = yOffset + 78
             if legacyExpanded then
                 for _, expName in ipairs(LEGACY_ORDER) do
                     local b, key = GetBucketByHeaderName(buckets, expName)
-
-                    if key == warWithinKey then
-                        -- War Within: nest Season headers beneath it
-                        local wwItems = (b and b.items) or {}
-                        local wwSeasonCount = 0
-                        for i = 1, 6 do
-                            local sKey = "season " .. i
-                            local sBucket = buckets[sKey]
-                            if sBucket and #sBucket.items > 0 then
-                                wwSeasonCount = wwSeasonCount + #sBucket.items
-                            end
-                        end
-
-                        if (#wwItems > 0) or (wwSeasonCount > 0) then
-                            RenderCurrenciesUnderHeader(
-                                (b and b.name) or expName,
-                                charKeyForState .. "-legacy-" .. key:gsub("%s",""),
-                                nil,
-                                wwItems,
-                                baseIndent + 20,
-                                true,
-                                function()
-                                    for i = 1, 6 do
-                                        local sKey = "season " .. i
-                                        local sBucket = buckets[sKey]
-                                        if sBucket and #sBucket.items > 0 then
-                                            RenderCurrenciesUnderHeader(
-                                                sBucket.name,
-                                                charKeyForState .. "-legacy-" .. key:gsub("%s","") .. "-" .. sKey:gsub("%s",""),
-                                                "Interface\\Icons\\INV_Misc_QuestionMark",
-                                                sBucket.items,
-                                                baseIndent + 40,
-                                                true
-                                            )
-                                        end
-                                    end
-                                end,
-                                true,
-                                (#wwItems + wwSeasonCount)
-                            )
-                        end
-                    else
-                        if b and #b.items > 0 then
-                            RenderCurrenciesUnderHeader(
-                                b.name,
-                                charKeyForState .. "-legacy-" .. key:gsub("%s",""),
-                                nil,
-                                b.items,
-                                baseIndent + 20,
-                                true
-                            )
-                        end
+                    if b and #b.items > 0 then
+                        RenderCurrenciesUnderHeader(
+                            b.name,
+                            charKeyForState .. "-legacy-" .. key:gsub("%s",""),
+                            nil,
+                            b.items,
+                            baseIndent + 20,
+                            true
+                        )
                     end
                 end
             end

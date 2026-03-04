@@ -9,14 +9,14 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.22"
+local CURRENT_VERSION = "1.0.23"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.22",
-    date = "2026-02-26",
+    version = "1.0.23",
+    date = "2026-03-04",
     changes = {
-        "New Feature: Profession Recipe Tracking & Comparison",
+        "Moved Season 1 under Midnight in Currencies.",
     }
 }
 

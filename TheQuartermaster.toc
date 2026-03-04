@@ -2,7 +2,7 @@
 ## Title: The Quartermaster
 ## Notes: Account-Wide Inventory, Warband & Character Overview for World of Warcraft (Midnight-Ready)
 ## Author: Lanni Alonsus
-## Version: 1.0.22
+## Version: 1.0.23
 ## IconTexture: Interface\AddOns\TheQuartermaster\Media\icon
 ## AddonCompartmentFunc: TheQuartermaster_OnAddonCompartmentClick
 ## AddonCompartmentFuncOnEnter: TheQuartermaster_OnAddonCompartmentEnter
