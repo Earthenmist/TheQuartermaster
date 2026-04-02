@@ -201,6 +201,26 @@ local options = {
                 end
             end,
         },
+        windowScale = {
+            order = 43.5,
+            type = "range",
+            name = "Window Scale",
+            desc = "Adjust the size of The Quartermaster main window.",
+            min = 0.70,
+            max = 1.15,
+            step = 0.05,
+            isPercent = true,
+            width = 1.5,
+            get = function() return TheQuartermaster.db.profile.uiScale or 1 end,
+            set = function(_, value)
+                TheQuartermaster.db.profile.uiScale = value
+                if TheQuartermaster.ApplyWindowScale then
+                    TheQuartermaster:ApplyWindowScale(value)
+                elseif TheQuartermaster.RefreshUI then
+                    TheQuartermaster:RefreshUI()
+                end
+            end,
+        },
 
         trackProfessionRecipes = {
             order = 44,

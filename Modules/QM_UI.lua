@@ -52,6 +52,10 @@ local DEFAULT_HEIGHT = 680
 local MIN_WIDTH = 1200
 local MIN_HEIGHT = 680
 local ROW_HEIGHT = 26
+local DEFAULT_SCALE = 1.0
+local MIN_SCALE = 0.70
+local MAX_SCALE = 1.15
+
 
 local mainFrame = nil
 local goldTransferFrame = nil
@@ -193,6 +197,27 @@ function TheQuartermaster:HideMainWindow()
     end
 end
 
+function TheQuartermaster:ApplyWindowScale(scale)
+    if not mainFrame then return end
+
+    local value = tonumber(scale) or DEFAULT_SCALE
+    if value < MIN_SCALE then value = MIN_SCALE end
+    if value > MAX_SCALE then value = MAX_SCALE end
+
+    mainFrame:SetScale(value)
+
+    if self.db and self.db.profile then
+        self.db.profile.uiScale = value
+    end
+
+    if mainFrame.scaleValueText then
+        mainFrame.scaleValueText:SetText(string.format("%.0f%%", value * 100))
+    end
+    if mainFrame.scaleSlider and math.abs((mainFrame.scaleSlider:GetValue() or value) - value) > 0.0001 then
+        mainFrame.scaleSlider:SetValue(value)
+    end
+end
+
 --============================================================================
 -- CREATE MAIN WINDOW
 --============================================================================
@@ -219,6 +244,12 @@ function TheQuartermaster:CreateMainWindow()
     f:SetFrameStrata("DIALOG")  -- DIALOG is above HIGH, ensures we're above BankFrame
     f:SetFrameLevel(100)         -- Extra high level for safety
     f:SetClampedToScreen(true)
+
+    local savedScale = self.db and self.db.profile and self.db.profile.uiScale or DEFAULT_SCALE
+    if type(savedScale) ~= "number" then savedScale = DEFAULT_SCALE end
+    if savedScale < MIN_SCALE then savedScale = MIN_SCALE end
+    if savedScale > MAX_SCALE then savedScale = MAX_SCALE end
+    f:SetScale(savedScale)
 
     -- Enforce minimum size even if some client versions don't fully respect
     -- resize bounds while sizing (or if other code sets the size directly).
@@ -317,17 +348,98 @@ function TheQuartermaster:CreateMainWindow()
 		end
 		-- perceived brightness (YIQ)
 		local brightness = (br * 299 + bg * 587 + bb * 114) / 1000
+		local tr, tg, tb = 1, 1, 1
 		if brightness > 0.6 then
-			discretionLabel:SetTextColor(0.1, 0.1, 0.1, 0.95)
-		else
-			discretionLabel:SetTextColor(1, 1, 1, 0.95)
+			tr, tg, tb = 0.1, 0.1, 0.1
+		end
+		discretionLabel:SetTextColor(tr, tg, tb, 0.95)
+		if f and f.scaleLabel then
+			f.scaleLabel:SetTextColor(tr, tg, tb, 0.95)
+		end
+		if f and f.scaleValueText then
+			f.scaleValueText:SetTextColor(tr, tg, tb, 0.95)
 		end
 	end
 	ApplyDiscretionLabelColor()
     discretionLabel:SetPoint("RIGHT", discretionCB, "LEFT", -6, 0)
 
+    -- Window scale slider
+    local scaleSlider = CreateFrame("Slider", nil, header, "OptionsSliderTemplate")
+    scaleSlider:SetWidth(140)
+    scaleSlider:SetHeight(14)
+    scaleSlider:SetPoint("RIGHT", discretionLabel, "LEFT", -46, 0)
+    scaleSlider:SetMinMaxValues(MIN_SCALE, MAX_SCALE)
+    scaleSlider:SetValueStep(0.05)
+    scaleSlider:SetObeyStepOnDrag(true)
+    scaleSlider:SetValue(savedScale)
+
+    if scaleSlider.Low then
+        scaleSlider.Low:SetText("70%")
+        scaleSlider.Low:ClearAllPoints()
+        scaleSlider.Low:SetPoint("TOPLEFT", scaleSlider, "BOTTOMLEFT", 0, -1)
+    end
+    if scaleSlider.High then
+        scaleSlider.High:SetText("115%")
+        scaleSlider.High:ClearAllPoints()
+        scaleSlider.High:SetPoint("TOPRIGHT", scaleSlider, "BOTTOMRIGHT", 0, -1)
+    end
+    if scaleSlider.Text then
+        scaleSlider.Text:SetText("")
+    end
+
+    local scaleLabel = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    scaleLabel:SetPoint("RIGHT", scaleSlider, "LEFT", -8, 0)
+    scaleLabel:SetText("Scale")
+    scaleLabel:SetTextColor(1, 1, 1, 0.95)
+
+    local scaleValueText = header:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    scaleValueText:SetPoint("LEFT", scaleSlider, "RIGHT", 10, 0)
+    scaleValueText:SetText(string.format("%.0f%%", savedScale * 100))
+    scaleValueText:SetTextColor(1, 1, 1, 0.95)
+
+    local function NormalizeScaleValue(value)
+        local stepped = math.floor((value / 0.05) + 0.5) * 0.05
+        if stepped < MIN_SCALE then stepped = MIN_SCALE end
+        if stepped > MAX_SCALE then stepped = MAX_SCALE end
+        return stepped
+    end
+
+    local function UpdateScalePreview(value)
+        local stepped = NormalizeScaleValue(value)
+        if math.abs((scaleSlider:GetValue() or stepped) - stepped) > 0.0001 then
+            scaleSlider:SetValue(stepped)
+            return nil
+        end
+        if scaleValueText then
+            scaleValueText:SetText(string.format("%.0f%%", stepped * 100))
+        end
+        scaleSlider.pendingScaleValue = stepped
+        return stepped
+    end
+
+    scaleSlider:SetScript("OnValueChanged", function(self, value)
+        UpdateScalePreview(value)
+    end)
+
+    scaleSlider:SetScript("OnMouseUp", function(self)
+        local stepped = self.pendingScaleValue or NormalizeScaleValue(self:GetValue())
+        TheQuartermaster:ApplyWindowScale(stepped)
+    end)
+    scaleSlider:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText("Window Scale")
+        GameTooltip:AddLine("Adjust the size of The Quartermaster so it can sit more comfortably beside other windows.", 0.8, 0.8, 0.8, true)
+        GameTooltip:Show()
+    end)
+    scaleSlider:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+    f.scaleSlider = scaleSlider
+    f.scaleValueText = scaleValueText
+
 	-- Store references so the shared colour refresh can update the label when themes change
 	f.discretionLabel = discretionLabel
+	f.scaleLabel = scaleLabel
+	f.scaleValueText = scaleValueText
 	f.ApplyDiscretionLabelColor = ApplyDiscretionLabelColor
 
     discretionCB:SetScript("OnClick", function(self)

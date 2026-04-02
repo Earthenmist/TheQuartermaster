@@ -58,6 +58,7 @@ ns.DEFAULTS = {
             tabHover = { 0.24, 0.14, 0.35 }, -- Hover tab background (0.6x)
         },
         showItemCount = true,
+        uiScale = 1.0, -- Main window scale
 
         -- Professions
         -- When enabled, the addon will cache known recipeIDs (and names) per character
