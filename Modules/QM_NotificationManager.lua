@@ -9,14 +9,14 @@ local TheQuartermaster = ns.TheQuartermaster
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 -- Current addon version
-local CURRENT_VERSION = "1.0.23"
+local CURRENT_VERSION = "1.0.24"
 
 -- Changelog for current version (manual update required)
 local CHANGELOG = {
-    version = "1.0.23",
-    date = "2026-03-04",
+    version = "1.0.24",
+    date = "2026-04-02",
     changes = {
-        "Moved Season 1 under Midnight in Currencies.",
+        "Added a scale slider at the top of the window.",
     }
 }
 

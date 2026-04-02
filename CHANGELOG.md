@@ -1,9 +1,9 @@
-## 🧩 Addon Updates (2026-02-26)
+## 🧩 Addon Updates (2026-04-02)
 
-**The Quartermaster** — v1.0.23  
+**The Quartermaster** — v1.0.24  
 
 **Changes:**  
-- Move Season 1 under Midnight in Currencies
+- Added a scale slider at the top of the window allowing resize between 75 & 115%
   
 **Fixes:**  
 - None
