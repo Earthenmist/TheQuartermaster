@@ -1,9 +1,9 @@
 ## 🧩 Addon Updates (2026-04-02)
 
-**The Quartermaster** — v1.0.24  
+**The Quartermaster** — v1.0.25  
 
 **Changes:**  
-- Added a scale slider at the top of the window allowing resize between 75 & 115%
+- Updated toc for WoW 12.0.5 patch release.
   
 **Fixes:**  
 - None
