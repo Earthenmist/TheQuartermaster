@@ -1,8 +1,8 @@
-## Interface: 120005, 120001
+## Interface: 120007, 120005
 ## Title: The Quartermaster
 ## Notes: Account-Wide Inventory, Warband & Character Overview for World of Warcraft (Midnight-Ready)
 ## Author: Lanni Alonsus
-## Version: 1.0.25
+## Version: 1.0.26
 ## IconTexture: Interface\AddOns\TheQuartermaster\Media\icon
 ## AddonCompartmentFunc: TheQuartermaster_OnAddonCompartmentClick
 ## AddonCompartmentFuncOnEnter: TheQuartermaster_OnAddonCompartmentEnter
@@ -64,6 +64,7 @@ Modules\UI\QM_WatchlistUI.lua
 Modules\UI\QM_CharactersUI.lua
 Modules\UI\ExperienceUI.lua
 Modules\UI\EquipmentUI.lua
+Modules\UI\ProfessionEquipmentUI.lua
 Modules\UI\GuildUI.lua
 Modules\UI\QM_CurrencyUI.lua
 Modules\UI\QM_ItemsUI.lua
