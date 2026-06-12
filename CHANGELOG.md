@@ -1,9 +1,9 @@
-## 🧩 Addon Updates (2026-06-12)
+## 🧩 Addon Updates (2026-04-02)
 
-**The Quartermaster** — v1.0.26  
+**The Quartermaster** — v1.0.25  
 
 **Changes:**  
-- Added a Profession Equipment window as per feature request on discord.
+- Updated toc for WoW 12.0.5 patch release.
   
 **Fixes:**  
 - None
