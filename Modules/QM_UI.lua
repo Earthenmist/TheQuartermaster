@@ -552,25 +552,26 @@ f.tabButtons["chars"] = CreateTabButton(nav, "Characters", "chars", 10 + tabSpac
 f.tabButtons["exp"] = CreateTabButton(nav, "Experience", "exp", 10 + tabSpacing * 2)
 f.tabButtons["guild"] = CreateTabButton(nav, "Guilds", "guild", 10 + tabSpacing * 3)
 f.tabButtons["equip"] = CreateTabButton(nav, "Equipment", "equip", 10 + tabSpacing * 4)
-f.tabButtons["items"] = CreateTabButton(nav, "Items", "items", 10 + tabSpacing * 5)
-f.tabButtons["materials"] = CreateTabButton(nav, "Materials", "materials", 10 + tabSpacing * 6)
-f.tabButtons["recipes"] = CreateTabButton(nav, "Recipes", "recipes", 10 + tabSpacing * 7)
-f.tabButtons["storage"] = CreateTabButton(nav, "Storage", "storage", 10 + tabSpacing * 8)
-f.tabButtons["pve"] = CreateTabButton(nav, "PvE", "pve", 10 + tabSpacing * 9)
-f.tabButtons["reputations"] = CreateTabButton(nav, "Reputations", "reputations", 10 + tabSpacing * 10)
-f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tabSpacing * 11)
+f.tabButtons["profequip"] = CreateTabButton(nav, "Prof Gear", "profequip", 10 + tabSpacing * 5)
+f.tabButtons["items"] = CreateTabButton(nav, "Items", "items", 10 + tabSpacing * 6)
+f.tabButtons["materials"] = CreateTabButton(nav, "Materials", "materials", 10 + tabSpacing * 7)
+f.tabButtons["recipes"] = CreateTabButton(nav, "Recipes", "recipes", 10 + tabSpacing * 8)
+f.tabButtons["storage"] = CreateTabButton(nav, "Storage", "storage", 10 + tabSpacing * 9)
+f.tabButtons["pve"] = CreateTabButton(nav, "PvE", "pve", 10 + tabSpacing * 10)
+f.tabButtons["reputations"] = CreateTabButton(nav, "Reputations", "reputations", 10 + tabSpacing * 11)
+f.tabButtons["currency"] = CreateTabButton(nav, "Currency", "currency", 10 + tabSpacing * 12)
 
 -- Separator (theme color) between primary sections and utility tabs
 local sep = CreateFrame("Frame", nil, nav, "BackdropTemplate")
 sep:SetHeight(3)
-sep:SetPoint("TOPLEFT", nav, "TOPLEFT", 10, -(10 + tabSpacing * 12) - 4)
-sep:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -10, -(10 + tabSpacing * 12) - 4)
+sep:SetPoint("TOPLEFT", nav, "TOPLEFT", 10, -(10 + tabSpacing * 13) - 4)
+sep:SetPoint("TOPRIGHT", nav, "TOPRIGHT", -10, -(10 + tabSpacing * 13) - 4)
 sep:SetBackdrop({ bgFile = "Interface\\BUTTONS\\WHITE8X8" })
 local accent = COLORS.accent
 sep:SetBackdropColor(accent[1], accent[2], accent[3], 0.9)
 
-f.tabButtons["search"] = CreateTabButton(nav, "Search", "search", 10 + tabSpacing * 12 + 20)
-f.tabButtons["watchlist"] = CreateTabButton(nav, "Watchlist", "watchlist", 10 + tabSpacing * 13 + 20)
+f.tabButtons["search"] = CreateTabButton(nav, "Search", "search", 10 + tabSpacing * 13 + 20)
+f.tabButtons["watchlist"] = CreateTabButton(nav, "Watchlist", "watchlist", 10 + tabSpacing * 14 + 20)
 -- Sidebar actions (Information + Settings) - match nav button style, anchored to bottom
 local infoNav = CreateTabButton(nav, L["INFORMATION"] or "Information", "info_action", 10) -- yOffset ignored after re-anchor
 local settingsNav = CreateTabButton(nav, L["SETTINGS"] or "Settings", "settings_action", 10) -- yOffset ignored after re-anchor
@@ -1009,6 +1010,12 @@ mainFrame.persistentSearchBoxes.global = globalSearch
         height = self:DrawExperienceList(scrollChild)
     elseif mainFrame.currentTab == "equip" then
         height = self:DrawEquipmentList(scrollChild)
+    elseif mainFrame.currentTab == "profequip" then
+        if self.DrawProfessionEquipmentList then
+            height = self:DrawProfessionEquipmentList(scrollChild)
+        else
+            height = 200
+        end
     elseif mainFrame.currentTab == "guild" then
         height = self:DrawGuildSummaryList(scrollChild)
     elseif mainFrame.currentTab == "currency" then

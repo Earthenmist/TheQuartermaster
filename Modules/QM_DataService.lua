@@ -443,6 +443,57 @@ function TheQuartermaster:SaveCurrentCharacterData()
 
     local equipment = CollectEquippedItems()
 
+    -- Profession equipment (best-effort, current character only).
+    -- Retail exposes profession gear as inventory slot IDs after normal equipment.
+    -- We scan the numeric range instead of relying on localized slot names so this
+    -- survives profession-specific tools/accessories and future additions.
+    local function CollectProfessionEquipmentItems()
+        local professionEquipment = {}
+
+        for slotID = 20, 30 do
+            local link = (GetInventoryItemLink and GetInventoryItemLink("player", slotID)) or nil
+            local itemID = (GetInventoryItemID and GetInventoryItemID("player", slotID)) or nil
+            local tex = (GetInventoryItemTexture and GetInventoryItemTexture("player", slotID)) or nil
+
+            if link or itemID or tex then
+                local ilvl = nil
+                if link and C_Item and C_Item.GetDetailedItemLevelInfo then
+                    ilvl = C_Item.GetDetailedItemLevelInfo(link)
+                end
+
+                local name, itemLink, quality, itemLevel, reqLevel, itemType, itemSubType, maxStack, equipLoc, iconFileID, sellPrice, classID, subclassID = nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil
+                if link and GetItemInfo then
+                    name, itemLink, quality, itemLevel, _, itemType, itemSubType, _, equipLoc, iconFileID, _, classID, subclassID = GetItemInfo(link)
+                elseif itemID and C_Item and C_Item.GetItemInfoInstant then
+                    _, _, quality, equipLoc, iconFileID, classID, subclassID = C_Item.GetItemInfoInstant(itemID)
+                    if C_Item.GetItemNameByID then
+                        name = C_Item.GetItemNameByID(itemID)
+                    end
+                end
+
+                professionEquipment[slotID] = {
+                    itemLink = link or itemLink,
+                    itemID = itemID,
+                    iconFileID = tex or iconFileID,
+                    itemLevel = ilvl or itemLevel,
+                    name = name,
+                    quality = quality,
+                    itemType = itemType,
+                    itemSubType = itemSubType,
+                    classID = classID,
+                    subclassID = subclassID,
+                    equipLoc = equipLoc,
+                    slotID = slotID,
+                    slotName = "Profession Slot " .. slotID,
+                }
+            end
+        end
+
+        return professionEquipment
+    end
+
+    local professionEquipment = CollectProfessionEquipmentItems()
+
     -- Experience / Rested XP (best-effort)
     local currentXP, maxXP, restedXP, fullyRestedIn = nil, nil, nil, nil
     local maxPlayerLevel = (GetMaxPlayerLevel and GetMaxPlayerLevel()) or 80
@@ -500,6 +551,7 @@ function TheQuartermaster:SaveCurrentCharacterData()
         ilvlEquipped = equippedIlvl,
         ilvlAvg = avgIlvl,
         equipment = equipment,
+        professionEquipment = professionEquipment,
         gold = gold,
         faction = faction,
         race = race,
@@ -522,6 +574,7 @@ function TheQuartermaster:SaveCurrentCharacterData()
         currencies = currencyData, -- Store Currency data
         currencyHeaders = currencyHeaders, -- Store Currency headers
         equipment = equipment, -- Equipped items per slot (offline gear check)
+        professionEquipment = professionEquipment, -- Profession equipment slots (tools/accessories)
         personalBank = personalBank,  -- Store personal bank for search
         inventory = inventory,  -- Store inventory for storage search
     }
@@ -1084,6 +1137,48 @@ function TheQuartermaster:PerformItemSearch(searchTerm)
                                 character = charData.name,
                             })
                         end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Search Equipped Gear (all characters)
+    if self.db.global.characters then
+        for charKey, charData in pairs(self.db.global.characters) do
+            if charData.equipment then
+                for slotName, item in pairs(charData.equipment) do
+                    local match = false
+                    if item and item.name and item.name:lower():find(searchLower) then match = true end
+                    if item and searchID and item.itemID == searchID then match = true end
+                    if match then
+                        table.insert(results, {
+                            item = item,
+                            location = "Equipped",
+                            locationDetail = (charData.name or charKey) .. " (" .. (charData.realm or "Unknown") .. ") - " .. tostring(slotName),
+                            character = charData.name,
+                        })
+                    end
+                end
+            end
+        end
+    end
+
+    -- Search Profession Equipment (all characters)
+    if self.db.global.characters then
+        for charKey, charData in pairs(self.db.global.characters) do
+            if charData.professionEquipment then
+                for slotID, item in pairs(charData.professionEquipment) do
+                    local match = false
+                    if item and item.name and item.name:lower():find(searchLower) then match = true end
+                    if item and searchID and item.itemID == searchID then match = true end
+                    if match then
+                        table.insert(results, {
+                            item = item,
+                            location = "Profession Equipment",
+                            locationDetail = (charData.name or charKey) .. " (" .. (charData.realm or "Unknown") .. ") - " .. (item.slotName or ("Slot " .. tostring(slotID))),
+                            character = charData.name,
+                        })
                     end
                 end
             end

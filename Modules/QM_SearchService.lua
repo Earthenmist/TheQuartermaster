@@ -250,6 +250,26 @@ function TheQuartermaster:CountItemTotals(itemID, includeGuildBank)
                 end
                 Add(charLabel .. " - Bank", count)
             end
+
+            if charData.equipment then
+                local count = 0
+                for _, item in pairs(charData.equipment) do
+                    if item and item.itemID == itemID then
+                        count = count + 1
+                    end
+                end
+                Add(charLabel .. " - Equipped", count)
+            end
+
+            if charData.professionEquipment then
+                local count = 0
+                for _, item in pairs(charData.professionEquipment) do
+                    if item and item.itemID == itemID then
+                        count = count + 1
+                    end
+                end
+                Add(charLabel .. " - Profession Equipment", count)
+            end
         end
     end
 

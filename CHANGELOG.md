@@ -1,9 +1,9 @@
-## 🧩 Addon Updates (2026-04-02)
+## 🧩 Addon Updates (2026-06-12)
 
-**The Quartermaster** — v1.0.24  
+**The Quartermaster** — v1.0.26  
 
 **Changes:**  
-- Added a scale slider at the top of the window allowing resize between 75 & 115%
+- Added a Profession Equipment window as per feature request on discord.
   
 **Fixes:**  
 - None
