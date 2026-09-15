@@ -1,0 +1,122 @@
+## Interface: 120100, 120105
+## Title: The Quartermaster
+## Notes: Characters, storage, professions and weekly progress across your Warband.
+## Author: Earthenmist
+## Version: 2.0.1-Release
+## IconTexture: Interface\AddOns\TheQuartermaster\Media\icon
+## AddonCompartmentFunc: TheQuartermaster_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: TheQuartermaster_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: TheQuartermaster_OnAddonCompartmentLeave
+## SavedVariables: TheQuartermasterDB
+## OptionalDeps: Ace3
+## Category: Bags & Inventory
+## X-Curse-Project-ID: 1444475
+## X-Wago-ID: O67D4ZK3
+
+# Libraries
+embeds.xml
+
+# Localization (Blizzard supported locales only - no trTR)
+Locales\enUS.lua
+Locales\deDE.lua
+Locales\esES.lua
+Locales\esMX.lua
+Locales\frFR.lua
+Locales\itIT.lua
+Locales\koKR.lua
+Locales\ptBR.lua
+Locales\ruRU.lua
+Locales\zhCN.lua
+Locales\zhTW.lua
+
+# Core
+Core\QM_Constants.lua
+Core\QM_Defaults.lua
+Core\QM_Theme.lua
+QuartermasterCore.lua
+Modules\QM_TimePlayedSuppress.lua
+QuartermasterConfig.lua
+
+# Modules (Core Services - Load First!)
+Modules\QM_APIWrapper.lua
+Modules\QM_ErrorHandler.lua
+Modules\QM_Identity.lua
+Modules\QM_CharacterOrder.lua
+Modules\QM_PvEData.lua
+Modules\QM_WeeklyActivities.lua
+Modules\QM_WeeklyDetails.lua
+Modules\QM_DataFreshness.lua
+Modules\QM_SetupChecklist.lua
+Modules\QM_EquipmentCache.lua
+Modules\QM_DataService.lua
+Modules\QM_Experience.lua
+Modules\QM_SearchService.lua
+Modules\QM_ProfessionPins.lua
+Modules\QM_RecipeOwnership.lua
+Modules\QM_ProfessionRecipes.lua
+Modules\QM_RecipeIngredients.lua
+Modules\QM_RecipeWatchlist.lua
+Modules\QM_Auctionator.lua
+Modules\QM_RecipeIngredientScan.lua
+Modules\QM_CacheManager.lua
+Modules\QM_EventManager.lua
+Modules\QM_DatabaseOptimizer.lua
+Modules\QM_CollectionManager.lua
+Modules\QM_AccountCollections.lua
+Modules\QM_NotificationManager.lua
+
+# Modules (Features)
+Modules\QM_MinimapButton.lua
+Modules\QM_TooltipEnhancer.lua
+Modules\QM_Scanner.lua
+Modules\QM_Mail.lua
+Modules\QM_MailExpiry.lua
+Modules\QM_MailAttachments.lua
+Modules\QM_Wealth.lua
+Modules\QM_WealthTracking.lua
+Modules\QM_Auctions.lua
+Modules\QM_ProfessionCooldowns.lua
+Modules\QM_ProfessionDepth.lua
+Core\KnowledgeData.lua
+Modules\QM_Knowledge.lua
+Modules\QM_Comparison.lua
+Modules\QM_QuestLogs.lua
+Modules\QM_Achievements.lua
+Modules\QM_Banker.lua
+Modules\QM_PvE.lua
+
+# UI Modules (SharedWidgets must load first!)
+Modules\UI\QM_RenderPool.lua
+Modules\UI\QM_SharedWidgets.lua
+Modules\UI\QM_DataCoverageUI.lua
+Modules\UI\QM_SearchUI.lua
+Modules\UI\QM_WatchlistUI.lua
+Modules\UI\QM_CharacterDrag.lua
+Modules\UI\QM_CharactersUI.lua
+Modules\UI\ExperienceUI.lua
+Modules\UI\EquipmentUI.lua
+Modules\UI\ProfessionEquipmentUI.lua
+Modules\UI\GuildUI.lua
+Modules\UI\QM_CurrencyUI.lua
+Modules\UI\QM_ItemsUI.lua
+Modules\UI\QM_MaterialsUI.lua
+Modules\UI\QM_StorageUI.lua
+Modules\UI\QM_PvECompactUI.lua
+Modules\UI\QM_WeeklyUI.lua
+Modules\UI\QM_PvEUI.lua
+Modules\UI\QM_ReputationUI.lua
+Modules\UI\QM_RecipesUI.lua
+Modules\UI\QM_ConcentrationUI.lua
+Modules\UI\QM_CooldownsUI.lua
+Modules\UI\QM_KnowledgeUI.lua
+Modules\UI\QM_QuestLogsUI.lua
+Modules\UI\QM_AchievementsUI.lua
+Modules\UI\QM_SetupUI.lua
+Modules\UI\QM_StatisticsUI.lua
+Modules\UI\QM_WealthUI.lua
+Modules\UI\QM_AuctionsUI.lua
+Modules\UI\QM_DashboardUI.lua
+Modules\UI\QM_ComparisonUI.lua
+Modules\UI\QM_NavigationUI.lua
+Modules\UI\QM_InformationDialog.lua
+Modules\QM_UI.lua
