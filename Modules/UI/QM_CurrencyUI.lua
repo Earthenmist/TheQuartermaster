@@ -1,0 +1,741 @@
+--[[
+    The Quartermaster - Currency Tab
+    Display all currencies across characters with Blizzard API headers
+    
+    EXACT StorageUI pattern:
+    - Character → Expansion → Category → Currency rows
+    - Season 3 is a CATEGORY under "The War Within" expansion
+    - All spacing, fonts, colors match StorageUI
+]]
+
+local ADDON_NAME, ns = ...
+local TheQuartermaster = ns.TheQuartermaster
+
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+
+-- Import shared UI components (always get fresh reference)
+local CreateCard = ns.UI_CreateCard
+local CreateCollapsibleHeader = ns.UI_CreateCollapsibleHeader
+local FormatGold = ns.UI_FormatGold
+local FormatCharacterNameRealm = ns.UI_FormatCharacterNameRealm
+local function DrawEmptyState(parent, message, y)
+    local text = ns.UI_RenderFontString(parent, nil, "OVERLAY", "QuartermasterFontBody")
+    text:SetPoint("TOPLEFT", 10, -y)
+    text:SetWidth(math.max(1, parent:GetWidth() - 20))
+    text:SetJustifyH("LEFT")
+    text:SetTextColor(unpack(ns.UI_COLORS.textNormal))
+    text:SetText(message)
+end
+local function GetCOLORS()
+    return ns.UI_COLORS
+end
+
+-- Performance: Local function references
+local format = string.format
+local floor = math.floor
+local ipairs = ipairs
+local pairs = pairs
+local next = next
+
+-- Import shared UI constants (EXACT StorageUI spacing)
+local UI_LAYOUT = ns.UI_LAYOUT
+local ROW_HEIGHT = UI_LAYOUT.ROW_HEIGHT
+local ROW_SPACING = UI_LAYOUT.ROW_SPACING
+local HEADER_SPACING = UI_LAYOUT.HEADER_SPACING
+local SECTION_SPACING = UI_LAYOUT.SECTION_SPACING
+
+--============================================================================
+-- CURRENCY FORMATTING & HELPERS
+--============================================================================
+
+---Format number with thousand separators
+---@param num number Number to format
+---@return string Formatted number
+local function FormatNumber(num)
+    local formatted = tostring(num)
+    local k
+    while true do
+        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1.%2')
+        if k == 0 then break end
+    end
+    return formatted
+end
+
+---Format currency quantity with cap indicator
+---@param quantity number Current amount
+---@param maxQuantity number Maximum amount (0 = no cap)
+---@return string Formatted text with color
+local function FormatCurrencyAmount(quantity, maxQuantity)
+    if maxQuantity > 0 then
+        local percentage = (quantity / maxQuantity) * 100
+        local color
+        
+        if percentage >= 100 then
+            color = "|cffff4444" -- Red (capped)
+        elseif percentage >= 80 then
+            color = "|cffffaa00" -- Orange (near cap)
+        elseif percentage >= 50 then
+            color = "|cffffff00" -- Yellow (half)
+        else
+            color = "|cffffffff" -- White (safe)
+        end
+        
+        return format("%s%s|r / %s", color, FormatNumber(quantity), FormatNumber(maxQuantity))
+    else
+        return format("|cffffffff%s|r", FormatNumber(quantity))
+    end
+end
+
+---Check if currency matches search text
+---@param currency table Currency data
+---@param searchText string Search text (lowercase)
+---@return boolean matches
+local function CurrencyMatchesSearch(currency, searchText)
+    if not searchText or searchText == "" then
+        return true
+    end
+    
+    local name = (currency.name or ""):lower()
+    local category = (currency.category or ""):lower()
+    
+    return name:find(searchText, 1, true) or category:find(searchText, 1, true)
+end
+
+--============================================================================
+-- CURRENCY ROW RENDERING (EXACT StorageUI style)
+--============================================================================
+
+---Create a single currency row (PIXEL-PERFECT StorageUI style)
+---@param parent Frame Parent frame
+---@param currency table Currency data
+---@param currencyID number Currency ID
+---@param rowIndex number Row index for alternating colors
+---@param indent number Left indent
+---@param width number Parent width
+---@param yOffset number Y position
+---@return number newYOffset
+local function CreateCurrencyRow(parent, currency, currencyID, rowIndex, indent, width, yOffset)
+    -- Acquire a row from the current render pass.
+    local row = ns.UI_RenderFrame("Button", nil, parent, "BackdropTemplate")
+    row:SetSize(width - indent, ROW_HEIGHT)
+    row:SetPoint("TOPLEFT", 10 + indent, -yOffset)
+    row:SetBackdrop({
+        bgFile = "Interface\\BUTTONS\\WHITE8X8",
+    })
+    
+    -- EXACT alternating row colors (StorageUI formula)
+    row:SetBackdropColor(rowIndex % 2 == 0 and 0.07 or 0.05, rowIndex % 2 == 0 and 0.07 or 0.05, rowIndex % 2 == 0 and 0.09 or 0.06, 1)
+    
+    local hasQuantity = (currency.quantity or 0) > 0
+    
+    -- Icon
+    local icon = ns.UI_RenderTexture(row, nil, "ARTWORK")
+    icon:SetSize(22, 22)
+    icon:SetPoint("LEFT", 15, 0)
+    if currency.iconFileID then
+        icon:SetTexture(currency.iconFileID)
+    else
+        icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+    end
+    
+    if not hasQuantity then
+        icon:SetAlpha(0.4)
+    end
+    
+    -- Name
+    local nameText = ns.UI_RenderFontString(row, nil, "OVERLAY", "QuartermasterFontBody")
+    nameText:SetPoint("LEFT", 43, 0)
+    nameText:SetJustifyH("LEFT")
+    nameText:SetWordWrap(false)
+    nameText:SetWidth(width - indent - 200)
+    nameText:SetText(currency.name or "Unknown Currency")
+    if hasQuantity then
+        nameText:SetTextColor(1, 1, 1)
+    else
+        nameText:SetTextColor(0.5, 0.5, 0.5)
+    end
+    
+    -- Amount
+    local amountText = ns.UI_RenderFontString(row, nil, "OVERLAY", "QuartermasterFontBody")
+    amountText:SetPoint("RIGHT", -10, 0)
+    amountText:SetWidth(150)
+    amountText:SetJustifyH("RIGHT")
+    amountText:SetText(FormatCurrencyAmount(currency.quantity or 0, currency.maxQuantity or 0))
+    if not hasQuantity then
+        amountText:SetTextColor(0.5, 0.5, 0.5)
+    end
+    
+    -- EXACT StorageUI hover effect
+    row:SetScript("OnEnter", function(self)
+        self:SetBackdropColor(unpack(GetCOLORS().bgLight))
+        
+        GameTooltip:SetOwner(self, "ANCHOR_LEFT")
+        if currencyID and C_CurrencyInfo then
+            GameTooltip:SetCurrencyByID(currencyID)
+        else
+            GameTooltip:SetText(currency.name or "Currency", 1, 1, 1)
+            if currency.maxQuantity and currency.maxQuantity > 0 then
+                GameTooltip:AddLine(format("Maximum: %d", currency.maxQuantity), 0.7, 0.7, 0.7)
+            end
+        end
+        GameTooltip:Show()
+    end)
+    
+    row:SetScript("OnLeave", function(self)
+        self:SetBackdropColor(rowIndex % 2 == 0 and 0.07 or 0.05, rowIndex % 2 == 0 and 0.07 or 0.05, rowIndex % 2 == 0 and 0.09 or 0.06, 1)
+        GameTooltip:Hide()
+    end)
+    
+    return yOffset + ROW_SPACING
+end
+
+--============================================================================
+-- MAIN DRAW FUNCTION
+--============================================================================
+
+local function DrawContent(self, parent)
+    local yOffset = 8
+    local width = parent:GetWidth() - 20
+    local indent = 20
+    
+    -- Get search text
+    local currencySearchText = (ns.currencySearchText or ""):lower()
+    
+    -- Get all characters
+    local characters = self:GetAllCharacters()
+    if not characters or #characters == 0 then
+        DrawEmptyState(parent, L.PG_NO_CHARACTERS, yOffset)
+        return yOffset + 50
+    end
+    
+    -- View mode and zero toggle
+    -- Currency view is now locked to "Character Only" (alt list visible).
+    -- (The old All Warband view was removed along with the toggle button.)
+    local viewMode = "character"
+    self.db.profile.currencyViewMode = viewMode
+    local showZero = self.db.profile.currencyShowZero
+    if showZero == nil then showZero = true end
+    
+    -- Get current online character
+    local currentPlayerName = UnitName("player")
+    local currentRealm = GetRealmName()
+    local currentCharKey = currentPlayerName .. "-" .. currentRealm
+    
+    local IsExpanded, ToggleExpand = ns.UI_ProgressionAccordion("currency", function() self:RefreshUI() end)
+
+    local COLORS = GetCOLORS()
+
+    -- ===== RENDER CHARACTERS =====
+    local hasAnyData = false
+    local charactersWithCurrencies = {}
+    
+    -- Collect characters with currencies
+    for _, char in ipairs(characters) do
+        if char.currencies and next(char.currencies) then
+            local charKey = (char.name or "Unknown") .. "-" .. (char.realm or "Unknown")
+            local isOnline = (charKey == currentCharKey)
+            
+            -- Filter currencies
+            local matchingCurrencies = {}
+            for currencyID, currency in pairs(char.currencies) do
+                local passesZeroFilter = showZero or ((currency.quantity or 0) > 0)
+                
+                if not currency.isHidden 
+                   and passesZeroFilter
+                   and CurrencyMatchesSearch(currency, currencySearchText) then
+                    table.insert(matchingCurrencies, {
+                        id = currencyID,
+                        data = currency,
+                    })
+                end
+            end
+            
+            if #matchingCurrencies > 0 then
+                hasAnyData = true
+                table.insert(charactersWithCurrencies, {
+                    char = char,
+                    key = charKey,
+                    currencies = matchingCurrencies,
+                    isOnline = isOnline,
+                    sortPriority = isOnline and 0 or 1,
+                })
+            end
+        end
+    end
+    
+    -- Follow the order saved on Characters Overview.
+    charactersWithCurrencies = ns.SortCharacterRows(self.db, charactersWithCurrencies, function(row) return row.key end)
+    
+
+    -- All Warband view: hide alt list by rendering ONLY the current (online) character.
+    -- We still keep the single character header for context, but no other alts are listed.
+    if viewMode == "warband" and #charactersWithCurrencies > 0 then
+        local selected = nil
+        for _, cd in ipairs(charactersWithCurrencies) do
+            if cd.isOnline then
+                selected = cd
+                break
+            end
+        end
+        if not selected then
+            selected = charactersWithCurrencies[1]
+        end
+
+        -- Merge account-wide (warband) currencies from all characters into the selected list.
+        local accountWide = {}
+        for _, cd in ipairs(charactersWithCurrencies) do
+            for _, curr in ipairs(cd.currencies) do
+                if curr.data and curr.data.isAccountWide then
+                    local existing = accountWide[curr.id]
+                    if not existing or (curr.data.quantity or 0) > (existing.data.quantity or 0) then
+                        accountWide[curr.id] = curr
+                    end
+                end
+            end
+        end
+
+        local merged = {}
+        local seen = {}
+        for _, curr in ipairs(selected.currencies) do
+            merged[#merged+1] = curr
+            seen[curr.id] = true
+        end
+        for cid, curr in pairs(accountWide) do
+            if not seen[cid] then
+                merged[#merged+1] = curr
+            end
+        end
+        selected.currencies = merged
+
+        charactersWithCurrencies = { selected }
+    end
+
+    if not hasAnyData then
+        DrawEmptyState(parent, 
+            currencySearchText ~= "" and L.PG_CURRENCY_SEARCH_EMPTY or L.PG_NO_CURRENCIES,
+            yOffset)
+        return yOffset + 100
+    end
+    
+    
+    -- ============================================================================
+    -- Blizzard-like ordering (requested)
+    -- ============================================================================
+    local LEGACY_ORDER = {
+        "The War Within",
+        "Dragonflight",
+        "Shadowlands",
+        "Battle for Azeroth",
+        "Legion",
+        "Warlords of Draenor",
+        "Mists of Pandaria",
+        "Cataclysm",
+        "Wrath of the Lich King",
+        "The Burning Crusade",
+    }
+
+    local function NormalizeHeaderName(name)
+        name = name or ""
+        name = name:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+        return name:lower()
+    end
+
+    -- Blizzard header names can differ between versions (e.g. "The War Within" vs "War Within").
+    -- Resolve a bucket by trying common aliases so we don't drop currencies when names vary.
+    local function GetBucketByHeaderName(buckets, headerName)
+        local key = NormalizeHeaderName(headerName)
+        local bucket = buckets[key]
+        if bucket then return bucket, key end
+
+        -- Try stripping leading "the "
+        if key:sub(1, 4) == "the " then
+            local alt = key:sub(5)
+            bucket = buckets[alt]
+            if bucket then return bucket, alt end
+        end
+
+        -- Try adding leading "the "
+        local withThe = "the " .. key
+        bucket = buckets[withThe]
+        if bucket then return bucket, withThe end
+
+        return nil, key
+    end
+
+    local function BuildHeaderBuckets(currList)
+        local buckets = {}
+        for _, curr in ipairs(currList) do
+            local header = (curr.data and curr.data.headerName) or "Other"
+            local key = NormalizeHeaderName(header)
+            buckets[key] = buckets[key] or { name = header, items = {} }
+            table.insert(buckets[key].items, curr)
+        end
+        -- Preserve Blizzard's currency-list order within each header.
+        -- Falling back to the name keeps older saved data deterministic.
+        for _, b in pairs(buckets) do
+            table.sort(b.items, function(a, b2)
+                local aIndex = tonumber(a.data and a.data.listIndex) or math.huge
+                local bIndex = tonumber(b2.data and b2.data.listIndex) or math.huge
+                if aIndex ~= bIndex then
+                    return aIndex < bIndex
+                end
+                return (a.data.name or "") < (b2.data.name or "")
+            end)
+        end
+        return buckets
+    end
+
+    -- Midnight now contains several nested Blizzard currency subheaders.
+    -- Keep the order aligned with the in-game Currency frame and include
+    -- season headers dynamically so future seasons do not require another fix.
+    local MIDNIGHT_SUBHEADER_ORDER = {
+        { keys = { "crests", "crest" }, icon = "Interface\\Icons\\INV_Misc_QuestionMark" },
+        { keys = { "delves" }, icon = "Interface\\Icons\\INV_Misc_QuestionMark" },
+        { keys = { "features" }, icon = "Interface\\Icons\\INV_Misc_QuestionMark" },
+        { keys = { "professions", "profession" }, icon = "Interface\\Icons\\Trade_Engineering" },
+        { seasons = true, icon = "Interface\\Icons\\INV_Misc_QuestionMark" },
+        { keys = { "zones", "zone" }, icon = "Interface\\Icons\\INV_Misc_Map_01" },
+    }
+
+    local function GetMidnightSubheaderBuckets(buckets)
+        local subheaders = {}
+        local itemCount = 0
+        local added = {}
+
+        local function AddBucket(key, bucket, icon)
+            if not bucket or #bucket.items == 0 or added[bucket] then
+                return
+            end
+
+            added[bucket] = true
+            table.insert(subheaders, {
+                key = key,
+                bucket = bucket,
+                icon = icon,
+            })
+            itemCount = itemCount + #bucket.items
+        end
+
+        for _, definition in ipairs(MIDNIGHT_SUBHEADER_ORDER) do
+            if definition.seasons then
+                for season = 1, 10 do
+                    local key = "season " .. season
+                    AddBucket(key, buckets[key], definition.icon)
+                end
+            else
+                for _, key in ipairs(definition.keys) do
+                    local bucket = buckets[key]
+                    if bucket then
+                        AddBucket(key, bucket, definition.icon)
+                        break
+                    end
+                end
+            end
+        end
+
+        return subheaders, itemCount
+    end
+
+
+    local function RenderCurrenciesUnderHeader(headerTitle, headerKey, headerIcon, items, baseIndent, defaultExpanded, nestedFn, allowEmpty, countOverride)
+        if (not items or #items == 0) and not allowEmpty then
+            return
+        end
+
+        local hKey = headerKey
+        local hExpanded = IsExpanded(hKey, false, 1 + baseIndent / 20)
+
+        if currencySearchText ~= "" then
+            hExpanded = true
+        end
+
+        local hdr, _ = CreateCollapsibleHeader(
+            parent,
+            headerTitle .. " (" .. (countOverride or #items) .. ")",
+            hKey,
+            hExpanded,
+            function(isExpanded) ToggleExpand(hKey, isExpanded) end,
+            headerIcon
+        )
+        hdr:SetPoint("TOPLEFT", 10 + baseIndent, -yOffset)
+        hdr:SetWidth(width - baseIndent)
+        hdr:SetBackdropColor(unpack(COLORS.bgCard))
+        local COLORS = GetCOLORS()
+        local borderColor = COLORS.border
+        hdr:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
+
+        yOffset = yOffset + HEADER_SPACING
+
+        if hExpanded then
+            local rowIdx = 0
+            for _, curr in ipairs(items) do
+                rowIdx = rowIdx + 1
+                yOffset = CreateCurrencyRow(parent, curr.data, curr.id, rowIdx, baseIndent, width, yOffset)
+            end
+        end
+
+        -- Child headers belong to their parent and should disappear with it.
+        if nestedFn and hExpanded then
+            nestedFn(true)
+        end
+    end
+
+    local function RenderBlizzardOrder(charKeyForState, currList, baseIndent)
+        local buckets = BuildHeaderBuckets(currList)
+
+        -- Midnight and its nested Blizzard subheaders.
+        local midnight = buckets["midnight"]
+        local midnightSubheaders, midnightSubheaderCount = GetMidnightSubheaderBuckets(buckets)
+        local midnightItems = midnight and midnight.items or {}
+
+        if #midnightItems > 0 or midnightSubheaderCount > 0 then
+            RenderCurrenciesUnderHeader(
+                midnight and midnight.name or "Midnight",
+                charKeyForState .. "-hdr-midnight",
+                "Interface\\Icons\\inv12_apextalent_demonhunter_midnight",
+                midnightItems,
+                baseIndent,
+                true,
+                function()
+                    for _, subheader in ipairs(midnightSubheaders) do
+                        RenderCurrenciesUnderHeader(
+                            subheader.bucket.name,
+                            charKeyForState .. "-hdr-midnight-" .. subheader.key:gsub("%s", ""),
+                            subheader.icon,
+                            subheader.bucket.items,
+                            baseIndent + 20,
+                            true
+                        )
+                    end
+                end,
+                true,
+                (#midnightItems + midnightSubheaderCount)
+            )
+        end
+
+-- Dungeon & Raid
+        local dr = buckets["dungeon and raid"] or buckets["dungeons and raids"] or buckets["dungeon & raid"]
+        if dr and #dr.items > 0 then
+            RenderCurrenciesUnderHeader(
+                dr.name,
+                charKeyForState .. "-hdr-dungeonraid",
+                "Interface\\Icons\\achievement_boss_archaedas",
+                dr.items,
+                baseIndent,
+                true
+            )
+        end
+
+        -- Miscellaneous with Timerunning subheader
+        local misc = buckets["miscellaneous"]
+        if misc and #misc.items > 0 then
+            RenderCurrenciesUnderHeader(
+                misc.name,
+                charKeyForState .. "-hdr-misc",
+                "Interface\\Icons\\INV_Misc_Gear_01",
+                misc.items,
+                baseIndent,
+                true,
+                function()
+                    local tr = buckets["timerunning"] or buckets["time running"]
+                    if tr and #tr.items > 0 then
+                        RenderCurrenciesUnderHeader(
+                            tr.name,
+                            charKeyForState .. "-hdr-timerunning",
+                            "Interface\\Icons\\INV_Misc_QuestionMark",
+                            tr.items,
+                            baseIndent + 20,
+                            true
+                        )
+                    end
+                end
+            )
+        elseif (buckets["timerunning"] or buckets["time running"]) then
+            local tr = buckets["timerunning"] or buckets["time running"]
+            if tr and #tr.items > 0 then
+                RenderCurrenciesUnderHeader(
+                    "Miscellaneous",
+                    charKeyForState .. "-hdr-misc",
+                    "Interface\\Icons\\INV_Misc_Gear_01",
+                    tr.items,
+                    baseIndent,
+                    true,
+                    function()
+                        RenderCurrenciesUnderHeader(
+                            tr.name,
+                            charKeyForState .. "-hdr-timerunning",
+                            "Interface\\Icons\\INV_Misc_QuestionMark",
+                            tr.items,
+                            baseIndent + 20,
+                            true
+                        )
+                    end
+                )
+            end
+        end
+
+        -- Player vs. Player
+        local pvp = buckets["player vs. player"] or buckets["pvp"]
+        if pvp and #pvp.items > 0 then
+            RenderCurrenciesUnderHeader(
+                pvp.name,
+                charKeyForState .. "-hdr-pvp",
+                "Interface\\Icons\\Achievement_BG_returnXflags_def_WSG",
+                pvp.items,
+                baseIndent,
+                true
+            )
+        end
+
+        -- Legacy (with expansion subheadings)
+        local legacyItemsCount = 0
+        for _, expName in ipairs(LEGACY_ORDER) do
+            local b = select(1, GetBucketByHeaderName(buckets, expName))
+            if b and #b.items > 0 then
+                legacyItemsCount = legacyItemsCount + #b.items
+            end
+        end
+
+        if legacyItemsCount > 0 then
+            local legacyKey = charKeyForState .. "-hdr-legacy"
+            local legacyExpanded = IsExpanded(legacyKey, false, 1 + baseIndent / 20)
+            if currencySearchText ~= "" then legacyExpanded = true end
+
+            local legacyHdr, _ = CreateCollapsibleHeader(
+                parent,
+                "Legacy (" .. legacyItemsCount .. ")",
+                legacyKey,
+                legacyExpanded,
+                function(isExpanded) ToggleExpand(legacyKey, isExpanded) end,
+                "Interface\\Icons\\INV_Misc_QuestionMark"
+            )
+            legacyHdr:SetPoint("TOPLEFT", 10 + baseIndent, -yOffset)
+            legacyHdr:SetWidth(width - baseIndent)
+            legacyHdr:SetBackdropColor(unpack(COLORS.bgCard))
+            local COLORS = GetCOLORS()
+            local borderColor = COLORS.border
+            legacyHdr:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
+
+            yOffset = yOffset + HEADER_SPACING
+
+            if legacyExpanded then
+                for _, expName in ipairs(LEGACY_ORDER) do
+                    local b, key = GetBucketByHeaderName(buckets, expName)
+                    if b and #b.items > 0 then
+                        RenderCurrenciesUnderHeader(
+                            b.name,
+                            charKeyForState .. "-legacy-" .. key:gsub("%s",""),
+                            nil,
+                            b.items,
+                            baseIndent + 20,
+                            true
+                        )
+                    end
+                end
+            end
+        end
+    end
+
+-- Draw each character
+    for _, charData in ipairs(charactersWithCurrencies) do
+        local char = charData.char
+        local charKey = charData.key
+        local currencies = charData.currencies
+        
+        -- Character header
+        local classColor = RAID_CLASS_COLORS[char.classFile or char.class] or {r=1, g=1, b=1}
+        local onlineBadge = charData.isOnline and " |cff00ff00(Online)|r" or ""
+        local charName = (FormatCharacterNameRealm and FormatCharacterNameRealm(char.name, char.realm, char.classFile or char.class))
+            or format("%s-%s", char.name or "Unknown", char.realm or "Unknown")
+        
+        local charKey_expand = "currency-char-" .. charKey
+        local charExpanded = IsExpanded(charKey_expand, false, 1)
+        
+        if currencySearchText ~= "" then
+            charExpanded = true
+        end
+        
+        -- Get class icon texture path
+        local classIconPath = nil
+        local coords = CLASS_ICON_TCOORDS[char.classFile or char.class]
+        if coords then
+            classIconPath = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
+        end
+        
+        local charHeader, charBtn, classIcon = CreateCollapsibleHeader(
+            parent,
+            format("%s%s - |cff888888%d currencies|r", charName, onlineBadge, #currencies),
+            charKey_expand,
+            charExpanded,
+            function(isExpanded) ToggleExpand(charKey_expand, isExpanded) end,
+            classIconPath  -- Pass class icon path
+        )
+        
+        -- If we have class icon coordinates, apply them
+        if classIcon and coords then
+            classIcon:SetTexCoord(unpack(coords))
+        end
+        
+        charHeader:SetPoint("TOPLEFT", 10, -yOffset)
+        charHeader:SetWidth(width)
+        charHeader:SetBackdropColor(unpack(COLORS.bgCard))
+        local COLORS = GetCOLORS()
+        local borderColor = COLORS.border
+        charHeader:SetBackdropBorderColor(borderColor[1], borderColor[2], borderColor[3], 0.8)
+        
+        yOffset = yOffset + HEADER_SPACING
+        
+        if charExpanded then
+            local charIndent = 20
+            
+                        -- Render currencies in Blizzard header order (shared between both views)
+            RenderBlizzardOrder(charKey, currencies, charIndent)
+        end
+        
+        yOffset = yOffset + 5
+    end
+    
+    -- ===== API LIMITATION NOTICE =====
+    yOffset = yOffset + 15
+    
+    local noticeFrame = ns.UI_RenderFrame("Frame", nil, parent, "BackdropTemplate")
+    noticeFrame:SetSize(width - 20, 60)
+    noticeFrame:SetPoint("TOPLEFT", 10, -yOffset)
+    noticeFrame:SetBackdrop({
+        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        tile = true, tileSize = 16, edgeSize = 12,
+        insets = { left = 3, right = 3, top = 3, bottom = 3 }
+    })
+    noticeFrame:SetBackdropColor(unpack(COLORS.bgCard))
+    noticeFrame:SetBackdropBorderColor(0.5, 0.4, 0.2, 0.8)
+    
+    local noticeIcon = ns.UI_RenderTexture(noticeFrame, nil, "ARTWORK")
+    noticeIcon:SetSize(24, 24)
+    noticeIcon:SetPoint("LEFT", 10, 0)
+    noticeIcon:SetTexture("Interface\\DialogFrame\\UI-Dialog-Icon-AlertNew")
+    
+    local noticeText = ns.UI_RenderFontString(noticeFrame, nil, "OVERLAY", "QuartermasterFontBody")
+    noticeText:SetPoint("LEFT", noticeIcon, "RIGHT", 10, 5)
+    noticeText:SetPoint("RIGHT", -10, 5)
+    noticeText:SetJustifyH("LEFT")
+    noticeText:SetText(L["CFFFFCC00CURRENCY_TRANSFER_LIMITATION_R"])
+    
+    local noticeSubText = ns.UI_RenderFontString(noticeFrame, nil, "OVERLAY", "QuartermasterFontSmall")
+    noticeSubText:SetPoint("TOPLEFT", noticeIcon, "TOPRIGHT", 10, -15)
+    noticeSubText:SetPoint("RIGHT", -10, 0)
+    noticeSubText:SetJustifyH("LEFT")
+    noticeSubText:SetTextColor(0.8, 0.8, 0.8)
+    noticeSubText:SetText(L["BLIZZARD_API_DOES_NOT_SUPPORT_AUTOMATED_CURRENCY_TRANSFERS_P"])
+    
+    yOffset = yOffset + 75
+    
+    return yOffset
+end
+
+function TheQuartermaster:DrawCurrencyTab(parent)
+    if not parent then return 0 end
+    self.currencyRenderPool = self.currencyRenderPool or ns.UI_NewRenderPool(parent)
+    local pool = self.currencyRenderPool
+    return pool:Finish(DrawContent(self, pool:Begin(parent:GetWidth())))
+end
